@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DoNet (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "DoNet (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
