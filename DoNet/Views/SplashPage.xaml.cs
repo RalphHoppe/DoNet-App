@@ -1,0 +1,66 @@
+using System;
+using System.Threading.Tasks;
+using DoNet.Contracts;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+
+namespace DoNet.Views;
+
+/// <summary>
+/// Branded splash: the DoNet lockup draws itself on, holds, un-draws, and the app moves
+/// on to onboarding.
+/// </summary>
+public sealed partial class SplashPage : Page
+{
+    /// <summary>Beat between the wordmark finishing and starting to rewind.</summary>
+    private const int HoldMs = 420;
+
+    /// <summary>
+    /// Hard ceiling on the whole splash. Whatever happens to the animation, the user
+    /// reaches onboarding - a splash that never advances is the worst thing this screen
+    /// could do.
+    /// </summary>
+    private const int WatchdogMs = 6000;
+
+    private readonly INavigationService _navigation;
+    private bool _started;
+
+    public SplashPage()
+    {
+        InitializeComponent();
+
+        _navigation = App.Current.Services.GetRequiredService<INavigationService>();
+        Loaded += OnLoaded;
+    }
+
+    private async void OnLoaded(object sender, RoutedEventArgs args)
+    {
+        // Loaded can fire again if the page is ever re-parented; the splash plays once.
+        if (_started)
+        {
+            return;
+        }
+
+        _started = true;
+
+        try
+        {
+            await Task.WhenAny(PlaySequenceAsync(), Task.Delay(WatchdogMs));
+        }
+        catch (Exception)
+        {
+            // An animation failure must never strand the user on a blank splash -
+            // fall through and navigate anyway.
+        }
+
+        _navigation.NavigateTo(typeof(CreatePasswordPage), clearBackStack: true);
+    }
+
+    private async Task PlaySequenceAsync()
+    {
+        await Logo.PlayIntroAsync();
+        await Task.Delay(HoldMs);
+        await Logo.PlayOutroAsync();
+    }
+}

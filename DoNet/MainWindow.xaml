@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Window
     x:Class="DoNet.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -9,11 +9,23 @@
     mc:Ignorable="d"
     Title="DoNet">
 
-    <Window.SystemBackdrop>
-        <MicaBackdrop />
-    </Window.SystemBackdrop>
+    <!--
+        No SystemBackdrop: the design is flat white edge to edge, and Mica would tint it.
+        The title bar is extended into the client area (see the code-behind) so the pages
+        own the whole window, matching the Figma frames.
+    -->
+    <Grid Background="{StaticResource AppBackgroundBrush}">
 
-    <Grid>
+        <Frame x:Name="RootFrame" />
 
+        <!--
+            Sits above the frame so the window stays draggable even though there is no
+            visible title bar. Both onboarding screens are empty up here, so nothing is
+            swallowed; revisit when a screen puts controls in the top strip.
+        -->
+        <Grid x:Name="DragRegion"
+              Height="40"
+              VerticalAlignment="Top"
+              Background="Transparent" />
     </Grid>
 </Window>

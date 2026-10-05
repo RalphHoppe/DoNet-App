@@ -23,6 +23,21 @@
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
 
+  <!--
+    Embedded fonts. Referenced from XAML as
+    "ms-appx:///Assets/Fonts/<file>#<family name>" - see Styles/Fonts.xaml.
+    All three are SIL Open Font License 1.1; the OFL.txt files ship with them to
+    satisfy the licence's attribution requirement.
+  -->
+  <ItemGroup>
+    <Content Include="Assets\Fonts\Pacifico-Regular.ttf" />
+    <Content Include="Assets\Fonts\Baloo2-Regular.ttf" />
+    <Content Include="Assets\Fonts\Jersey25-Regular.ttf" />
+    <Content Include="Assets\Fonts\Pacifico-OFL.txt" />
+    <Content Include="Assets\Fonts\Baloo2-OFL.txt" />
+    <Content Include="Assets\Fonts\Jersey25-OFL.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
@@ -38,6 +53,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+
+    <!-- Source-generated ObservableProperty / RelayCommand for the view models. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+
+    <!-- Composition root; see App.xaml.cs. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
 
   <!--
