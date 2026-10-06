@@ -322,7 +322,7 @@ def home(LW=1440, LH=900):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from gen_nav_icons import ICONS, RING, flatten
 
-    TITLEBAR, LOGO_W = 48, 100
+    TITLEBAR, LOGO_W = 48, 80
     PAD, RAIL_W, GAP = 12, 64, 20
     RAIL_R, CARD_R = RAIL_W / 2, 34
     DISC, SPACING, RING_D = 48, 16, 28

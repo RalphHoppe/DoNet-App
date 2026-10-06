@@ -97,6 +97,16 @@ removes it outright, leaving a 48px strip in `MainWindow.xaml` as the only chrom
 three coloured dots at the right — green minimise, amber maximise, red close, left to
 right — and the DoNet lockup at the left, inset 14px to match them.
 
+`Width="80"` there is measured, not chosen by eye. The lockup's tallest element is its
+ring, which is 111 units against the control's declared canvas width of 447.99, so the
+rendered height is `Width × 0.2478` — 19.82px at 80, leaving 14.09px clear above and
+below and matching the 14px inset on the left. The logo carries the same margin on
+every side it touches.
+
+That coefficient is worth remembering: it is **not** the `103.4 / 447.99 = 0.2308` the
+canvas implies. The ring overflows the declared canvas by 7.3% and `Viewbox` does not
+clip, so `DoNetLogo` always draws about 7% taller than the box it reserves.
+
 That lockup is shown on the home screen and nowhere else, toggled from the navigation
 service's `Navigated` event. Splash, create-password, lock and forgot-password each
 present a large centred logo already, and two at once reads as a duplication rather

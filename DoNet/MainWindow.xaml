@@ -37,11 +37,21 @@
                 Navigated event. Smaller than the 118 the centred screens use, because
                 here it is chrome rather than the focal point.
 
+                80 is not arbitrary. The lockup's tallest element is the ring, and the
+                ring measures 111 against the control's declared canvas width of
+                447.99 - so the rendered height is Width x 0.2478, which at 80 is
+                19.82. That leaves 14.09 clear above and below, matching the 14 inset
+                on the left: the same margin on every side the logo touches.
+
+                Note the 0.2478, not the 103.4/447.99 = 0.2308 the canvas implies. The
+                ring overflows the declared canvas by 7.3% and Viewbox does not clip,
+                so the box the control reserves is slightly shorter than what it draws.
+
                 Not hit-testable: the drag region has to receive the press, or the
                 window would stop moving wherever the logo happens to sit.
             -->
             <controls:DoNetLogo x:Name="TitleLogo"
-                                Width="100"
+                                Width="80"
                                 Margin="14,0,0,0"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
