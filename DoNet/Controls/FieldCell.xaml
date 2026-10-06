@@ -38,6 +38,16 @@
             <Thickness x:Key="TextControlThemePadding">0</Thickness>
             <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
             <x:Double x:Key="TextControlThemeMinWidth">0</x:Double>
+
+            <!--
+                PasswordBox has PlaceholderText but no PlaceholderForeground property -
+                TextBox has both, and the asymmetry is easy to walk into. The theme
+                resource is honoured by both controls, so the placeholder is coloured
+                here rather than on the element. Same approach as PasswordField.xaml.
+            -->
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#7B8491" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#7B8491" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#7B8491" />
         </Border.Resources>
 
         <Grid RowSpacing="6">
@@ -99,7 +109,6 @@
                              FontFamily="{StaticResource BalooFont}"
                              FontSize="{StaticResource FieldValueFontSize}"
                              Foreground="{StaticResource TextPrimaryBrush}"
-                             PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
                              Background="Transparent"
                              BorderThickness="0"
                              Padding="0"

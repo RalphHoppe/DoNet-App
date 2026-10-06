@@ -31,6 +31,29 @@ problems: list[str] = []
 notes: list[str] = []
 
 
+
+# Members that exist on a similar control but not on this one. Each of these has cost a
+# build cycle; the compiler only reports them one file at a time, and there is no SDK on
+# this machine to check against, so they are listed by hand as they are found.
+FORBIDDEN_MEMBERS = {
+    "PasswordBox": {
+        "PlaceholderForeground":
+            "PasswordBox has PlaceholderText but no PlaceholderForeground. "
+            "Set the TextControlPlaceholderForeground brush in the parent's Resources.",
+    },
+}
+
+
+def check_forbidden_members(path, src, problems):
+    import re
+    for m in re.finditer(r"<(\w+)([^>]*?)/?>", src, re.S):
+        tag, attrs = m.group(1), m.group(2)
+        for member, why in FORBIDDEN_MEMBERS.get(tag, {}).items():
+            if re.search(rf"\b{member}\s*=", attrs):
+                line = src[:m.start()].count("\n") + 1
+                problems.append(f"{path}:{line}: <{tag}> {member} - {why}")
+
+
 def read(path):
     with open(path, encoding="utf-8-sig") as handle:
         return handle.read()
@@ -72,6 +95,10 @@ for path, key in used:
     if key in defined or key.startswith(BUILTIN_PREFIXES):
         continue
     problems.append(f"undefined resource key '{key}' used in {os.path.relpath(path, ROOT)}")
+
+# ---- 2b. members that do not exist on that element ------------------------
+for path, text in xaml_text.items():
+    check_forbidden_members(os.path.relpath(path, ROOT), text, problems)
 
 # ---- 3. event handlers exist ----------------------------------------------
 for path, text in xaml_text.items():
