@@ -257,7 +257,7 @@ def forgot_password():
     return img.resize((W, H), Image.LANCZOS)
 
 
-def home():
+def home(LW=1280, LH=810):
     """The home screen: navigation rail plus the (still empty) content surface."""
     import sys
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -265,7 +265,6 @@ def home():
 
     # window is 1280x810 logical; this canvas is 1546x980, so work in logical units
     # and scale at the end
-    LW, LH = 1280, 810
     img = Image.new("RGB", (LW * SS, LH * SS), "white")
     dr = ImageDraw.Draw(img)
 
