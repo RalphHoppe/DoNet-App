@@ -96,9 +96,76 @@ for path, key in used:
         continue
     problems.append(f"undefined resource key '{key}' used in {os.path.relpath(path, ROOT)}")
 
+
+# Properties a CommunityToolkit.Mvvm view model exposes, including the ones its source
+# generator produces. Written because rewriting a view model and leaving a binding
+# pointing at a property that no longer exists costs a full build cycle, and x:Bind
+# failures are compile-time so they are worth catching here rather than in Visual
+# Studio one file at a time.
+def viewmodel_members(src):
+    import re
+    members = set()
+
+    # ordinary properties: public T Name { ... } or public T Name =>
+    for m in re.finditer(r"public\s+(?:static\s+)?[\w<>,\[\]\?\s]+?\s+(\w+)\s*(?:\{|=>)", src):
+        members.add(m.group(1))
+
+    # [ObservableProperty] private T _name;  ->  Name
+    for m in re.finditer(r"\[ObservableProperty\][\s\S]{0,400}?private\s+[\w<>,\[\]\?]+\s+_(\w+)\s*[;=]", src):
+        name = m.group(1)
+        members.add(name[0].upper() + name[1:])
+
+    # [RelayCommand] on Foo() / FooAsync()  ->  FooCommand
+    for m in re.finditer(r"\[RelayCommand[^\]]*\][\s\S]{0,300}?\b(\w+)\s*\([^)]*\)\s*(?:\{|=>)", src):
+        name = m.group(1)
+        if name.endswith("Async"):
+            name = name[: -len("Async")]
+        members.add(name + "Command")
+
+    return members
+
+
+def check_viewmodel_bindings(xaml_rel, xaml_src, cs_src, all_cs, problems):
+    """Resolve every x:Bind ViewModel.<member> path against the real view model."""
+    import re
+
+    decl = re.search(r"public\s+(\w*ViewModel)\s+ViewModel\b", cs_src)
+    if not decl:
+        return
+    vm_type = decl.group(1)
+
+    vm_src = None
+    for path, text in all_cs.items():
+        if re.search(rf"class\s+{vm_type}\b", text):
+            vm_src = text
+            break
+    if vm_src is None:
+        return
+
+    members = viewmodel_members(vm_src)
+    if not members:
+        return
+
+    for m in re.finditer(r"x:Bind\s+ViewModel\.(\w+)", xaml_src):
+        member = m.group(1)
+        if member in members:
+            continue
+        line = xaml_src[: m.start()].count("\n") + 1
+        problems.append(
+            f"{xaml_rel}:{line}: x:Bind ViewModel.{member} - "
+            f"{vm_type} has no such member")
+
+
 # ---- 2b. members that do not exist on that element ------------------------
 for path, text in xaml_text.items():
     check_forbidden_members(os.path.relpath(path, ROOT), text, problems)
+
+# ---- 2c. x:Bind ViewModel paths resolve -----------------------------------
+for path, text in xaml_text.items():
+    base = path[: -len(".xaml")] + ".xaml.cs"
+    if os.path.exists(base):
+        check_viewmodel_bindings(
+            os.path.relpath(path, ROOT), text, cs_text.get(base, ""), cs_text, problems)
 
 # ---- 3. event handlers exist ----------------------------------------------
 for path, text in xaml_text.items():

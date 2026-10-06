@@ -332,9 +332,6 @@
                     <TextBlock Text="The directory could not be opened"
                                Style="{StaticResource StateTitleStyle}"
                                Margin="0,16,0,0" />
-                    <TextBlock Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
-                               Style="{StaticResource StateBodyStyle}"
-                               Visibility="Collapsed" />
                     <TextBlock Text="Nothing was changed. You can try again."
                                Style="{StaticResource StateBodyStyle}" />
                     <Button Margin="0,20,0,0"
