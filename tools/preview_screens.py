@@ -7,7 +7,7 @@ This is a design aid only - it is not part of the app build.
 """
 import math
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 _FD = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    "DoNet", "Assets", "Fonts")
@@ -375,9 +375,25 @@ def home(LW=1440, LH=900):
                 dr.line(p, fill=colour, width=int(spec["w"] * SS), joint="curve")
 
     top = PAD + TOP_PAD + RING_D + RING_GAP
-    for i, key in enumerate(("Services", "Persons", "Sites")):
-        disc(top + DISC / 2 + i * (DISC + SPACING), key, i == 0, TEAL)
-    disc(LH - PAD - BOTTOM_PAD - DISC / 2, "Lock", True, AMBER)
+    discs = [(top + DISC / 2 + i * (DISC + SPACING), key, i == 0, TEAL)
+             for i, key in enumerate(("Services", "Persons", "Sites"))]
+    discs.append((LH - PAD - BOTTOM_PAD - DISC / 2, "Lock", True, AMBER))
+
+    # The disc shadows, as a true Gaussian: every disc offset down 6, blurred at
+    # sigma 7 (Figma blur 14), then composited at 7.06%. This render previously drew
+    # no disc shadow at all, which is exactly why a grossly over-strong one in the
+    # XAML survived review here and only showed up in a real build.
+    sh = Image.new("L", img.size, 0)
+    sd = ImageDraw.Draw(sh)
+    for cy, *_rest in discs:
+        r = DISC / 2
+        sd.ellipse([(cx - r) * SS, (cy + 6 - r) * SS,
+                    (cx + r) * SS, (cy + 6 + r) * SS], fill=255)
+    sh = sh.filter(ImageFilter.GaussianBlur(7 * SS)).point(lambda v: round(v * 0.0706))
+    img.paste(Image.new("RGB", img.size, (0x04, 0x15, 0x16)), (0, 0), sh)
+
+    for _args in discs:
+        disc(*_args)
 
     return img.resize((LW, LH), Image.LANCZOS)
 

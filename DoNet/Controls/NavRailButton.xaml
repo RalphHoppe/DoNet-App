@@ -82,24 +82,44 @@
 
         <!--
             The design's drop shadow - X 0, Y 6, blur 14, 041516 at 7.06% - as a radial
-            gradient. For a circle this is exact rather than an approximation: the disc
-            hides everything inside 28/42 of the radius, so only the Gaussian tail past
-            the disc edge is ever on screen, and the stops below sample that tail.
+            gradient whose stops are fitted to a real Gaussian: a 56px disc convolved
+            with sigma 7 (a Figma/CSS blur radius is two sigma), sampled along the
+            radius and quantised to 8-bit alpha. Worst-case error across the band that
+            is actually visible, r=28 to 42, is 0.4 of one alpha level.
+
+            The key number is 3.18% at r=28. A blurred edge sits at roughly half the
+            source's opacity, so the shadow is already half gone where the disc ends.
+            Carrying the full 7.06% out to the rim - which is what an evenly spaced
+            ramp does - reads as a hard grey collar rather than a shadow.
+
+            Translated, not margined. On a centre-aligned child a top margin shrinks
+            the layout slot and the centring then halves it, so Margin="0,6,0,0" drops
+            this by 3px, not 6. RenderTransform is outside layout and gives the real 6.
+
+            FallbackColor is pinned transparent because RadialGradientBrush is a
+            XamlCompositionBrushBase: where composition is unavailable it paints a flat
+            FallbackColor across the whole ellipse. Losing the shadow is invisible;
+            gaining a solid grey disc behind every button is not.
         -->
         <Ellipse x:Name="DropShadow"
                  Width="84"
                  Height="84"
-                 Margin="0,6,0,0"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  IsHitTestVisible="False">
+            <Ellipse.RenderTransform>
+                <TranslateTransform Y="6" />
+            </Ellipse.RenderTransform>
             <Ellipse.Fill>
-                <RadialGradientBrush>
-                    <GradientStop Offset="0.0" Color="#12041516" />
-                    <GradientStop Offset="0.6667" Color="#12041516" />
-                    <GradientStop Offset="0.7833" Color="#0D041516" />
-                    <GradientStop Offset="0.9" Color="#04041516" />
-                    <GradientStop Offset="1.0" Color="#00041516" />
+                <RadialGradientBrush FallbackColor="Transparent">
+                    <GradientStop Offset="0.0"    Color="#12041516" />
+                    <GradientStop Offset="0.3333" Color="#11041516" />
+                    <GradientStop Offset="0.5714" Color="#0C041516" />
+                    <GradientStop Offset="0.6667" Color="#08041516" />
+                    <GradientStop Offset="0.7619" Color="#04041516" />
+                    <GradientStop Offset="0.8333" Color="#02041516" />
+                    <GradientStop Offset="0.9048" Color="#01041516" />
+                    <GradientStop Offset="1.0"    Color="#00041516" />
                 </RadialGradientBrush>
             </Ellipse.Fill>
         </Ellipse>

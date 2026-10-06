@@ -216,9 +216,29 @@ box with its stroke, and rasterises a sheet to compare against the design.
 
 ### Shadows
 
-A circle's drop shadow can be reproduced exactly with a `RadialGradientBrush`, because
-the disc covers everything inside 28/42 of the radius and only the Gaussian tail is
-ever visible. That is what the rail buttons do — no composition code, nothing to fail.
+A circle's drop shadow can be reproduced with a `RadialGradientBrush`, because the disc
+hides the middle and only the Gaussian tail past the rim is ever on screen. That is what
+the rail buttons do — no composition code, nothing to fail.
+
+The trap is assuming the tail *starts* at full strength. It does not. A blurred edge
+sits at roughly half the source's opacity, so this design's 7.06% shadow is already down
+to **3.18% exactly where the disc ends**, and halves again every ~2.5px. The first
+attempt ramped evenly from 7.06% at the rim and read as a hard grey collar rather than a
+shadow — 2.2× too dark against the rail. The stops are now a numeric fit to a 56px disc
+convolved with σ 7 (a Figma/CSS blur radius is two σ), accurate to 0.4 of one alpha
+level across r=28–42, the only band that is visible.
+
+Two smaller traps live in the same element. A top margin does not offset a
+centre-aligned child — it shrinks the layout slot and the centring then halves the
+result, so `Margin="0,6,0,0"` dropped the shadow 3px instead of 6; use a
+`TranslateTransform`, which is outside layout. And `RadialGradientBrush` is a
+`XamlCompositionBrushBase`: where composition is unavailable it paints a flat
+`FallbackColor` across the whole ellipse, so that is pinned to `Transparent` here.
+Losing the shadow is invisible; gaining a solid grey disc behind every button is not.
+
+`tools/preview_screens.py` draws these shadows as a true Gaussian. It previously drew
+none at all, which is precisely why an over-strong one passed review in `docs/` and
+only surfaced in a real build.
 
 The two rounded panels cannot use that trick, so they take a real composition
 `DropShadow` via `Controls/Elevation.cs`. Two things about it are easy to get wrong:
