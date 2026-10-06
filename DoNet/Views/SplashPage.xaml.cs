@@ -24,7 +24,7 @@ public sealed partial class SplashPage : Page
     private const int WatchdogMs = 6000;
 
     private readonly INavigationService _navigation;
-    private readonly IAppState _appState;
+    private readonly IVaultService _vault;
     private bool _started;
 
     public SplashPage()
@@ -32,7 +32,7 @@ public sealed partial class SplashPage : Page
         InitializeComponent();
 
         _navigation = App.Current.Services.GetRequiredService<INavigationService>();
-        _appState = App.Current.Services.GetRequiredService<IAppState>();
+        _vault = App.Current.Services.GetRequiredService<IVaultService>();
 
         Loaded += OnLoaded;
     }
@@ -65,7 +65,7 @@ public sealed partial class SplashPage : Page
     /// Either way the back stack is cleared - there is nothing sensible to go back to.
     /// </summary>
     private Type Destination() =>
-        _appState.IsPasswordConfigured ? typeof(LockPage) : typeof(CreatePasswordPage);
+        _vault.IsInitialized ? typeof(LockPage) : typeof(CreatePasswordPage);
 
     private async Task PlaySequenceAsync()
     {

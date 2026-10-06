@@ -2,11 +2,13 @@ using System;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DoNet.Contracts;
+using DoNet.Views;
 
 namespace DoNet.ViewModels;
 
 /// <summary>
-/// Backs the "Create a password for your DoNet account" screen.
+/// Backs the "Create a password for your DoNet account" screen, shown once per install.
 /// </summary>
 public partial class CreatePasswordViewModel : ObservableObject
 {
@@ -20,6 +22,12 @@ public partial class CreatePasswordViewModel : ObservableObject
     /// </remarks>
     public const int MinimumPasswordLength = 8;
 
+    /// <summary>How long the success notice stays up before the lock screen takes over.</summary>
+    private const int SuccessPauseMs = 1400;
+
+    private readonly IVaultService _vault;
+    private readonly INavigationService _navigation;
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
     private string _password = string.Empty;
@@ -30,11 +38,17 @@ public partial class CreatePasswordViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
+    [NotifyPropertyChangedFor(nameof(SubmitLabel))]
     private bool _isBusy;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasError))]
+    [NotifyPropertyChangedFor(nameof(HasError), nameof(ShowError), nameof(ShowGuidance))]
     private string? _errorMessage;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SubmitCommand))]
+    [NotifyPropertyChangedFor(nameof(ShowSuccess), nameof(ShowError), nameof(ShowGuidance))]
+    private bool _isSuccess;
 
     [ObservableProperty]
     private bool _hasPasswordError;
@@ -42,21 +56,31 @@ public partial class CreatePasswordViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasConfirmError;
 
-    /// <summary>
-    /// Raised once both fields pass validation, with the accepted password.
-    /// </summary>
-    /// <remarks>
-    /// Nothing subscribes yet. This is the seam the vault work plugs into: deriving the
-    /// key, creating the encrypted database and moving on to the next screen all hang
-    /// off this callback, so none of that has to leak into the view.
-    /// </remarks>
-    public event Func<string, Task>? Submitted;
+    public CreatePasswordViewModel(IVaultService vault, INavigationService navigation)
+    {
+        _vault = vault;
+        _navigation = navigation;
+    }
 
     /// <summary>True while the red notice should replace the amber one.</summary>
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 
+    // The notice slot holds one of three things and never changes height, so the button
+    // below it cannot move. Exactly one of these is true at any moment.
+    public bool ShowSuccess => IsSuccess;
+
+    public bool ShowError => !IsSuccess && HasError;
+
+    public bool ShowGuidance => !IsSuccess && !HasError;
+
     /// <summary>
-    /// Validates the pair and hands the password to <see cref="Submitted"/>.
+    /// Key derivation is deliberately slow, so the button says what it is doing rather
+    /// than just going flat for a second.
+    /// </summary>
+    public string SubmitLabel => IsBusy ? "CREATING..." : "CREATE AND CONTINUE";
+
+    /// <summary>
+    /// Validates the pair, creates the encrypted vault, and hands over to the lock screen.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanSubmit))]
     private async Task SubmitAsync()
@@ -81,13 +105,21 @@ public partial class CreatePasswordViewModel : ObservableObject
 
         try
         {
-            if (Submitted is { } handler)
-            {
-                await handler(Password);
-            }
+            await _vault.CreateAsync(Password);
+
+            IsSuccess = true;
+            await Task.Delay(SuccessPauseMs);
+
+            // Cleared before leaving rather than left sitting in a bound property.
+            Password = string.Empty;
+            ConfirmPassword = string.Empty;
+
+            // No way back: the create screen is finished with for the life of the install.
+            _navigation.NavigateTo(typeof(LockPage), clearBackStack: true);
         }
         catch (Exception ex)
         {
+            IsSuccess = false;
             ErrorMessage = $"Could not create your account. {ex.Message}";
         }
         finally
@@ -100,7 +132,7 @@ public partial class CreatePasswordViewModel : ObservableObject
     /// The button stays live as soon as both fields have content; the actual rules are
     /// reported on submit so the user is not scolded mid-keystroke.
     /// </summary>
-    private bool CanSubmit() => !IsBusy && Password.Length > 0 && ConfirmPassword.Length > 0;
+    private bool CanSubmit() => !IsBusy && !IsSuccess && Password.Length > 0 && ConfirmPassword.Length > 0;
 
     partial void OnPasswordChanged(string value) => ClearErrors();
 

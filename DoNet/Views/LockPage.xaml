@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Page
     x:Class="DoNet.Views.LockPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -79,6 +79,23 @@
                            Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
                            Visibility="{x:Bind ViewModel.HasError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
 
+                <!--
+                    Stand-in for a destination. There is no screen behind the lock screen
+                    yet, so without this a correct password would clear the field and do
+                    nothing visible - identical to a failure. Remove once Unlocked leads
+                    somewhere.
+                -->
+                <TextBlock Grid.Column="0"
+                           Margin="0,0,12,0"
+                           VerticalAlignment="Center"
+                           FontFamily="{StaticResource BalooFont}"
+                           FontSize="{StaticResource LinkFontSize}"
+                           LineHeight="18"
+                           LineStackingStrategy="BlockLineHeight"
+                           Foreground="{StaticResource SuccessForegroundBrush}"
+                           Text="Unlocked."
+                           Visibility="{x:Bind ViewModel.IsUnlocked, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
                 <HyperlinkButton Grid.Column="1"
                                  VerticalAlignment="Center"
                                  Style="{StaticResource LinkButtonStyle}"
@@ -91,7 +108,7 @@
 
             <Button Margin="0,22,0,0"
                     Style="{StaticResource PrimaryButtonStyle}"
-                    Content="CONTINUE"
+                    Content="{x:Bind ViewModel.SubmitLabel, Mode=OneWay}"
                     Command="{x:Bind ViewModel.UnlockCommand}" />
         </StackPanel>
     </Grid>

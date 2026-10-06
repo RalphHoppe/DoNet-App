@@ -30,6 +30,9 @@ FIELD_BORDER = (228, 230, 233)
 WARN_BG = (253, 244, 231)
 WARN_BORDER = (246, 222, 180)
 WARN_FG = (196, 113, 11)
+OK_BG = (234, 246, 241)
+OK_BORDER = (191, 224, 210)
+OK_FG = (46, 125, 91)
 
 # ---- metrics ---------------------------------------------------------------
 COL = 352
@@ -188,7 +191,7 @@ def splash():
     return img.resize((W, H), Image.LANCZOS)
 
 
-def create_password():
+def create_password(success=False):
     img = Image.new("RGB", (W * SS, H * SS), "white")
     dr = ImageDraw.Draw(img)
 
@@ -216,14 +219,21 @@ def create_password():
         y += FIELD_H + 12
     y += 18 - 12
 
+    bg, bd, fg = (OK_BG, OK_BORDER, OK_FG) if success else (WARN_BG, WARN_BORDER, WARN_FG)
     dr.rounded_rectangle([col_x * SS, y * SS, (col_x + COL) * SS, (y + WARN_H) * SS],
-                         radius=RADIUS * SS, fill=WARN_BG, outline=WARN_BORDER, width=int(1.2 * SS))
-    warn_icon(dr, (col_x + 13) * SS, (y + WARN_H / 2 - 7.5) * SS, 15 * SS, WARN_FG)
+                         radius=RADIUS * SS, fill=bg, outline=bd, width=int(1.2 * SS))
+    if success:
+        u = 15 / 16.0
+        ix, iy = (col_x + 13) * SS, (y + WARN_H / 2 - 7.5) * SS
+        dr.line([ix + 3.1 * u * SS, iy + 8.5 * u * SS, ix + 6.5 * u * SS, iy + 11.9 * u * SS,
+                 ix + 12.9 * u * SS, iy + 4.4 * u * SS], fill=fg, width=int(1.6 * SS), joint="curve")
+    else:
+        warn_icon(dr, (col_x + 13) * SS, (y + WARN_H / 2 - 7.5) * SS, 15 * SS, WARN_FG)
     f_w = font(BAL, 12.5)
-    wt = "Do not forget your password, you will lose all your data."
+    wt = "Password created successfully." if success else "Do not forget your password, you will lose all your data."
     wb = ink(dr, f_w, wt)
     dr.text(((col_x + 35) * SS - wb[0], (y + WARN_H / 2) * SS - (wb[3] - wb[1]) / 2 - wb[1]),
-            wt, font=f_w, fill=WARN_FG)
+            wt, font=f_w, fill=fg)
     y += WARN_H + 18
 
     dr.rounded_rectangle([col_x * SS, y * SS, (col_x + COL) * SS, (y + BTN_H) * SS],
@@ -241,6 +251,7 @@ if __name__ == "__main__":
     os.makedirs("/tmp/preview", exist_ok=True)
     splash().save("/tmp/preview/screen1_splash.png")
     create_password().save("/tmp/preview/screen2_create.png")
+    create_password(success=True).save("/tmp/preview/screen2_success.png")
     lock_screen().save("/tmp/preview/screen3_lock.png")
     lock_screen(error=True).save("/tmp/preview/screen3_lock_error.png")
     print("written")

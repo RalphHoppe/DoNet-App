@@ -10,8 +10,8 @@ A WinUI 3 / Windows App SDK desktop app.
 | Create password | `DoNet/Views/CreatePasswordPage.xaml` | First run only, with validation |
 | Lock | `DoNet/Views/LockPage.xaml` | Every launch after that |
 
-The splash decides between the last two by asking `IAppState.IsPasswordConfigured`,
-which is true once a vault exists on disk.
+The splash decides between the last two by asking `IVaultService.IsInitialized`, which
+is true once a vault exists on disk.
 
 ![splash animation](docs/splash-animation.gif)
 
@@ -80,28 +80,62 @@ Figma frame. Palette and type ramp are in `Styles/Colors.xaml` and `Styles/Fonts
 `Styles/Theme.xaml` is the only dictionary `App.xaml` merges, and it pulls in the other
 two itself so that `StaticResource` lookups always resolve.
 
-## Not done yet
+## The vault
 
-Three events are raised and nothing subscribes to them. They are the seams the encrypted
-store plugs into, kept out of the views on purpose:
+The master password is never stored, in any form, not even hashed. Instead:
+
+1. A random 16-byte salt plus the password go through **Argon2id** (64 MiB, t=3, p=4) to
+   derive a key-encryption key.
+2. A random 32-byte **data key** is generated and wrapped with **AES-256-GCM** under that
+   key-encryption key.
+3. Only the salt, nonce, wrapped key, GCM tag and KDF parameters are written to
+   `vault.json`.
+
+Unlocking re-derives the key-encryption key and tries to unwrap. A wrong password
+produces a wrong key, the GCM authentication tag fails, and the attempt is rejected —
+so **the tag is the password check**. There is nothing on disk to compare a guess
+against, and every guess costs a full Argon2id derivation.
+
+The indirection through a data key is not decoration: it means the database can be
+encrypted under a key that never changes, so changing the master password later only has
+to re-wrap 32 bytes instead of re-encrypting everything.
+
+KDF parameters are read back *from the file* rather than from the constants in
+`VaultService`, so raising the cost later will not lock anyone out of an existing vault.
+`vault.json` is written to a temporary file and renamed over the original, so a crash
+cannot leave behind a half-written vault that nothing can open.
+
+### Starting over
+
+To get the create-password screen back, delete the vault:
+
+```
+%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState\vault.json
+```
+
+Unpackaged debug runs fall back to `%LOCALAPPDATA%\DoNet\vault.json`.
+
+### Note on trimming
+
+`VaultDescriptor` is serialised through a source-generated `JsonSerializerContext`, not
+by reflection. Release builds set `PublishTrimmed`, which would strip the property
+metadata reflection-based `System.Text.Json` depends on — the failure would appear only
+in Release, not in Debug.
+
+## Not done yet
 
 | Event | Should do |
 | --- | --- |
-| `CreatePasswordViewModel.Submitted` | Derive a key, create the SQLCipher database, move on |
-| `LockViewModel.Unlocking` | Verify the password (the AES-GCM tag decides) and return the result |
-| `LockViewModel.ForgotPasswordRequested` | Undecided - see below |
+| `LockViewModel.Unlocked` | Go to whatever the first real screen is |
+| `LockViewModel.ForgotPasswordRequested` | Undecided — see below |
 
-Until `Unlocking` has a subscriber the lock screen's button does nothing, by design: with
-no verifier there is nothing to check against, so waving the user through would be worse
-than standing still.
-
-`AppState` decides "has a password been set" by looking for `vault.json` in the app's
-local folder. That file is never written yet, so a fresh install always routes to
-onboarding. It is the one place to revisit when the vault lands.
+There is no screen behind the lock screen yet, so a correct password shows a temporary
+"Unlocked." confirmation instead of navigating. Without it, success and failure would
+look identical. Delete it once `Unlocked` leads somewhere.
 
 **"Forgot password?" is a product decision, not a technical one.** The warning on the
 create-password screen says losing the password loses the data, and the key hierarchy
-makes that literally true - there is no recovery path to build. The realistic options are
+makes that literally true — there is no recovery path to build. The realistic options are
 to explain that and offer to wipe and start over, or to add a recovery code at setup time.
 The link is wired to a command that raises an event; nothing happens until that is settled.
 

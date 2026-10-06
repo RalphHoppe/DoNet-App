@@ -45,7 +45,7 @@ public partial class App : Application
         var services = new ServiceCollection();
 
         services.AddSingleton<INavigationService, NavigationService>();
-        services.AddSingleton<IAppState, AppState>();
+        services.AddSingleton<IVaultService, VaultService>();
 
         services.AddTransient<CreatePasswordViewModel>();
         services.AddTransient<LockViewModel>();
