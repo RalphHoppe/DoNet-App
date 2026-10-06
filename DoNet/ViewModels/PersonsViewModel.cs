@@ -21,34 +21,42 @@ public enum DirectoryState
 }
 
 /// <summary>
-/// Backs the Persons directory.
+/// Backs the Persons directory and the dialogs that open over it.
 /// </summary>
 /// <remarks>
-/// The states are mutually exclusive and derived from one <see cref="State"/> field
-/// rather than from a handful of independent booleans, because independent booleans
-/// drift - two of them end up true and the screen shows a spinner on top of an error.
-/// The view binds to the computed flags, so only one branch can ever be visible.
+/// A singleton, so the directory survives rail switches and so the dialog hosted at the
+/// HomePage root and the grid inside the content plate are driven by the same object.
+///
+/// The states are derived from one <see cref="State"/> field rather than several
+/// independent booleans. Independent booleans drift until two are true at once and the
+/// screen renders a spinner on top of an error.
 /// </remarks>
 public sealed partial class PersonsViewModel : ObservableObject
 {
+    /// <summary>
+    /// Records fetched per request. Enough to fill the grid at the design size with a
+    /// little to spare, so the first scroll is not immediately another round trip.
+    /// </summary>
+    public const int PageSize = 12;
+
     private readonly IPersonDirectory _directory;
 
-    /// <summary>
-    /// Everything the source returned. <see cref="People"/> is this list filtered by the
-    /// search box, so clearing the search restores the full set without another fetch.
-    /// </summary>
-    private IReadOnlyList<PersonPreview> _all = Array.Empty<PersonPreview>();
-
-    /// <summary>Cancels an in-flight load if the screen reloads before it finishes.</summary>
     private CancellationTokenSource? _loadCts;
+
+    /// <summary>Guards against two overlapping "load the next page" requests.</summary>
+    private bool _loadingMore;
 
     public PersonsViewModel(IPersonDirectory directory)
     {
         _directory = directory;
+        Dialog = new PersonDialogViewModel();
     }
 
-    /// <summary>The cards currently on screen, after filtering.</summary>
-    public ObservableCollection<PersonPreview> People { get; } = new();
+    /// <summary>The records currently realised on screen.</summary>
+    public ObservableCollection<Person> People { get; } = new();
+
+    /// <summary>Drives the person dialog in all three of its modes.</summary>
+    public PersonDialogViewModel Dialog { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoading))]
@@ -58,34 +66,49 @@ public sealed partial class PersonsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasNoMatches))]
     private DirectoryState _state = DirectoryState.Loading;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasCards))]
-    [NotifyPropertyChangedFor(nameof(HasNoMatches))]
-    private string _searchText = string.Empty;
+    [ObservableProperty] private string _searchText = string.Empty;
 
-    /// <summary>The message shown by the error state. Never the raw exception text.</summary>
-    [ObservableProperty]
-    private string _errorMessage = string.Empty;
+    [ObservableProperty] private bool _isDialogOpen;
+
+    [ObservableProperty] private bool _isConfirmingDelete;
+
+    /// <summary>The record the confirmation is about.</summary>
+    [ObservableProperty] private Person? _pendingDelete;
+
+    /// <summary>True while more records exist beyond what has been fetched.</summary>
+    [ObservableProperty] private bool _hasMore;
 
     public bool IsLoading => State == DirectoryState.Loading;
 
     public bool IsError => State == DirectoryState.Error;
 
-    /// <summary>No records exist at all - distinct from a search that matched nothing.</summary>
     public bool IsEmpty => State == DirectoryState.Empty;
 
     public bool HasCards => State == DirectoryState.Ready && People.Count > 0;
 
     /// <summary>
-    /// Records exist but the current search excluded every one of them. Kept separate
-    /// from <see cref="IsEmpty"/> so the empty state never claims the directory is empty
-    /// when it is really the filter that is too narrow.
+    /// Records exist but the search excluded all of them. Separate from
+    /// <see cref="IsEmpty"/> so the empty state never claims the directory is empty
+    /// when it is the filter that is too narrow.
     /// </summary>
     public bool HasNoMatches => State == DirectoryState.Ready && People.Count == 0;
 
+    public string ConfirmDeleteTitle => "Delete this person?";
+
+    public string ConfirmDeleteBody =>
+        PendingDelete is null
+            ? string.Empty
+            : $"{PendingDelete.DisplayName} and every field on the record will be removed. "
+              + "This cannot be undone.";
+
     /// <summary>
-    /// Loads the directory. Safe to call repeatedly; a second call cancels the first.
+    /// Opens the store before the directory is on screen. Called while the welcome
+    /// screen is animating, so the open happens during something the user is already
+    /// watching instead of showing as a delay here.
     /// </summary>
+    public Task PreloadAsync() => _directory.WarmUpAsync();
+
+    /// <summary>Loads the first page. Safe to call again; a second call cancels the first.</summary>
     [RelayCommand]
     public async Task LoadAsync()
     {
@@ -95,93 +118,187 @@ public sealed partial class PersonsViewModel : ObservableObject
         CancellationToken token = _loadCts.Token;
 
         State = DirectoryState.Loading;
-        ErrorMessage = string.Empty;
 
         try
         {
-            IReadOnlyList<PersonPreview> loaded =
-                await _directory.GetPreviewsAsync(token).ConfigureAwait(true);
+            IReadOnlyList<Person> page =
+                await _directory.GetPageAsync(0, PageSize, SearchText, token).ConfigureAwait(true);
 
             if (token.IsCancellationRequested)
             {
                 return;
             }
 
-            _all = loaded;
-            ApplyFilter();
-            State = _all.Count == 0 ? DirectoryState.Empty : DirectoryState.Ready;
+            People.Clear();
+            foreach (Person person in page)
+            {
+                People.Add(person);
+            }
+
+            int total = await _directory.CountAsync(SearchText, token).ConfigureAwait(true);
+            HasMore = People.Count < total;
+
+            // "Empty" means the store holds nothing at all. With a search term in play
+            // an empty result is a filtering outcome, not an empty directory.
+            bool searching = !string.IsNullOrWhiteSpace(SearchText);
+            State = total == 0 && !searching ? DirectoryState.Empty : DirectoryState.Ready;
         }
         catch (OperationCanceledException)
         {
-            // Superseded by a newer load. The newer one owns the state.
+            // Superseded by a newer load, which owns the state now.
         }
         catch (Exception)
         {
-            // The exception text is for a log, not for the screen. Showing a user a
-            // provider stack trace tells them nothing they can act on.
-            _all = Array.Empty<PersonPreview>();
             People.Clear();
-            ErrorMessage = "The directory could not be opened.";
+            HasMore = false;
             State = DirectoryState.Error;
         }
     }
 
-    /// <summary>Retry button on the error state.</summary>
+    /// <summary>
+    /// Fetches the next page. Called as the grid approaches the end of what it has.
+    /// </summary>
+    public async Task LoadMoreAsync()
+    {
+        if (_loadingMore || !HasMore || State != DirectoryState.Ready)
+        {
+            return;
+        }
+
+        _loadingMore = true;
+        try
+        {
+            IReadOnlyList<Person> page = await _directory
+                .GetPageAsync(People.Count, PageSize, SearchText)
+                .ConfigureAwait(true);
+
+            foreach (Person person in page)
+            {
+                People.Add(person);
+            }
+
+            int total = await _directory.CountAsync(SearchText).ConfigureAwait(true);
+            HasMore = People.Count < total;
+        }
+        catch (Exception)
+        {
+            // A failed page does not invalidate what is already on screen; stop asking.
+            HasMore = false;
+        }
+        finally
+        {
+            _loadingMore = false;
+        }
+    }
+
     [RelayCommand]
     private Task RetryAsync() => LoadAsync();
 
-    /// <summary>
-    /// Opens the full record. Double-click on a card is wired to this.
-    /// </summary>
-    /// <remarks>
-    /// Intentionally does nothing: the full record form has not been designed yet.
-    /// The gesture, the command and the parameter are all in place, so adding that
-    /// screen later is a navigation call in this method and no change to the view.
-    /// </remarks>
-    [RelayCommand]
-    private void OpenPerson(PersonPreview? person)
+    // --- dialogs ----------------------------------------------------------
+
+    /// <summary>Double-click on a card.</summary>
+    public void OpenPreview(Person person)
     {
-        _ = person;
+        Dialog.ShowPreview(person);
+        IsDialogOpen = true;
     }
 
-    /// <summary>
-    /// The ADD PERSON button.
-    /// </summary>
-    /// <remarks>Also intentionally inert, for the same reason.</remarks>
+    /// <summary>The ADD PERSON button.</summary>
     [RelayCommand]
     private void AddPerson()
     {
+        Dialog.ShowAdd();
+        IsDialogOpen = true;
+    }
+
+    /// <summary>Edit, from a card's menu.</summary>
+    public void OpenEdit(Person person)
+    {
+        Dialog.ShowEdit(person);
+        IsDialogOpen = true;
+    }
+
+    public void CloseDialog() => IsDialogOpen = false;
+
+    /// <summary>
+    /// The dialog's primary button. In preview it switches to editing in place; in the
+    /// other two modes it commits.
+    /// </summary>
+    public async Task CommitDialogAsync()
+    {
+        if (Dialog.IsPreview)
+        {
+            Dialog.SwitchToEdit();
+            return;
+        }
+
+        Person person = Dialog.ToPerson();
+
+        try
+        {
+            if (Dialog.Mode == PersonDialogMode.Add)
+            {
+                await _directory.AddAsync(person).ConfigureAwait(true);
+            }
+            else
+            {
+                await _directory.UpdateAsync(person).ConfigureAwait(true);
+            }
+        }
+        catch (Exception)
+        {
+            State = DirectoryState.Error;
+            IsDialogOpen = false;
+            return;
+        }
+
+        IsDialogOpen = false;
+        await LoadAsync().ConfigureAwait(true);
+    }
+
+    // --- delete -----------------------------------------------------------
+
+    /// <summary>Delete, from a card's menu. Asks first; the action is irreversible.</summary>
+    public void RequestDelete(Person person)
+    {
+        PendingDelete = person;
+        OnPropertyChanged(nameof(ConfirmDeleteBody));
+        IsConfirmingDelete = true;
+    }
+
+    public void CancelDelete()
+    {
+        IsConfirmingDelete = false;
+        PendingDelete = null;
+    }
+
+    public async Task ConfirmDeleteAsync()
+    {
+        Person? person = PendingDelete;
+        IsConfirmingDelete = false;
+        PendingDelete = null;
+
+        if (person is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _directory.DeleteAsync(person.Id).ConfigureAwait(true);
+        }
+        catch (Exception)
+        {
+            State = DirectoryState.Error;
+            return;
+        }
+
+        await LoadAsync().ConfigureAwait(true);
     }
 
     partial void OnSearchTextChanged(string value)
     {
         _ = value;
-
-        if (State is DirectoryState.Loading or DirectoryState.Error)
-        {
-            return;
-        }
-
-        ApplyFilter();
-    }
-
-    /// <summary>
-    /// Rebuilds <see cref="People"/> from <see cref="_all"/> for the current search term.
-    /// </summary>
-    private void ApplyFilter()
-    {
-        string term = SearchText?.Trim() ?? string.Empty;
-
-        People.Clear();
-
-        foreach (PersonPreview person in _all.Where(p => p.Matches(term)))
-        {
-            People.Add(person);
-        }
-
-        // People is a collection, so changing its contents raises no property change for
-        // the flags that depend on its count. Raise them by hand.
-        OnPropertyChanged(nameof(HasCards));
-        OnPropertyChanged(nameof(HasNoMatches));
+        _ = LoadAsync();
     }
 }

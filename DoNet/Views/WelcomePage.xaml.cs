@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using DoNet.Contracts;
+using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -51,6 +52,13 @@ public sealed partial class WelcomePage : Page
         }
 
         _started = true;
+
+        // Open the person store now, while the wordmark is drawing. This screen runs
+        // for roughly 2.65 seconds of animation the user is already watching, which is
+        // ample cover for an encrypted file open - so the directory has its first page
+        // ready instead of showing a spinner the moment it appears. Deliberately not
+        // awaited: the welcome animation must never wait on storage.
+        _ = App.Current.Services.GetRequiredService<PersonsViewModel>().PreloadAsync();
 
         try
         {

@@ -47,19 +47,18 @@ public partial class App : Application
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<IVaultService, VaultService>();
 
-        // Placeholder directory. Swap this one registration for the encrypted store when
-        // the data layer is built; nothing above it needs to change. Set Mode here to
-        // look at the empty or error states.
-        services.AddSingleton<IPersonDirectory>(_ => new PersonDirectoryService
-        {
-            Mode = DirectoryPreviewMode.Loaded,
-        });
+        // The person store. Real add, edit and delete; what it does not yet do is
+        // survive a restart. Swapping this one registration for EF Core over SQLCipher
+        // is the whole of that change - nothing above this line needs to move.
+        services.AddSingleton<IPersonDirectory, PersonDirectoryService>();
 
         services.AddTransient<CreatePasswordViewModel>();
         services.AddTransient<LockViewModel>();
         services.AddTransient<HomeViewModel>();
         services.AddTransient<ForgotPasswordViewModel>();
-        services.AddTransient<PersonsViewModel>();
+        // Singleton: the directory grid and the two modals hosted at the HomePage root
+        // are three views onto one screen and must share its state.
+        services.AddSingleton<PersonsViewModel>();
 
         return services.BuildServiceProvider();
     }

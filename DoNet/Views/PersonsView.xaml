@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:DoNet.Models"
+    xmlns:controls="using:DoNet.Controls"
     mc:Ignorable="d">
 
     <!--
@@ -38,27 +39,6 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <!-- One field cell on a card: a quiet uppercase label over its value. -->
-        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
-            <Setter Property="FontSize" Value="{StaticResource FieldLabelFontSize}" />
-            <Setter Property="Foreground" Value="{StaticResource FieldLabelBrush}" />
-            <Setter Property="CharacterSpacing" Value="60" />
-            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="14" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
-
-        <Style x:Key="FieldValueStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
-            <Setter Property="FontSize" Value="{StaticResource FieldValueFontSize}" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="Margin" Value="0,4,0,0" />
-            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="20" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
-
         <!-- Shared by the three message states so they cannot drift apart. -->
         <Style x:Key="StateTitleStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
@@ -83,137 +63,14 @@
         </Style>
 
         <!--
-            A directory card.
-
-            The copy buttons drawn in the design are deliberately absent: they were cut
-            after the design was produced, which is why each field cell here is just a
-            label over a value with nothing on its right edge.
+            The card is its own control: a menu that animates needs named elements, and
+            names inside a DataTemplate cannot be reached from code.
         -->
-        <DataTemplate x:Key="PersonCardTemplate" x:DataType="models:PersonPreview">
-            <Border Background="{StaticResource CardBackgroundBrush}"
-                    BorderBrush="{StaticResource CardBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="16"
-                    Padding="20"
-                    DoubleTapped="OnCardDoubleTapped">
-
-                <Grid RowSpacing="22">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
-                    <!-- Identity row: avatar, name, and the preview marker. -->
-                    <Grid Grid.Row="0" ColumnSpacing="16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <Border Grid.Column="0"
-                                Width="56"
-                                Height="56"
-                                CornerRadius="28"
-                                Background="{StaticResource CardAvatarBrush}"
-                                BorderBrush="{StaticResource SearchBorderBrush}"
-                                BorderThickness="1">
-                            <TextBlock Text="{x:Bind Id}"
-                                       FontFamily="{StaticResource BalooFont}"
-                                       FontSize="15"
-                                       Foreground="{StaticResource FieldLabelBrush}"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                        </Border>
-
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{x:Bind DisplayName}"
-                                       FontFamily="{StaticResource BalooSemiBoldFont}"
-                                       FontSize="{StaticResource CardTitleFontSize}"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       LineStackingStrategy="BlockLineHeight"
-                                       LineHeight="22" />
-                            <TextBlock Text="{x:Bind Caption}"
-                                       FontFamily="{StaticResource BalooFont}"
-                                       FontSize="{StaticResource FieldValueFontSize}"
-                                       Foreground="{StaticResource CardMetaBrush}"
-                                       Margin="0,2,0,0"
-                                       TextTrimming="CharacterEllipsis"
-                                       LineStackingStrategy="BlockLineHeight"
-                                       LineHeight="20" />
-                        </StackPanel>
-
-                        <TextBlock Grid.Column="2"
-                                   Text="Preview"
-                                   VerticalAlignment="Center"
-                                   FontFamily="{StaticResource BalooFont}"
-                                   FontSize="{StaticResource CardMetaFontSize}"
-                                   Foreground="{StaticResource CardMetaBrush}"
-                                   LineStackingStrategy="BlockLineHeight"
-                                   LineHeight="18" />
-                    </Grid>
-
-                    <!--
-                        Nine of the eighteen columns, in the three-by-three the design
-                        specifies. Column widths are star-sized so the cell boundaries
-                        line up across every card regardless of how wide the grid makes
-                        them, and the labels trim rather than overflow when the window
-                        is at its narrowest.
-                    -->
-                    <Grid Grid.Row="1" RowSpacing="18" ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Grid.Row="0" Grid.Column="0">
-                            <TextBlock Text="#" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind Id}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="1">
-                            <TextBlock Text="FIRST NAME" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind FirstName}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="2">
-                            <TextBlock Text="LAST NAME" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind LastName}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="1" Grid.Column="0">
-                            <TextBlock Text="GENDER" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind Gender}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="1">
-                            <TextBlock Text="DATE OF BIRTH" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind DateOfBirth}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="2">
-                            <TextBlock Text="COUNTRY" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind Country}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="2" Grid.Column="0">
-                            <TextBlock Text="EMAIL" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind Email}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="2" Grid.Column="1">
-                            <TextBlock Text="CREATED AT" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind CreatedAt}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="2" Grid.Column="2">
-                            <TextBlock Text="NOTE" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{x:Bind Note}" Style="{StaticResource FieldValueStyle}" />
-                        </StackPanel>
-                    </Grid>
-                </Grid>
-            </Border>
+        <DataTemplate x:Key="PersonCardTemplate" x:DataType="models:Person">
+            <controls:PersonCard Person="{x:Bind}"
+                                 OpenRequested="OnCardOpen"
+                                 EditRequested="OnCardEdit"
+                                 DeleteRequested="OnCardDelete" />
         </DataTemplate>
 
     </UserControl.Resources>
@@ -325,7 +182,7 @@
                 -->
                 <Button x:Name="AddPersonButton"
                         Grid.Column="1"
-                        Style="{StaticResource NavRailHitStyle}"
+                        Style="{StaticResource BareButtonStyle}"
                         Command="{x:Bind ViewModel.AddPersonCommand}">
                     <Border CornerRadius="10"
                             Padding="14,0,18,0"
@@ -380,9 +237,11 @@
                 -->
 
                 <!-- Loaded -->
-                <ScrollViewer Visibility="{x:Bind ViewModel.HasCards, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                <ScrollViewer x:Name="CardScroller"
+                              Visibility="{x:Bind ViewModel.HasCards, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollMode="Disabled"
+                              ViewChanged="OnCardScrollChanged"
                               Padding="0,0,4,0">
                     <ItemsRepeater ItemsSource="{x:Bind ViewModel.People}"
                                    ItemTemplate="{StaticResource PersonCardTemplate}">
@@ -480,7 +339,7 @@
                                Style="{StaticResource StateBodyStyle}" />
                     <Button Margin="0,20,0,0"
                             HorizontalAlignment="Center"
-                            Style="{StaticResource NavRailHitStyle}"
+                            Style="{StaticResource BareButtonStyle}"
                             Command="{x:Bind ViewModel.RetryCommand}">
                         <Border CornerRadius="10"
                                 Height="40"

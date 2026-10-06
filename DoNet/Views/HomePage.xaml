@@ -58,6 +58,13 @@
         than giving MainWindow a second row keeps the centred screens 2-4 centred in
         the full window, which is what their layout was measured against.
     -->
+
+    <!--
+        An outer, unpadded layer so the modal dialogs can cover the entire page. The
+        shell keeps its own padding; a dialog placed inside it would stop short of the
+        window edges and leave a visible frame around the scrim.
+    -->
+    <Grid>
     <Grid Padding="12,54,12,12">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="64" />
@@ -171,5 +178,13 @@
             <views:PersonsView
                 Visibility="{x:Bind ViewModel.IsPersonsSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
         </Grid>
+        </Grid>
+
+        <!--
+            Modals, outside the padded shell and last in the tree so they sit above it.
+            Both are driven by the same PersonsViewModel singleton that backs the grid.
+        -->
+        <views:PersonDialog />
+        <views:ConfirmDialog />
     </Grid>
 </Page>

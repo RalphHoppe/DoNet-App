@@ -437,7 +437,7 @@ def _card(dr, x, y, w, h):
         dr.rounded_rectangle(b, radius=radius * SS, fill=fill, outline=outline,
                              width=int(wd * SS))
 
-    rr([x, y, x + w, y + h], 16, (255, 255, 255), CARD_BORDER, 1)
+    rr([x, y, x + w, y + h], 12, (255, 255, 255), CARD_BORDER, 1)
     p = 20 * SS
     ax, ay = x + p, y + p
 
@@ -622,6 +622,178 @@ def home(LW=1440, LH=900, content="persons", state="loaded"):
     if content == "persons":
         persons_content(img, dr, (PAD + RAIL_W + GAP, TOP, LW - PAD, LH - PAD),
                         state=state, narrow=LW < 820)
+
+    return img.resize((LW, LH), Image.LANCZOS)
+
+
+
+def person_dialog(mode="preview", LW=1440, LH=900):
+    """The person dialog over the directory. Mirrors Views/PersonDialog.xaml."""
+    base = home(LW, LH)
+    img = base.resize((LW * SS, LH * SS), Image.LANCZOS)
+    dr = ImageDraw.Draw(img, "RGBA")
+
+    dr.rectangle([0, 0, LW * SS, LH * SS], fill=(0, 0, 0, 0x59))
+
+    CW = min(1180, LW - 48)
+    pad = 40
+    editing = mode in ("add", "edit")
+
+    # measure first so the card is exactly as tall as its content
+    CELL = 74
+    left_h = 6 * CELL + 5 * 16
+    recov_h = 16 + 44 + 14 + 3 * CELL + 2 * 14 + 16
+    right_h = CELL + 16 + CELL + 16 + recov_h
+    body_h = max(left_h, right_h) + 16 + CELL
+    CH = 32 + 62 + 24 + body_h + 24 + 52 + 28
+
+    x0 = (LW - CW) / 2
+    y0 = max(24, (LH - CH) / 2)
+    CH = min(CH, LH - 48)
+
+    def rr(b, radius, fill, outline=None, w=0):
+        dr.rounded_rectangle([v * SS for v in b], radius=radius * SS, fill=fill,
+                             outline=outline, width=int(w * SS))
+
+    rr((x0, y0, x0 + CW, y0 + CH), 24, (255, 255, 255))
+
+    cx0, cy0 = x0 + pad, y0 + 32
+    cx1 = x0 + CW - pad
+
+    title = {"preview": "PREVIEW ALL INFO", "add": "ADD PERSON", "edit": "EDIT PERSON"}[mode]
+    sub = {"preview": "Full person record",
+           "add": "Create a person record \u00b7 # and Created At are assigned automatically on save.",
+           "edit": "Edit this person record \u00b7 # and Created At cannot be changed."}[mode]
+    tracked(dr, (cx0 * SS, (cy0 - 6) * SS), title, font(BAU, 34), BTN, 20)
+    dr.text((cx0 * SS, (cy0 + 38) * SS), sub, font=font(BAL, 14), fill=META_GREY)
+
+    # close button
+    r = 19
+    ccx, ccy = cx1 - r, cy0 + r - 4
+    dr.ellipse([(ccx - r) * SS, (ccy - r) * SS, (ccx + r) * SS, (ccy + r) * SS],
+               fill=(255, 255, 255), outline=SEARCH_BORDER, width=max(1, round(1 * SS)))
+    for dx, dy in ((-1, -1), (-1, 1)):
+        dr.line([(ccx - 4.6 * dx) * SS, (ccy - 4.6 * dy) * SS,
+                 (ccx + 4.6 * dx) * SS, (ccy + 4.6 * dy) * SS],
+                fill=META_GREY, width=max(1, round(1.6 * SS)))
+
+    by0 = cy0 + 62 + 24
+    gap, colgap = 16, 24
+    unit = (cx1 - cx0 - colgap * 2) / 4.0
+    colw = [unit, unit, unit * 2]
+    colx = [cx0, cx0 + colw[0] + colgap, cx0 + colw[0] + colw[1] + colgap * 2]
+
+    f_lab, f_val, f_btn = font(BAL, 11), font(BAL, 14), font(JER, 13)
+
+    def cell(x, y, w, label, value, auto=False, secret=False, gen=False, copy=False):
+        rr((x, y, x + w, y + CELL), 12,
+           CARD_AVATAR if auto else (255, 255, 255), SEARCH_BORDER, 1)
+        tracked(dr, ((x + 16) * SS, (y + 11) * SS), label, f_lab, LABEL_GREY, 60)
+        vy = y + 12 + 14 + 6 + 5
+        if auto:
+            dr.text(((x + 16) * SS, vy * SS), "Assigned on save", font=f_val, fill=SEARCH_PH)
+        elif editing:
+            dr.text(((x + 16) * SS, vy * SS), value, font=f_val, fill=SEARCH_PH)
+        else:
+            dr.text(((x + 16) * SS, vy * SS), "\u2014", font=f_val, fill=TEXT_PRIMARY)
+
+        rx = x + w - 12
+        if copy and not auto:
+            lw = tracked_w(dr, "COPY", f_btn, 40) / SS + 15 + 7 + 22
+            rr((rx - lw, y + CELL - 12 - 30, rx, y + CELL - 12), 8,
+               (255, 255, 255), SEARCH_BORDER, 1)
+            tracked(dr, ((rx - lw + 32) * SS, (y + CELL - 12 - 30 + 7) * SS),
+                    "COPY", f_btn, META_GREY, 40)
+            rx -= lw + 10
+        if gen and editing:
+            lw = tracked_w(dr, "AUTO GENERATE", f_btn, 40) / SS + 24
+            rr((rx - lw, y + CELL - 12 - 30, rx, y + CELL - 12), 8,
+               (255, 255, 255), SEARCH_BORDER, 1)
+            tracked(dr, ((rx - lw + 12) * SS, (y + CELL - 12 - 30 + 7) * SS),
+                    "AUTO GENERATE", f_btn, META_GREY, 40)
+            rx -= lw + 10
+        if secret:
+            ey = y + CELL - 12 - 15
+            dr.ellipse([(rx - 20) * SS, (ey - 5) * SS, (rx - 6) * SS, (ey + 5) * SS],
+                       outline=LABEL_GREY, width=max(1, round(1.4 * SS)))
+            dr.ellipse([(rx - 15) * SS, (ey - 2.5) * SS, (rx - 11) * SS, (ey + 2.5) * SS],
+                       outline=LABEL_GREY, width=max(1, round(1.4 * SS)))
+
+    L = [("#", "Assigned on save", True), ("LAST NAME", "Enter last name", False),
+         ("DATE OF BIRTH", "DD / MM / YYYY", False), ("STATE", "Enter state", False),
+         ("STREET", "Enter street address", False),
+         ("PHONE NUMBER", "Enter phone number", False)]
+    M = [("FIRST NAME", "Enter first name"), ("GENDER", "Enter gender"),
+         ("COUNTRY", "Enter country"), ("CITY", "Enter city"),
+         ("POSTAL CODE", "Enter postal code")]
+
+    y = by0
+    for lab, ph, auto in L:
+        cell(colx[0], y, colw[0], lab, ph, auto=auto and mode == "add",
+             copy=mode == "preview")
+        y += CELL + gap
+
+    y = by0
+    for lab, ph in M:
+        cell(colx[1], y, colw[1], lab, ph, copy=mode == "preview")
+        y += CELL + gap
+
+    y = by0
+    cell(colx[2], y, colw[2], "EMAIL", "Enter primary email address", copy=mode == "preview")
+    y += CELL + gap
+    cell(colx[2], y, colw[2], "EMAIL PASSWORD", "Enter email account password",
+         secret=True, gen=True, copy=mode == "preview")
+    y += CELL + gap
+
+    rr((colx[2], y, colx[2] + colw[2], y + recov_h), 16, (255, 255, 255), SEARCH_BORDER, 1)
+    iy = y + 16
+    if mode == "preview":
+        dr.ellipse([(colx[2] + 16) * SS, iy * SS, (colx[2] + 46) * SS, (iy + 30) * SS],
+                   fill=OK_BG)
+        dr.text(((colx[2] + 29) * SS, (iy + 5) * SS), "i", font=font(BALSB, 15), fill=OK_FG)
+        tx = colx[2] + 58
+    else:
+        tx = colx[2] + 16
+    note = ("Recovery Email, Password and Words recover the primary Email",
+            "account above \u2014 not additional person contacts.")
+    for i, line in enumerate(note):
+        dr.text((tx * SS, (iy + i * 22) * SS), line, font=f_val, fill=META_GREY)
+
+    ry = y + 16 + 44 + 14
+    for lab, ph, sec, gn in (("RECOVERY EMAIL", "Enter recovery email address", False, False),
+                             ("RECOVERY PASSWORD (OPTIONAL)", "Enter recovery password", True, True),
+                             ("RECOVERY WORDS", "Enter recovery words", True, False)):
+        cell(colx[2] + 16, ry, colw[2] - 32, lab, ph, secret=sec, gen=gn,
+             copy=mode == "preview")
+        ry += CELL + 14
+
+    brow = by0 + max(left_h, right_h) + gap
+    cell(colx[0], brow, colw[0] + colw[1] + colgap, "CREATED AT", "Assigned on save",
+         auto=mode == "add", copy=mode == "preview")
+    cell(colx[2], brow, colw[2], "NOTE", "Add a note about this person",
+         copy=mode == "preview")
+
+    fy = y0 + CH - 28 - 52
+    f_big = font(JER, 17)
+    if mode == "preview":
+        rr((cx0, fy, cx1, fy + 52), 12, BTN)
+        lw = tracked_w(dr, "EDIT RECORD", f_big, 40)
+        tracked(dr, ((cx0 + cx1) / 2 * SS - lw / 2, (fy + 14) * SS),
+                "EDIT RECORD", f_big, (255, 255, 255), 40)
+    else:
+        dr.text((cx0 * SS, (fy + 16) * SS),
+                "Copy is disabled for empty and automatic values.", font=f_val, fill=META_GREY)
+        primary = "ADD PERSON" if mode == "add" else "SAVE CHANGES"
+        pw = max(210, tracked_w(dr, primary, f_big, 40) / SS + 60)
+        rr((cx1 - pw, fy, cx1, fy + 52), 12, BTN)
+        lw = tracked_w(dr, primary, f_big, 40)
+        tracked(dr, ((cx1 - pw / 2) * SS - lw / 2, (fy + 14) * SS),
+                primary, f_big, (255, 255, 255), 40)
+        c1 = cx1 - pw - 14
+        rr((c1 - 150, fy, c1, fy + 52), 12, (255, 255, 255), SEARCH_BORDER, 1)
+        lw = tracked_w(dr, "CANCEL", f_big, 40)
+        tracked(dr, ((c1 - 75) * SS - lw / 2, (fy + 14) * SS),
+                "CANCEL", f_big, META_GREY, 40)
 
     return img.resize((LW, LH), Image.LANCZOS)
 

@@ -6,26 +6,41 @@ using DoNet.Models;
 namespace DoNet.Contracts;
 
 /// <summary>
-/// The source of person records for the directory screen.
+/// The store behind the Persons directory.
 /// </summary>
 /// <remarks>
-/// This is the seam the encrypted data layer will slot into. The view model knows only
-/// this interface, so replacing the placeholder implementation with EF Core over
-/// SQLCipher is a container registration change and nothing else - no view rework.
+/// This is the seam the encrypted database lands in. Every method is asynchronous and
+/// allowed to throw, which is what gives the screen real loading and error states: an
+/// encrypted open is slow enough to see, and a wrong key or a damaged file is a genuine
+/// failure the user has to be told about rather than shown an empty page.
 ///
-/// The method is asynchronous and allowed to throw. That is what gives the screen its
-/// loading and error states something real to represent: a database open is slow enough
-/// to see, and a wrong key or a corrupt file is a genuine failure the user must be told
-/// about rather than shown an empty page.
+/// Reads are paged rather than "fetch everything", because the screen loads only what
+/// is on display and asks for more as the user scrolls. An implementation over SQL
+/// turns <see cref="GetPageAsync"/> into OFFSET/FETCH and keeps that property.
 /// </remarks>
 public interface IPersonDirectory
 {
     /// <summary>
-    /// Returns the cards for the directory, or an empty list when there are none.
+    /// Opens the store ahead of time. Called while the welcome screen is showing, so
+    /// the cost is paid during an animation the user is already watching instead of
+    /// appearing as a delay on the directory.
     /// </summary>
-    /// <exception cref="System.Exception">
-    /// Any failure reaching the store. The view model turns this into the error state
-    /// rather than letting it reach the dispatcher.
-    /// </exception>
-    Task<IReadOnlyList<PersonPreview>> GetPreviewsAsync(CancellationToken cancellationToken = default);
+    Task WarmUpAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>One page of records, newest first, optionally filtered.</summary>
+    Task<IReadOnlyList<Person>> GetPageAsync(
+        int skip, int take, string? search = null, CancellationToken cancellationToken = default);
+
+    /// <summary>How many records match <paramref name="search"/>, for paging.</summary>
+    Task<int> CountAsync(string? search = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Inserts a person, assigning its id and creation time, and returns the stored
+    /// record so the caller does not have to guess what the store decided.
+    /// </summary>
+    Task<Person> AddAsync(Person person, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(Person person, CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(int id, CancellationToken cancellationToken = default);
 }

@@ -3,7 +3,6 @@ using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 
 namespace DoNet.Views;
 
@@ -14,8 +13,6 @@ public sealed partial class PersonsView : UserControl
 {
     public PersonsView()
     {
-        // Before InitializeComponent, for the same reason as every other view here:
-        // x:Bind resolves its root object while the generated code runs.
         ViewModel = App.Current.Services.GetRequiredService<PersonsViewModel>();
 
         InitializeComponent();
@@ -27,21 +24,41 @@ public sealed partial class PersonsView : UserControl
 
     private async void OnLoaded(object sender, RoutedEventArgs args)
     {
-        // Fires once, when the control enters the tree. The result is cached in the view
-        // model, so switching rail sections does not re-fetch.
+        // The store was already opened while the welcome screen was animating, so this
+        // is usually just the first page arriving rather than a cold open.
         await ViewModel.LoadAsync();
     }
 
+    private void OnCardOpen(object? sender, Person person) => ViewModel.OpenPreview(person);
+
+    private void OnCardEdit(object? sender, Person person) => ViewModel.OpenEdit(person);
+
+    private void OnCardDelete(object? sender, Person person) => ViewModel.RequestDelete(person);
+
     /// <summary>
-    /// Double-click on a card. The full record form does not exist yet, so the command
-    /// this reaches is deliberately a no-op - the gesture is wired now so adding that
-    /// screen later needs no change here.
+    /// Fetches the next page as the end of the list comes into reach.
     /// </summary>
-    private void OnCardDoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
+    /// <remarks>
+    /// Three quarters of a viewport of slack, so the records are already there by the
+    /// time the user arrives rather than appearing under them. Firing on intermediate
+    /// scroll events as well as settled ones is deliberate - waiting for the scroll to
+    /// stop would make a fast flick hit the bottom and wait.
+    ///
+    /// When the content is shorter than the viewport the remaining distance is zero and
+    /// this fires immediately, which is what fills the first screen.
+    /// </remarks>
+    private async void OnCardScrollChanged(object sender, ScrollViewerViewChangedEventArgs args)
     {
-        if (sender is FrameworkElement { DataContext: PersonPreview person })
+        if (sender is not ScrollViewer scroller)
         {
-            ViewModel.OpenPersonCommand.Execute(person);
+            return;
+        }
+
+        double remaining = scroller.ScrollableHeight - scroller.VerticalOffset;
+
+        if (remaining <= scroller.ViewportHeight * 0.75)
+        {
+            await ViewModel.LoadMoreAsync();
         }
     }
 }

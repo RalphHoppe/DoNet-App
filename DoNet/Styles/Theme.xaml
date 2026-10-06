@@ -252,6 +252,92 @@
         </Setter>
     </Style>
 
+    <!--
+        A button that is nothing but its content.
+
+        Distinct from NavRailHitStyle, which is deliberately a bare Grid with no
+        ContentPresenter because the rail draws its own visuals underneath and only
+        needs an invisible hit target. Using that style for a button whose content IS
+        the visual renders an invisible rectangle - which is exactly what happened to
+        ADD PERSON. This one presents its content and carries the pointer feedback.
+    -->
+    <Style x:Key="BareButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid Background="Transparent">
+                        <ContentPresenter x:Name="Presenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Padding="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Presenter"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0.82" Duration="0:0:0.08" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Presenter"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0.65" Duration="0:0:0.08" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Presenter"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0.4" Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        Strips a Flyout back to nothing so the card menu can supply its own surface and
+        its own entrance animation. Without this the menu would sit inside a second,
+        system-drawn panel with its own padding and corner radius.
+    -->
+    <Style x:Key="BareFlyoutPresenterStyle" TargetType="FlyoutPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MaxWidth" Value="1000" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="ScrollViewer.HorizontalScrollMode" Value="Disabled" />
+        <Setter Property="ScrollViewer.VerticalScrollMode" Value="Disabled" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="FlyoutPresenter">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="NavToolTipStyle" TargetType="ToolTip">
         <Setter Property="Background" Value="{StaticResource TooltipBackgroundBrush}" />
         <Setter Property="Foreground" Value="{StaticResource TooltipForegroundBrush}" />
