@@ -104,4 +104,26 @@
     <SolidColorBrush x:Key="ErrorBorderBrush" Color="#F3C6C0" />
     <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#C0392B" />
 
+    <!--
+        Persons directory. Exact values supplied by the designer; the slate family here
+        is intentionally cooler than the warm greys used on screens 1-4, so these are
+        separate keys rather than reuses of TextSecondaryBrush and friends.
+    -->
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#CBD5E1" />
+    <SolidColorBrush x:Key="CardAvatarBrush" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="FieldLabelBrush" Color="#7A8798" />
+    <SolidColorBrush x:Key="CardMetaBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="SectionSubtitleBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="SearchBorderBrush" Color="#E6EBF0" />
+    <SolidColorBrush x:Key="SearchPlaceholderBrush" Color="#7B8491" />
+
+    <!--
+        ADD PERSON's outline. The same value as BrandPrimaryDisabledBrush, but keyed
+        separately: that brush means "this control is unavailable", and reusing it on an
+        enabled button would make a later change to the disabled look silently restyle
+        this border.
+    -->
+    <SolidColorBrush x:Key="AddActionBorderBrush" Color="#BBDFD8" />
+
 </ResourceDictionary>

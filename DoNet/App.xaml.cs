@@ -47,10 +47,19 @@ public partial class App : Application
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<IVaultService, VaultService>();
 
+        // Placeholder directory. Swap this one registration for the encrypted store when
+        // the data layer is built; nothing above it needs to change. Set Mode here to
+        // look at the empty or error states.
+        services.AddSingleton<IPersonDirectory>(_ => new PersonDirectoryService
+        {
+            Mode = DirectoryPreviewMode.Loaded,
+        });
+
         services.AddTransient<CreatePasswordViewModel>();
         services.AddTransient<LockViewModel>();
         services.AddTransient<HomeViewModel>();
         services.AddTransient<ForgotPasswordViewModel>();
+        services.AddTransient<PersonsViewModel>();
 
         return services.BuildServiceProvider();
     }

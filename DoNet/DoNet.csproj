@@ -34,9 +34,11 @@
     <Content Include="Assets\Fonts\Baloo2-Regular.ttf" />
     <Content Include="Assets\Fonts\Baloo2-SemiBold.ttf" />
     <Content Include="Assets\Fonts\Jersey25-Regular.ttf" />
+    <Content Include="Assets\Fonts\Baumans-Regular.ttf" />
     <Content Include="Assets\Fonts\Pacifico-OFL.txt" />
     <Content Include="Assets\Fonts\Baloo2-OFL.txt" />
     <Content Include="Assets\Fonts\Jersey25-OFL.txt" />
+    <Content Include="Assets\Fonts\Baumans-OFL.txt" />
   </ItemGroup>
 
   <ItemGroup>

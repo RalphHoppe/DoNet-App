@@ -30,7 +30,10 @@ public partial class HomeViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsServicesSelected))]
     [NotifyPropertyChangedFor(nameof(IsPersonsSelected))]
     [NotifyPropertyChangedFor(nameof(IsSitesSelected))]
-    private HomeSection _selectedSection = HomeSection.Services;
+    // Persons, not Services: it is the only section with a design, and the supplied
+    // artwork shows it as the selected one. Opening on an empty Services surface would
+    // look like a failure to load.
+    private HomeSection _selectedSection = HomeSection.Persons;
 
     public HomeViewModel(INavigationService navigation) => _navigation = navigation;
 

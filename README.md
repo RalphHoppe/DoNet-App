@@ -373,3 +373,77 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/gen_nav_icons.py` | Parses the design's icon SVG, checks it fits, emits the XAML path data |
 | `tools/validate_xaml.py` | Checks resource keys, `x:Name`s and event handlers without a Windows build |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |
+
+## The Persons directory
+
+The first section with content. It lives inside the home screen's content plate rather
+than being its own page: the rail stays put, and `HomePage` shows `PersonsView` when
+`IsPersonsSelected`. Two surfaces are in play and they are easy to confuse — the grey
+`#F5F5F5` plate belongs to `HomePage` and the header sits directly on it, while the
+white rounded panel holding the cards belongs to this screen.
+
+The screen opens on Persons rather than Services, because Services and Sites have no
+design yet and opening on a blank surface reads as a failure to load.
+
+### What is deliberately not here
+
+The copy button on every field cell is drawn in the supplied design and is **not**
+implemented — it was cut after the design was produced. ADD PERSON and double-clicking
+a card are both rendered and wired to commands that do nothing, because the forms they
+would open have not been designed. The gesture, the command and its parameter are all
+in place, so adding those screens later is a navigation call in the view model and no
+change to the view.
+
+A person has eighteen columns. A card shows nine of them; the rest belong to the full
+record form. `PersonPreview` models only those nine on purpose — inventing a shape for
+a screen that does not exist yet would guess at decisions that are not ours to make.
+
+### States
+
+Four of them, and they are derived from one `DirectoryState` field rather than from a
+handful of independent booleans. Independent booleans drift: two end up true and the
+screen shows a spinner on top of an error. The view binds to flags computed from the
+single field, so only one branch can ever be visible.
+
+| state | when |
+|---|---|
+| Loading | a fetch is in flight |
+| Ready | records exist and at least one survives the search |
+| Empty | no records at all |
+| Error | the fetch threw |
+
+"No matches for this search" is kept separate from "no records at all". Collapsing them
+would have the empty state claim the directory is empty when it is really the filter
+that is too narrow.
+
+The error state never shows the exception text. A provider stack trace tells a user
+nothing they can act on, so the message is fixed and the detail stays in the log.
+
+### The seam the database will land in
+
+`IPersonDirectory` is the only thing the view model knows about. `PersonDirectoryService`
+currently returns the four blank cards the design specifies — the screen is explicitly
+labelled "Static placeholder values only", so that is the designed content, not fake
+data standing in for something richer. Replacing it with EF Core over SQLCipher is one
+registration change in `App.xaml.cs` and no view rework.
+
+That stub carries a `Mode` property, which exists only because the empty and error
+states would otherwise be unreachable: a service that always succeeds gives you no way
+to look at them. The real implementation reaches them on its own, and the property
+disappears with the class.
+
+### On encrypting column names
+
+SQLCipher encrypts the entire database file, schema included. Without the key, table and
+column names are indistinguishable from random bytes on disk — so readable names in the
+schema are already unreadable at rest, and naming columns `c1`, `c2` would only add
+protection against someone who already holds the key. Readable names it is.
+
+### Sizing
+
+`UniformGridLayout` with `MinItemWidth="430"` is what makes the grid responsive: two
+columns while both fit, one below that, with no size-watching code. Below a window
+width of 820 the search row drops under the title and stretches, and the paddings
+tighten from 32/24 to 12/12 — at 480 the three field columns would otherwise have about
+81px each, which is narrower than "DATE OF BIRTH" renders. Card padding stays fixed,
+because a `VisualState` on the page cannot reach inside a `DataTemplate`.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The three Google Fonts used by the design, embedded under Assets/Fonts.
+    The Google Fonts used by the design, embedded under Assets/Fonts.
 
     The part after '#' must be the font's *family* name as recorded in its name table,
     not the file name - "Baloo 2" and "Jersey 25" both contain a space.
@@ -30,6 +30,12 @@
     -->
     <FontFamily x:Key="BalooSemiBoldFont">ms-appx:///Assets/Fonts/Baloo2-SemiBold.ttf#Baloo 2 SemiBold</FontFamily>
 
+    <!--
+        Section headings on the content screens. Baumans is a geometric Bauhaus-derived
+        display face and is deliberately used at one size, for the screen title only.
+    -->
+    <FontFamily x:Key="BaumansFont">ms-appx:///Assets/Fonts/Baumans-Regular.ttf#Baumans</FontFamily>
+
     <!-- Button captions -->
     <FontFamily x:Key="JerseyFont">ms-appx:///Assets/Fonts/Jersey25-Regular.ttf#Jersey 25</FontFamily>
 
@@ -41,5 +47,13 @@
     <x:Double x:Key="NoticeFontSize">12.5</x:Double>
     <x:Double x:Key="LinkFontSize">14</x:Double>
     <x:Double x:Key="ButtonFontSize">17</x:Double>
+
+    <!-- Persons directory -->
+    <x:Double x:Key="SectionTitleFontSize">34</x:Double>
+    <x:Double x:Key="SectionSubtitleFontSize">14</x:Double>
+    <x:Double x:Key="CardTitleFontSize">16</x:Double>
+    <x:Double x:Key="CardMetaFontSize">13</x:Double>
+    <x:Double x:Key="FieldLabelFontSize">11</x:Double>
+    <x:Double x:Key="FieldValueFontSize">14</x:Double>
 
 </ResourceDictionary>

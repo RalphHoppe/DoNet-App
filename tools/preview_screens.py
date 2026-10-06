@@ -15,6 +15,7 @@ PAC = os.path.join(_FD, "Pacifico-Regular.ttf")
 BAL = os.path.join(_FD, "Baloo2-Regular.ttf")
 BALSB = os.path.join(_FD, "Baloo2-SemiBold.ttf")
 JER = os.path.join(_FD, "Jersey25-Regular.ttf")
+BAU = os.path.join(_FD, "Baumans-Regular.ttf")
 
 W, H = 1546, 980
 SS = 2  # supersample for clean edges
@@ -316,7 +317,213 @@ def create_password(success=False):
     return img.resize((W, H), Image.LANCZOS)
 
 
-def home(LW=1440, LH=900):
+
+# --- Persons directory ------------------------------------------------------
+#
+# Mirrors Views/PersonsView.xaml. Every number here is the same number that is in
+# the XAML; when one changes the other must, or this render starts certifying a
+# layout the app does not actually have.
+
+CARD_BORDER = (0xCB, 0xD5, 0xE1)
+CARD_AVATAR = (0xF8, 0xFA, 0xFC)
+LABEL_GREY = (0x7A, 0x87, 0x98)
+META_GREY = (0x6B, 0x72, 0x80)
+SEARCH_BORDER = (0xE6, 0xEB, 0xF0)
+SEARCH_PH = (0x7B, 0x84, 0x91)
+ADD_BORDER = (0xBB, 0xDF, 0xD8)
+TEXT_PRIMARY = (0x2B, 0x2F, 0x33)
+
+
+def tracked(dr, xy, text, f, fill, em_per_1000):
+    """Draw text with XAML CharacterSpacing, which PIL has no concept of."""
+    x, y = xy
+    extra = (em_per_1000 / 1000.0) * f.size
+    for ch in text:
+        dr.text((x, y), ch, font=f, fill=fill)
+        x += dr.textlength(ch, font=f) + extra
+    return x - xy[0]
+
+
+def tracked_w(dr, text, f, em_per_1000):
+    extra = (em_per_1000 / 1000.0) * f.size
+    return sum(dr.textlength(c, font=f) for c in text) + extra * max(0, len(text) - 1)
+
+
+def persons_content(img, dr, box, state="loaded", narrow=False):
+    """The Persons screen inside the content plate. box is the plate in CSS px."""
+    x0, y0, x1, y1 = [v * SS for v in box]
+
+    def rr(b, radius, fill, outline=None, w=0):
+        dr.rounded_rectangle(b, radius=radius * SS, fill=fill, outline=outline,
+                             width=int(w * SS))
+
+    pad = (12 if narrow else 32) * SS
+    cx0, cy0, cx1 = x0 + pad, y0 + pad, x1 - pad
+    cy1 = y1 - pad
+
+    # Header -----------------------------------------------------------------
+    f_title = font(BAU, 34)
+    f_sub = font(BAL, 14)
+    tracked(dr, (cx0, cy0 + (40 - 34) / 2 * SS - 6 * SS), "PERSONS", f_title, BTN, 20)
+    dr.text((cx0, cy0 + 40 * SS - 2 * SS), "Preview directory \u00b7 Static placeholder values only",
+            font=f_sub, fill=META_GREY)
+
+    # search + add, right aligned on wide, full width underneath on narrow
+    f_ph = font(BAL, 14)
+    f_btn = font(JER, 17)
+    add_label_w = tracked_w(dr, "ADD PERSON", f_btn, 40)
+    add_w = (14 + 18 + 10) * SS + add_label_w + 18 * SS
+    H = 42 * SS
+
+    if narrow:
+        ay = cy0 + 60 * SS + 14 * SS
+        search_x0, search_x1 = cx0, cx1 - add_w - 12 * SS
+        header_h = 60 * SS + 14 * SS + H + 16 * SS
+    else:
+        ay = cy0 + (60 * SS - H) / 2
+        search_w = 304 * SS
+        search_x1 = cx1 - add_w - 12 * SS
+        search_x0 = search_x1 - search_w
+        header_h = 60 * SS + 24 * SS
+
+    rr([search_x0, ay, search_x1, ay + H], 21, (255, 255, 255), SEARCH_BORDER, 1)
+    # magnifier: circle r5.5 at (8,8) in an 18 box, handle to (16,16)
+    mx, my = search_x0 + 16 * SS, ay + H / 2
+    r = 5.5 * SS
+    dr.ellipse([mx - r, my - r, mx + r, my + r], outline=SEARCH_PH,
+               width=max(1, round(1.8 * SS)))
+    dr.line([mx + 4.2 * SS, my + 4.2 * SS, mx + 8 * SS, my + 8 * SS],
+            fill=SEARCH_PH, width=max(1, round(1.8 * SS)))
+    dr.text((search_x0 + 16 * SS + 18 * SS + 12 * SS, my - 10 * SS),
+            "SEARCH DIRECTORY", font=f_ph, fill=SEARCH_PH)
+
+    bx0 = cx1 - add_w
+    rr([bx0, ay, cx1, ay + H], 10, (255, 255, 255), ADD_BORDER, 1)
+    # the supplied 18x18 icon: teal rounded square, white round-capped cross
+    ix, iy = bx0 + 14 * SS, ay + (H - 18 * SS) / 2
+    rr([ix, iy, ix + 18 * SS, iy + 18 * SS], 6, BTN)
+    w2 = max(1, round(2 * SS))
+    dr.line([ix + 3.75 * SS, iy + 9 * SS, ix + 14.25 * SS, iy + 9 * SS],
+            fill=(255, 255, 255), width=w2)
+    dr.line([ix + 9 * SS, iy + 3.75 * SS, ix + 9 * SS, iy + 14.25 * SS],
+            fill=(255, 255, 255), width=w2)
+    tracked(dr, (ix + 18 * SS + 10 * SS, ay + H / 2 - 12 * SS), "ADD PERSON", f_btn, BTN, 40)
+
+    # Card surface ------------------------------------------------------------
+    sy0 = cy0 + header_h
+    rr([cx0, sy0, cx1, cy1], 18 if narrow else 24, (255, 255, 255))
+
+    spad = (12 if narrow else 24) * SS
+    ix0, iy0, ix1 = cx0 + spad, sy0 + spad, cx1 - spad
+
+    if state != "loaded":
+        _state_block(dr, state, (ix0 + ix1) / 2, (sy0 + cy1) / 2)
+        return
+
+    # UniformGridLayout: cols = floor((avail + gap) / (min + gap)), at least 1
+    gap = 20 * SS
+    avail = ix1 - ix0
+    cols = max(1, int((avail + gap) // (430 * SS + gap)))
+    cw = (avail - gap * (cols - 1)) / cols
+    ch = 268 * SS
+
+    for i in range(4):
+        r_, c_ = divmod(i, cols)
+        _card(dr, ix0 + c_ * (cw + gap), iy0 + r_ * (ch + gap), cw, ch)
+
+
+def _card(dr, x, y, w, h):
+    def rr(b, radius, fill, outline=None, wd=0):
+        dr.rounded_rectangle(b, radius=radius * SS, fill=fill, outline=outline,
+                             width=int(wd * SS))
+
+    rr([x, y, x + w, y + h], 16, (255, 255, 255), CARD_BORDER, 1)
+    p = 20 * SS
+    ax, ay = x + p, y + p
+
+    # identity row: 56 avatar, 16 gap, name block, "Preview" hard right
+    dr.ellipse([ax, ay, ax + 56 * SS, ay + 56 * SS], fill=CARD_AVATAR,
+               outline=SEARCH_BORDER, width=max(1, round(1 * SS)))
+    f_dash = font(BAL, 15)
+    dw = dr.textlength("\u2014", font=f_dash)
+    dr.text((ax + 28 * SS - dw / 2, ay + 28 * SS - 13 * SS), "\u2014",
+            font=f_dash, fill=LABEL_GREY)
+
+    tx = ax + 56 * SS + 16 * SS
+    f_name, f_cap = font(BALSB, 16), font(BAL, 14)
+    dr.text((tx, ay + 28 * SS - 23 * SS), "Person record", font=f_name, fill=TEXT_PRIMARY)
+    dr.text((tx, ay + 28 * SS + 1 * SS), "Record preview", font=f_cap, fill=META_GREY)
+
+    f_prev = font(BAL, 13)
+    pw = dr.textlength("Preview", font=f_prev)
+    dr.text((x + w - p - pw, ay + 28 * SS - 11 * SS), "Preview", font=f_prev, fill=META_GREY)
+
+    # 3x3 field grid
+    gy = ay + 56 * SS + 22 * SS
+    gw = w - p * 2
+    colgap = 12 * SS
+    colw = (gw - colgap * 2) / 3
+    f_lab, f_val = font(BAL, 11), font(BAL, 14)
+    labels = [("#", "FIRST NAME", "LAST NAME"),
+              ("GENDER", "DATE OF BIRTH", "COUNTRY"),
+              ("EMAIL", "CREATED AT", "NOTE")]
+    for r_, row in enumerate(labels):
+        ry = gy + r_ * (38 + 18) * SS
+        for c_, lab in enumerate(row):
+            lx = ax + c_ * (colw + colgap)
+            tracked(dr, (lx, ry - 2 * SS), lab, f_lab, LABEL_GREY, 60)
+            dr.text((lx, ry + 14 * SS + 4 * SS - 4 * SS), "\u2014", font=f_val, fill=TEXT_PRIMARY)
+
+
+def _state_block(dr, state, cx, cy):
+    """Loading / empty / no-match / error, centred on the card surface."""
+    f_t, f_b = font(BALSB, 16), font(BAL, 14)
+    copy = {
+        "loading": ("Opening the directory", "Just a moment."),
+        "empty": ("No persons yet", "Records you add will appear here."),
+        "nomatch": ("Nothing matches that search",
+                    "Try a shorter term, or clear the search to see every record."),
+        "error": ("The directory could not be opened",
+                  "Nothing was changed. You can try again."),
+    }[state]
+    icon_c = ERR_FG if state == "error" else LABEL_GREY
+
+    top = cy - 52 * SS
+    if state == "loading":
+        r = 18 * SS
+        dr.arc([cx - r, top - r + 18 * SS, cx + r, top + r + 18 * SS],
+               -60, 190, fill=BTN, width=max(1, round(3 * SS)))
+    elif state == "error":
+        s_ = 22 * SS
+        dr.line([cx, top, cx + s_, top + 38 * SS], fill=icon_c, width=max(1, round(1.6 * SS)))
+        dr.line([cx + s_, top + 38 * SS, cx - s_, top + 38 * SS], fill=icon_c,
+                width=max(1, round(1.6 * SS)))
+        dr.line([cx - s_, top + 38 * SS, cx, top], fill=icon_c, width=max(1, round(1.6 * SS)))
+        dr.line([cx, top + 14 * SS, cx, top + 25 * SS], fill=icon_c, width=max(1, round(1.6 * SS)))
+        dr.ellipse([cx - 1 * SS, top + 30 * SS, cx + 1 * SS, top + 32 * SS], fill=icon_c)
+    else:
+        r = 17 * SS
+        dr.ellipse([cx - r, top + 2 * SS, cx + r, top + 2 * SS + 2 * r], outline=icon_c,
+                   width=max(1, round(1.6 * SS)))
+
+    ty = top + 56 * SS
+    for txt, f, col in ((copy[0], f_t, TEXT_PRIMARY), (copy[1], f_b, META_GREY)):
+        tw = dr.textlength(txt, font=f)
+        dr.text((cx - tw / 2, ty), txt, font=f, fill=col)
+        ty += 26 * SS
+
+    if state == "error":
+        f_btn = font(JER, 17)
+        lw = tracked_w(dr, "TRY AGAIN", f_btn, 40)
+        bw, bh = lw + 44 * SS, 40 * SS
+        by = ty + 14 * SS
+        dr.rounded_rectangle([cx - bw / 2, by, cx + bw / 2, by + bh],
+                             radius=10 * SS, fill=BTN)
+        tracked(dr, (cx - lw / 2, by + bh / 2 - 12 * SS), "TRY AGAIN", f_btn,
+                (255, 255, 255), 40)
+
+
+def home(LW=1440, LH=900, content="persons", state="loaded"):
     """The home shell. Icons come from gen_nav_icons, which holds the design's SVG."""
     import sys
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -392,7 +599,7 @@ def home(LW=1440, LH=900):
                 dr.line(p, fill=colour, width=max(1, round(spec["w"] * k * SS)), joint="curve")
 
     top = TOP + TOP_PAD + RING_D + RING_GAP
-    discs = [(top + DISC / 2 + i * (DISC + SPACING), key, i == 0, TEAL)
+    discs = [(top + DISC / 2 + i * (DISC + SPACING), key, i == 1, TEAL)
              for i, key in enumerate(("Services", "Persons", "Sites"))]
     discs.append((LH - PAD - BOTTOM_PAD - DISC / 2, "Lock", True, AMBER))
 
@@ -411,6 +618,10 @@ def home(LW=1440, LH=900):
 
     for _args in discs:
         disc(*_args)
+
+    if content == "persons":
+        persons_content(img, dr, (PAD + RAIL_W + GAP, TOP, LW - PAD, LH - PAD),
+                        state=state, narrow=LW < 820)
 
     return img.resize((LW, LH), Image.LANCZOS)
 
