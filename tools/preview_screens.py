@@ -316,6 +316,73 @@ def create_password(success=False):
     return img.resize((W, H), Image.LANCZOS)
 
 
+def home(LW=1440, LH=900):
+    """The home shell. Icons come from gen_nav_icons, which holds the design's SVG."""
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from gen_nav_icons import ICONS, RING, flatten
+
+    PAD, RAIL_W, GAP = 14, 76, 24
+    RAIL_R, CARD_R = RAIL_W / 2, 40
+    DISC, SPACING, RING_D = 56, 19, 32
+    TOP_PAD, RING_GAP, BOTTOM_PAD = 18, 38, 18
+
+    SURFACE = (245, 245, 245)
+    STROKE = (224, 226, 226)
+    TEAL = (75, 170, 152)
+    TEAL_LIGHT = (140, 215, 197)
+    AMBER = (245, 166, 35)
+
+    img = Image.new("RGB", (LW * SS, LH * SS), (255, 255, 255))
+    dr = ImageDraw.Draw(img)
+
+    def rr(box, radius, fill, outline=None, w=0):
+        dr.rounded_rectangle([v * SS for v in box], radius=radius * SS, fill=fill,
+                             outline=outline, width=int(w * SS))
+
+    rr((PAD, PAD, PAD + RAIL_W, LH - PAD), RAIL_R, SURFACE, STROKE, 1)
+    rr((PAD + RAIL_W + GAP, PAD, LW - PAD, LH - PAD), CARD_R, SURFACE, STROKE, 1)
+
+    cx = PAD + RAIL_W / 2
+
+    # logo ring, gradient left to right across its 32px box
+    rx, ry = cx - RING_D / 2, PAD + TOP_PAD
+    for i in range(RING_D * SS):
+        t = i / (RING_D * SS - 1)
+        col = tuple(round(a + (b - a) * t) for a, b in zip(TEAL, TEAL_LIGHT))
+        dr.line([((rx * SS) + i, ry * SS), ((rx * SS) + i, (ry + RING_D) * SS - 1)], fill=col)
+    mask = Image.new("L", (RING_D * SS, RING_D * SS), 0)
+    md = ImageDraw.Draw(mask)
+    md.ellipse([0, 0, RING_D * SS - 1, RING_D * SS - 1], fill=255)
+    md.ellipse([8 * SS, 8 * SS, 24 * SS - 1, 24 * SS - 1], fill=0)
+    ring = img.crop((int(rx * SS), int(ry * SS),
+                     int(rx * SS) + RING_D * SS, int(ry * SS) + RING_D * SS))
+    base = Image.new("RGB", ring.size, SURFACE)
+    base.paste(ring, (0, 0), mask)
+    img.paste(base, (int(rx * SS), int(ry * SS)))
+
+    def disc(cy, key, selected, accent):
+        r = DISC / 2
+        dr.ellipse([(cx - r) * SS, (cy - r) * SS, (cx + r) * SS, (cy + r) * SS],
+                   fill=accent if selected else (255, 255, 255))
+        colour = (255, 255, 255) if selected else TEAL
+        spec = ICONS[key]
+        ox, oy = cx - 14, cy - 14
+        for sub in spec["paths"]:
+            for pts, closed in flatten(sub):
+                p = [((ox + px) * SS, (oy + py) * SS) for px, py in pts]
+                if closed:
+                    p.append(p[0])
+                dr.line(p, fill=colour, width=int(spec["w"] * SS), joint="curve")
+
+    top = PAD + TOP_PAD + RING_D + RING_GAP
+    for i, key in enumerate(("Services", "Persons", "Sites")):
+        disc(top + DISC / 2 + i * (DISC + SPACING), key, i == 0, TEAL)
+    disc(LH - PAD - BOTTOM_PAD - DISC / 2, "Lock", True, AMBER)
+
+    return img.resize((LW, LH), Image.LANCZOS)
+
+
 if __name__ == "__main__":
     os.makedirs("/tmp/preview", exist_ok=True)
     splash().save("/tmp/preview/screen1_splash.png")
@@ -324,4 +391,5 @@ if __name__ == "__main__":
     lock_screen().save("/tmp/preview/screen3_lock.png")
     lock_screen(error=True).save("/tmp/preview/screen3_lock_error.png")
     forgot_password().save("/tmp/preview/screen4_forgot.png")
+    home().save("/tmp/preview/screen5_home.png")
     print("written")

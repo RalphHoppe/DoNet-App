@@ -228,4 +228,38 @@
         </Setter>
     </Style>
 
+
+    <!--
+        The rail button's hit target. It draws nothing: the disc, icon and every state
+        are rendered by NavRailButton above it. Background must be an explicit brush
+        rather than left unset, or the template root has nothing to hit-test against.
+    -->
+    <Style x:Key="NavRailHitStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="CornerRadius" Value="28" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid Background="{TemplateBinding Background}"
+                          CornerRadius="{TemplateBinding CornerRadius}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="NavToolTipStyle" TargetType="ToolTip">
+        <Setter Property="Background" Value="{StaticResource TooltipBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TooltipForegroundBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="12,4,12,6" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
 </ResourceDictionary>

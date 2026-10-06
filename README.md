@@ -10,20 +10,22 @@ A WinUI 3 / Windows App SDK desktop app.
 | Create password | `DoNet/Views/CreatePasswordPage.xaml` | First run only, with validation |
 | Lock | `DoNet/Views/LockPage.xaml` | Every launch after that |
 | Forgot password | `DoNet/Views/ForgotPasswordPage.xaml` | From the lock screen's link |
-| Welcome | `DoNet/Views/WelcomePage.xaml` | "Welcome to DoNet" writes itself on; currently the last screen |
+| Welcome | `DoNet/Views/WelcomePage.xaml` | "Welcome to DoNet" writes itself on, then hands over to home |
+| Home | `DoNet/Views/HomePage.xaml` | Navigation rail; the content surface is still empty |
 
 ### Where each screen leads
 
 ```
-splash ──► create password ──┐                ┌──► lock ──► forgot password
-            (first run)      ├──► welcome ────┤              │        │
-       └──► lock ────────────┘                └──────────────┘        ▼
+splash ──► create password ──┐                     ┌──► lock ──► forgot password
+            (first run)      ├──► welcome ──► home ─┤              │        │
+       └──► lock ────────────┘                      └── lock ◄─────┘        │
+                                                         button             ▼
                                                                     create password
                                                                       (after reset)
 ```
 
-Both ways in go through the welcome screen. It is the same draw-on trick as the splash,
-minus the ring.
+Both ways in go through the welcome screen rather than landing on home directly. It is
+the same draw-on trick as the splash, minus the ring.
 
 The splash decides between the last two by asking `IVaultService.IsInitialized`, which
 is true once a vault exists on disk.
@@ -193,11 +195,54 @@ by reflection. Release builds set `PublishTrimmed`, which would strip the proper
 metadata reflection-based `System.Text.Json` depends on — the failure would appear only
 in Release, not in Debug.
 
+## The navigation rail
+
+Every size and path on this screen comes from the design's own export, not from
+measuring a picture of it. Three earlier attempts were measured off a 1546×967 PNG and
+each one was wrong by a different factor — the artboard is 1440×900, so that export was
+a 1.074× render, and eyeballed measurements carried another ±10% on top. The icons in
+particular are the design's SVG `d` strings pasted in unchanged.
+
+Each icon's SVG arrives as several `<path>` elements. Where they share a stroke colour
+and width their `d` strings are simply concatenated: XAML strokes each `M` subpath
+separately, so the result is identical and the control carries one `Geometry` per icon.
+The lock is the only one that mixed a filled dot with stroked lines, and a round-capped
+stroke already draws a disc of its own width at the end of a segment — so the dot and
+the line below it collapse into `M14 17.5V21` and the fill disappears.
+
+`tools/gen_nav_icons.py` holds those paths, flattens them (including the elliptical
+arcs and cubics the other preview scripts never needed), checks each one fits its 28px
+box with its stroke, and rasterises a sheet to compare against the design.
+
+### Shadows
+
+A circle's drop shadow can be reproduced exactly with a `RadialGradientBrush`, because
+the disc covers everything inside 28/42 of the radius and only the Gaussian tail is
+ever visible. That is what the rail buttons do — no composition code, nothing to fail.
+
+The two rounded panels cannot use that trick, so they take a real composition
+`DropShadow` via `Controls/Elevation.cs`. Two things about it are easy to get wrong:
+the shadow is shaped from `Shape.GetAlphaMask()`, which is why the panels are
+`Rectangle`s rather than `Border`s; and the sprite is parented to an *empty* element
+behind the panel, because a child visual draws above its host's content and would
+otherwise lay the shadow over the panel's own fill.
+
+`ThemeShadow` was tried first and rendered nothing at all.
+
+### States
+
+The rail buttons drive their states with named `Storyboard`s rather than a
+`VisualStateManager`. `GoToState` looks for its state groups on a control's *template*
+root and a `UserControl` has no template, which is a well-known way for states to go
+missing with no error at all. Pointer and selection are kept on disjoint properties —
+scale and wash for one, accent opacity and icon colour for the other — so they cannot
+overwrite each other.
+
 ## Not done yet
 
-The home screen has been removed and is being rebuilt from the design. `WelcomePage`
-is the last screen in the flow until it returns; the `NavigateTo` call it used to make
-is marked with a comment where it belongs.
+The home screen's content surface is deliberately empty — the three sections have no
+content yet, so it is the bare surface from the design. It becomes their host when
+those screens arrive.
 
 `VaultService.ResetAsync` deletes `vault.json`. It gets one more line to delete the
 encrypted database once that exists.
@@ -213,5 +258,6 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/extract_logo_geometry.py` | Prints the raw geometry and arc lengths; holds the ring proportions |
 | `tools/preview_animation.py` | Renders `docs/splash-animation.gif` |
 | `tools/preview_screens.py` | Renders a pixel reconstruction of the four screens for comparing against the design |
+| `tools/gen_nav_icons.py` | Parses the design's icon SVG, checks it fits, emits the XAML path data |
 | `tools/validate_xaml.py` | Checks resource keys, `x:Name`s and event handlers without a Windows build |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |
