@@ -130,7 +130,7 @@
             Background="{StaticResource CardBackgroundBrush}"
             BorderBrush="{StaticResource CardBorderBrush}"
             BorderThickness="1"
-            CornerRadius="12"
+            CornerRadius="16"
             Padding="20"
             DoubleTapped="OnDoubleTapped"
             PointerExited="OnCardPointerExited">
