@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--
     NavRailButton - one circular button in the home screen's left rail.
 
@@ -75,22 +75,22 @@
         </Storyboard>
     </UserControl.Resources>
 
-    <Grid x:Name="Root" Width="46" Height="46">
+    <Grid x:Name="Root" Width="56" Height="56">
 
         <Grid.RenderTransform>
-            <ScaleTransform x:Name="RootScale" CenterX="23" CenterY="23" ScaleX="1" ScaleY="1" />
+            <ScaleTransform x:Name="RootScale" CenterX="28" CenterY="28" ScaleX="1" ScaleY="1" />
         </Grid.RenderTransform>
 
         <!--
             A soft cast shadow, faked with a radial gradient rather than ThemeShadow.
 
             ThemeShadow was tried here and rendered nothing at all. For a circle the
-            gradient is exact anyway: the disc covers everything inside 46/62 of the
+            gradient is exact anyway: the disc covers everything inside 56/74 of the
             radius, so only the falloff past it is ever visible.
         -->
         <Ellipse x:Name="DropShadow"
-                 Width="62"
-                 Height="62"
+                 Width="74"
+                 Height="74"
                  Margin="0,3,0,0"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
@@ -114,10 +114,21 @@
 
         <Ellipse x:Name="Shade" Opacity="0" Fill="#000000" />
 
+        <!-- The design's 1px inside stroke. Drawn on a 55px circle so the stroke, which
+             straddles the edge it is given, lands just within the 56px disc. -->
+        <Ellipse x:Name="Edge"
+                 Width="55"
+                 Height="55"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 StrokeThickness="1"
+                 Stroke="{StaticResource NavDiscEdgeBrush}"
+                 IsHitTestVisible="False" />
+
         <!-- A bare Path with Stretch="None" has no layout size of its own, so it goes
              in a fixed Canvas; the Viewbox then scales the 18-unit grid the icon
              geometry is drawn on up to its place in a 46px disc. -->
-        <Viewbox Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Viewbox Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Canvas Width="18" Height="18">
                 <Path x:Name="Icon"
                       Data="{x:Bind IconData, Mode=OneWay}"
@@ -138,8 +149,8 @@
         <!-- Sized explicitly rather than left to stretch, so the hit area is exactly
              the disc whatever the Grid does. -->
         <Button x:Name="Host"
-                Width="46"
-                Height="46"
+                Width="56"
+                Height="56"
                 Style="{StaticResource NavRailHitStyle}"
                 Command="{x:Bind Command, Mode=OneWay}"
                 CommandParameter="{x:Bind CommandParameter, Mode=OneWay}"

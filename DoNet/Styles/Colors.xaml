@@ -27,9 +27,17 @@
     <SolidColorBrush x:Key="FieldBackgroundBrush" Color="#FFFFFF" />
 
     <!-- Home shell surfaces .................................................. -->
-    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FAFAFA" />
-    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#F4F4F4" />
-    <SolidColorBrush x:Key="SidebarBorderBrush" Color="#F0F1F2" />
+    <!--
+        Rail and content surface are the same colour: the design stacks FFFFFF at 72.16%
+        under BEBEBE at 16.1%, which over a white page composites to F5F5F5. What tells
+        the two panels apart is the stroke, not the fill.
+
+        CardStrokeBrush is the design's 041516 at 8.63%, kept as an alpha colour rather
+        than flattened, so it stays correct wherever the panel is placed.
+    -->
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#F5F5F5" />
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#F5F5F5" />
+    <SolidColorBrush x:Key="CardStrokeBrush" Color="#16041516" />
 
     <!--
         Navigation rail. The icon colours are Colors rather than Brushes because the
@@ -37,10 +45,14 @@
         raw value - and because each rail button owns its own SolidColorBrush instance.
         Animating a shared brush would repaint every button at once.
     -->
-    <Color x:Key="NavIconColor">#2F8872</Color>
+    <Color x:Key="NavIconColor">#4BAA98</Color>
     <Color x:Key="NavIconSelectedColor">#FFFFFF</Color>
     <SolidColorBrush x:Key="NavRestBrush" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="NavSelectedBrush" Color="{StaticResource BrandPrimaryColor}" />
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="#4BAA98" />
+
+    <!-- FFFFFF at 40%, the design's 1px inside stroke on each disc. Invisible on the
+         white resting disc, a soft inner lip on the filled one. -->
+    <SolidColorBrush x:Key="NavDiscEdgeBrush" Color="#66FFFFFF" />
     <SolidColorBrush x:Key="LockActionBrush" Color="#F5A623" />
 
     <!-- Tooltip .............................................................. -->

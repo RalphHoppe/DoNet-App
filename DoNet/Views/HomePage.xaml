@@ -57,9 +57,9 @@
         <Border x:Name="Rail"
                 Grid.Column="0"
                 Background="{StaticResource SidebarBackgroundBrush}"
-                BorderBrush="{StaticResource SidebarBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="20">
+                BorderBrush="{StaticResource CardStrokeBrush}"
+                BorderThickness="2"
+                CornerRadius="40">
             <Border.RenderTransform>
                 <TranslateTransform x:Name="RailSlide" />
             </Border.RenderTransform>
@@ -89,7 +89,7 @@
 
                 <StackPanel Grid.Row="1"
                             Margin="0,46,0,0"
-                            Spacing="28"
+                            Spacing="19"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Top">
 
@@ -138,7 +138,9 @@
         <Border x:Name="ContentSurface"
                 Grid.Column="2"
                 Background="{StaticResource ContentBackgroundBrush}"
-                CornerRadius="20"
+                BorderBrush="{StaticResource CardStrokeBrush}"
+                BorderThickness="2"
+                CornerRadius="40"
                 RenderTransformOrigin="0.5,0.5">
             <Border.RenderTransform>
                 <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1" />

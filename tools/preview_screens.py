@@ -22,7 +22,7 @@ SS = 2  # supersample for clean edges
 # ---- palette ---------------------------------------------------------------
 TEAL_DARK = (73, 164, 140)
 TEAL_LITE = (131, 205, 180)
-BTN = (66, 152, 130)
+BTN = (75, 170, 152)
 TXT_SUB = (92, 96, 102)
 ERR_FG = (192, 57, 43)
 PLACEHOLDER = (140, 145, 150)
@@ -37,9 +37,9 @@ OK_FG = (46, 125, 91)
 DANGER = (224, 27, 36)
 DANGER_HEAD = (164, 22, 26)
 DANGER_BODY = (192, 57, 43)
-RAIL_BG = (250, 250, 250)
-CONTENT_BG = (244, 244, 244)
-NAV_ICON = (47, 136, 114)
+RAIL_BG = (245, 245, 245)
+CONTENT_BG = (245, 245, 245)
+NAV_ICON = (75, 170, 152)
 LOCK_ACCENT = (245, 166, 35)
 
 # ---- metrics ---------------------------------------------------------------
@@ -268,7 +268,7 @@ def home(LW=1280, LH=810):
     img = Image.new("RGB", (LW * SS, LH * SS), "white")
     dr = ImageDraw.Draw(img)
 
-    PADDING, RAIL_W, GAP, R = 16, 82, 24, 20
+    PADDING, RAIL_W, GAP, R = 16, 82, 24, 40
 
     def rr(box, radius, fill):
         dr.rounded_rectangle([v * SS for v in box], radius=radius * SS, fill=fill)
@@ -286,20 +286,20 @@ def home(LW=1280, LH=810):
                outline=BTN, width=int(8 * SS))
 
     def disc(cy, icon_key, selected, accent):
-        dr.ellipse([(cx - 23) * SS, (cy - 23) * SS, (cx + 23) * SS, (cy + 23) * SS],
+        dr.ellipse([(cx - 28) * SS, (cy - 28) * SS, (cx + 28) * SS, (cy + 28) * SS],
                    fill=accent if selected else (255, 255, 255))
         colour = (255, 255, 255) if selected else NAV_ICON
-        k = 24 / 18.0                              # Viewbox scales the 18-unit grid to 24
-        ox, oy = cx - 12, cy - 12
+        k = 28 / 18.0                              # Viewbox scales the 18-unit grid to 28
+        ox, oy = cx - 14, cy - 14
         for sp in parse(ICONS[icon_key]):
             dr.line([((ox + x * k) * SS, (oy + y * k) * SS) for x, y in sp],
                     fill=colour, width=int(1.6 * k * SS), joint="curve")
 
     first_top = PADDING + 29 + 30 + 46            # 121
     for i, key in enumerate(("Services (briefcase)", "Persons", "Sites (pin)")):
-        disc(first_top + 23 + i * 74, key, i == 0, BTN)
+        disc(first_top + 28 + i * 75, key, i == 0, BTN)
 
-    disc(LH - PADDING - 14 - 23, "Lock", True, LOCK_ACCENT)
+    disc(LH - PADDING - 14 - 28, "Lock", True, LOCK_ACCENT)
 
     return img.resize((LW, LH), Image.LANCZOS)
 
