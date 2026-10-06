@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    DoNet palette, sampled from the Figma screens.
+    DoNet palette. The brand teal, the home surfaces and their strokes are the
+    design's own values; the hover, pressed and disabled steps are derived from the
+    teal so they move with it.
 
     Colors are declared separately from Brushes because the logo gradient needs raw
     Color values for its GradientStops.
@@ -12,10 +14,10 @@
     <!-- Brand ................................................................ -->
     <Color x:Key="BrandTealDeepColor">#49A48C</Color>
     <Color x:Key="BrandTealSoftColor">#83CDB4</Color>
-    <Color x:Key="BrandPrimaryColor">#429882</Color>
-    <Color x:Key="BrandPrimaryHoverColor">#3B8A76</Color>
-    <Color x:Key="BrandPrimaryPressedColor">#347B69</Color>
-    <Color x:Key="BrandPrimaryDisabledColor">#B3D8CC</Color>
+    <Color x:Key="BrandPrimaryColor">#4BAA98</Color>
+    <Color x:Key="BrandPrimaryHoverColor">#449989</Color>
+    <Color x:Key="BrandPrimaryPressedColor">#3C887A</Color>
+    <Color x:Key="BrandPrimaryDisabledColor">#BBDFD8</Color>
 
     <SolidColorBrush x:Key="BrandPrimaryBrush" Color="{StaticResource BrandPrimaryColor}" />
     <SolidColorBrush x:Key="BrandPrimaryHoverBrush" Color="{StaticResource BrandPrimaryHoverColor}" />
@@ -45,10 +47,13 @@
         raw value - and because each rail button owns its own SolidColorBrush instance.
         Animating a shared brush would repaint every button at once.
     -->
+    <!-- Literal rather than a reference to BrandPrimaryColor: a Color element's content
+         is parsed as a colour, so a StaticResource here would not resolve. Keep in step
+         with the brand teal by hand. -->
     <Color x:Key="NavIconColor">#4BAA98</Color>
     <Color x:Key="NavIconSelectedColor">#FFFFFF</Color>
     <SolidColorBrush x:Key="NavRestBrush" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="NavSelectedBrush" Color="#4BAA98" />
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="{StaticResource BrandPrimaryColor}" />
 
     <!-- FFFFFF at 40%, the design's 1px inside stroke on each disc. Invisible on the
          white resting disc, a soft inner lip on the filled one. -->

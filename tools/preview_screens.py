@@ -40,6 +40,7 @@ DANGER_BODY = (192, 57, 43)
 RAIL_BG = (245, 245, 245)
 CONTENT_BG = (245, 245, 245)
 NAV_ICON = (75, 170, 152)
+CARD_STROKE = (224, 226, 226)   # 041516 @ 8.63% over F5F5F5
 LOCK_ACCENT = (245, 166, 35)
 
 # ---- metrics ---------------------------------------------------------------
@@ -268,22 +269,24 @@ def home(LW=1280, LH=810):
     img = Image.new("RGB", (LW * SS, LH * SS), "white")
     dr = ImageDraw.Draw(img)
 
-    PADDING, RAIL_W, GAP, R = 16, 82, 24, 40
+    PADDING, RAIL_W, GAP, R = 14, 74, 24, 40
 
-    def rr(box, radius, fill):
-        dr.rounded_rectangle([v * SS for v in box], radius=radius * SS, fill=fill)
+    def rr(box, radius, fill, outline=None, w=0):
+        dr.rounded_rectangle([v * SS for v in box], radius=radius * SS, fill=fill,
+                             outline=outline, width=int(w * SS))
 
-    rr((PADDING, PADDING, PADDING + RAIL_W, LH - PADDING), R, RAIL_BG)
-    rr((PADDING + RAIL_W + GAP, PADDING, LW - PADDING, LH - PADDING), R, CONTENT_BG)
+    rr((PADDING, PADDING, PADDING + RAIL_W, LH - PADDING), R, RAIL_BG, CARD_STROKE, 2)
+    rr((PADDING + RAIL_W + GAP, PADDING, LW - PADDING, LH - PADDING), R, CONTENT_BG,
+       CARD_STROKE, 2)
 
     cx = PADDING + RAIL_W / 2                      # 46
 
     # Ring mark. XAML straddles a shape's stroke across its edge, so Width 19 with
     # StrokeThickness 7 draws an annulus from d=26 down to d=12. PIL insets the stroke
     # instead, so it has to be given the *outer* circle to land in the same place.
-    ring_cy = PADDING + 29 + 15
-    dr.ellipse([(cx - 15) * SS, (ring_cy - 15) * SS, (cx + 15) * SS, (ring_cy + 15) * SS],
-               outline=BTN, width=int(8 * SS))
+    ring_cy = PADDING + 18 + 14
+    dr.ellipse([(cx - 14) * SS, (ring_cy - 14) * SS, (cx + 14) * SS, (ring_cy + 14) * SS],
+               outline=BTN, width=int(7.5 * SS))
 
     def disc(cy, icon_key, selected, accent):
         dr.ellipse([(cx - 28) * SS, (cy - 28) * SS, (cx + 28) * SS, (cy + 28) * SS],
@@ -295,11 +298,11 @@ def home(LW=1280, LH=810):
             dr.line([((ox + x * k) * SS, (oy + y * k) * SS) for x, y in sp],
                     fill=colour, width=int(1.6 * k * SS), joint="curve")
 
-    first_top = PADDING + 29 + 30 + 46            # 121
+    first_top = PADDING + 18 + 28 + 43            # 103
     for i, key in enumerate(("Services (briefcase)", "Persons", "Sites (pin)")):
         disc(first_top + 28 + i * 75, key, i == 0, BTN)
 
-    disc(LH - PADDING - 14 - 28, "Lock", True, LOCK_ACCENT)
+    disc(LH - PADDING - 13 - 28, "Lock", True, LOCK_ACCENT)
 
     return img.resize((LW, LH), Image.LANCZOS)
 

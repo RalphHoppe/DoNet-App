@@ -15,8 +15,15 @@ namespace DoNet;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
-    private const int DesignWidth = 1280;
-    private const int DesignHeight = 810;
+    // The design's own artboard. The window opens at this size where the display has
+    // room, so the app matches the design 1:1 without anyone having to scale anything.
+    private const int DesignWidth = 1440;
+    private const int DesignHeight = 900;
+
+    // ...but never edge to edge. On a 1366x768 laptop the full design height does not
+    // fit at all, and a window exactly the size of the work area reads as a botched
+    // maximise rather than a deliberate default.
+    private const double MaxWorkAreaFraction = 0.92;
 
     // The smallest window the layout still works in, derived rather than picked:
     //
@@ -227,9 +234,14 @@ public sealed partial class MainWindow : Window
         var display = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest);
         var work = display.WorkArea;
 
-        // clamp so the window still fits on smaller screens
-        width = Math.Min(width, work.Width);
-        height = Math.Min(height, work.Height);
+        // Shrink to fit smaller displays, keeping a margin so the window still reads as
+        // a window. The minimum is applied last: a display too small for even that is
+        // better served by a clipped window than by one placed off-screen.
+        width = Math.Min(width, (int)(work.Width * MaxWorkAreaFraction));
+        height = Math.Min(height, (int)(work.Height * MaxWorkAreaFraction));
+
+        width = Math.Max(width, Math.Min((int)Math.Round(MinimumWidth * scale), work.Width));
+        height = Math.Max(height, Math.Min((int)Math.Round(MinimumHeight * scale), work.Height));
 
         var x = work.X + ((work.Width - width) / 2);
         var y = work.Y + ((work.Height - height) / 2);

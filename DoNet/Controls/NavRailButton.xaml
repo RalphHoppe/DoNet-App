@@ -85,21 +85,24 @@
             A soft cast shadow, faked with a radial gradient rather than ThemeShadow.
 
             ThemeShadow was tried here and rendered nothing at all. For a circle the
-            gradient is exact anyway: the disc covers everything inside 56/74 of the
-            radius, so only the falloff past it is ever visible.
+            gradient is exact anyway: the disc hides everything inside 28/42 of the
+            radius, so only the Gaussian tail past the disc edge is ever visible. The
+            stops below sample that tail; Y is the design's 6px offset.
         -->
         <Ellipse x:Name="DropShadow"
-                 Width="74"
-                 Height="74"
-                 Margin="0,3,0,0"
+                 Width="84"
+                 Height="84"
+                 Margin="0,6,0,0"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  IsHitTestVisible="False">
             <Ellipse.Fill>
                 <RadialGradientBrush>
-                    <GradientStop Offset="0" Color="#20000000" />
-                    <GradientStop Offset="0.74" Color="#1A000000" />
-                    <GradientStop Offset="1" Color="#00000000" />
+                    <GradientStop Offset="0.0" Color="#12041516" />
+                    <GradientStop Offset="0.6667" Color="#12041516" />
+                    <GradientStop Offset="0.7833" Color="#0D041516" />
+                    <GradientStop Offset="0.9" Color="#04041516" />
+                    <GradientStop Offset="1.0" Color="#00041516" />
                 </RadialGradientBrush>
             </Ellipse.Fill>
         </Ellipse>
