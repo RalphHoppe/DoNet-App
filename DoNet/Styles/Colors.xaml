@@ -46,6 +46,11 @@
     <SolidColorBrush x:Key="NoticeBorderBrush" Color="#F6DEB4" />
     <SolidColorBrush x:Key="NoticeForegroundBrush" Color="#C4710B" />
 
+    <!-- Caption buttons ...................................................... -->
+    <SolidColorBrush x:Key="CaptionMinimizeBrush" Color="#28C840" />
+    <SolidColorBrush x:Key="CaptionMaximizeBrush" Color="#FEBC2E" />
+    <SolidColorBrush x:Key="CaptionCloseBrush" Color="#FF5F57" />
+
     <!-- Destructive: the reset action on the forgot-password screen .......... -->
     <SolidColorBrush x:Key="DangerBrush" Color="#E01B24" />
     <SolidColorBrush x:Key="DangerHeadingBrush" Color="#A4161A" />

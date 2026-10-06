@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Window
     x:Class="DoNet.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -11,21 +11,51 @@
 
     <!--
         No SystemBackdrop: the design is flat white edge to edge, and Mica would tint it.
-        The title bar is extended into the client area (see the code-behind) so the pages
-        own the whole window, matching the Figma frames.
+        The system title bar is removed entirely in the code-behind, so the pages own the
+        whole window and the caption buttons below are the only window chrome.
     -->
     <Grid Background="{StaticResource AppBackgroundBrush}">
 
         <Frame x:Name="RootFrame" />
 
         <!--
-            Sits above the frame so the window stays draggable even though there is no
-            visible title bar. Both onboarding screens are empty up here, so nothing is
-            swallowed; revisit when a screen puts controls in the top strip.
+            Overlays the frame rather than taking a row of its own, so removing it would
+            not shift any page: every screen centres its content in the full window and
+            none of them put anything in the top strip.
         -->
         <Grid x:Name="DragRegion"
               Height="40"
               VerticalAlignment="Top"
-              Background="Transparent" />
+              Background="Transparent"
+              PointerPressed="OnDragRegionPointerPressed">
+
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Margin="0,0,10,0"
+                        Spacing="0">
+
+                <Button x:Name="MinimizeButton"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        Background="{StaticResource CaptionMinimizeBrush}"
+                        AutomationProperties.Name="Minimize"
+                        ToolTipService.ToolTip="Minimize"
+                        Click="OnMinimizeClick" />
+
+                <Button x:Name="MaximizeButton"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        Background="{StaticResource CaptionMaximizeBrush}"
+                        AutomationProperties.Name="Maximize"
+                        ToolTipService.ToolTip="Maximize"
+                        Click="OnMaximizeClick" />
+
+                <Button x:Name="CloseButton"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        Background="{StaticResource CaptionCloseBrush}"
+                        AutomationProperties.Name="Close"
+                        ToolTipService.ToolTip="Close"
+                        Click="OnCloseClick" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

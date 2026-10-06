@@ -181,4 +181,51 @@
         <Setter Property="FontSize" Value="{StaticResource TitleFontSize}" />
     </Style>
 
+    <!--
+        Caption buttons: a plain coloured dot.
+
+        The clickable Button is 20x20 while the dot is 12x12, so the hit target is
+        comfortable without the dots drifting apart - at this size the gap between them
+        is the 8px the design shows. Hover and press darken the dot rather than drawing
+        a glyph inside it, which keeps them quiet.
+    -->
+    <Style x:Key="CaptionButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <!-- Transparent fill rather than none, so the whole 20x20 square
+                         is hit-testable and not just the dot. -->
+                    <Grid Background="Transparent">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Shade.Opacity" Value="0.16" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Shade.Opacity" Value="0.30" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
+                        <Ellipse Width="12" Height="12" Fill="{TemplateBinding Background}" />
+                        <Ellipse x:Name="Shade" Width="12" Height="12" Fill="#000000" Opacity="0" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

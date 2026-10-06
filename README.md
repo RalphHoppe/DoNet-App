@@ -74,6 +74,29 @@ Both Baloo 2 (1.60 em) and Pacifico (1.76 em) declare unusually tall line boxes,
 text slots in the layout pin `LineHeight` explicitly. Remove those and the vertical
 rhythm drifts.
 
+## Window chrome
+
+There is no system title bar. `OverlappedPresenter.SetBorderAndTitleBar(true, false)`
+removes it outright, leaving the three coloured dots in `MainWindow.xaml` as the only
+chrome — green minimise, amber maximise, red close, left to right.
+
+Extending content into the title bar is *not* enough on its own: that keeps the system
+caption buttons, which cannot be hidden and would sit exactly where the dots go.
+Dropping the title bar is the only way to be rid of them. The border is kept, so the
+window still has its resize edges and drop shadow.
+
+Two consequences, both handled in `MainWindow.xaml.cs`:
+
+- **Dragging** is handed to the window manager with `WM_NCLBUTTONDOWN`/`HTCAPTION`
+  rather than emulated by moving the window on pointer events. That keeps snapping,
+  multi-monitor handoff and restore-on-drag behaving like a real title bar.
+- **Double-click to maximise** is detected in code. The window manager only maximises on
+  a genuine `WM_NCLBUTTONDBLCLK`, and synthesising a button-down per press means it
+  never sees one — it sees two unrelated clicks.
+
+Snap Layouts (hovering the maximise button on Windows 11) is the one thing lost; it is
+tied to the system maximise button, which no longer exists.
+
 ## Layout
 
 The design is a fixed 352 px column, centred, sitting 24 px above the optical centre of

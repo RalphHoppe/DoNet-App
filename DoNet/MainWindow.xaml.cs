@@ -5,10 +5,8 @@ using DoNet.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Input;
 using Windows.Graphics;
-
-// Microsoft.UI and Windows.UI both expose a "Colors" type, so neither is imported;
-// the few colour literals below are written out in full instead.
 
 namespace DoNet;
 
@@ -20,9 +18,19 @@ public sealed partial class MainWindow : Window
     private const int DesignWidth = 1280;
     private const int DesignHeight = 810;
 
+    private const uint WmNcLButtonDown = 0x00A1;
+    private const int HtCaption = 2;
+
+    private readonly IntPtr _handle;
+
+    /// <summary>When the title bar was last pressed, for detecting a double-click.</summary>
+    private DateTime _lastTitleBarPress = DateTime.MinValue;
+
     public MainWindow()
     {
         InitializeComponent();
+
+        _handle = WinRT.Interop.WindowNative.GetWindowHandle(this);
 
         ConfigureTitleBar();
         SizeAndCentre(DesignWidth, DesignHeight);
@@ -35,25 +43,98 @@ public sealed partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    private static extern uint GetDoubleClickTime();
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ReleaseCapture();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
     /// <summary>
-    /// Hides the system title bar and recolours the caption buttons so they disappear
-    /// into the white background instead of sitting in a grey strip.
+    /// Removes the system title bar outright, leaving the caption buttons in
+    /// MainWindow.xaml as the only window chrome.
     /// </summary>
+    /// <remarks>
+    /// Extending content into the title bar is not enough here: that keeps the system
+    /// caption buttons, which cannot be hidden and would sit exactly where the coloured
+    /// dots go. Dropping the title bar is the only way to be rid of them. The border is
+    /// kept, so the window still has its resize edges and drop shadow.
+    /// </remarks>
     private void ConfigureTitleBar()
     {
-        ExtendsContentIntoTitleBar = true;
-        SetTitleBar(DragRegion);
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
+        }
+    }
 
-        var titleBar = AppWindow.TitleBar;
+    /// <summary>
+    /// Starts a window drag, or maximises on a double-click.
+    /// </summary>
+    /// <remarks>
+    /// The drag is handed straight to the window manager rather than being emulated by
+    /// moving the window on pointer events. That is what keeps snapping, multi-monitor
+    /// handoff and restore-on-drag behaving exactly as they do for a real title bar.
+    /// <para>
+    /// The double-click has to be detected here as well. The window manager only
+    /// maximises on a genuine WM_NCLBUTTONDBLCLK, and synthesising a button-down per
+    /// press means it never sees one - it sees two unrelated clicks.
+    /// </para>
+    /// </remarks>
+    private void OnDragRegionPointerPressed(object sender, PointerRoutedEventArgs args)
+    {
+        // Buttons mark their own pointer events handled, so a click on a caption dot
+        // never reaches this handler.
+        if (!args.GetCurrentPoint(DragRegion).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
 
-        titleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
-        titleBar.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
-        titleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 0x5C, 0x60, 0x66);
-        titleBar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(255, 0xA0, 0xA5, 0xAB);
-        titleBar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(255, 0xF0, 0xF1, 0xF2);
-        titleBar.ButtonHoverForegroundColor = Windows.UI.Color.FromArgb(255, 0x2B, 0x2F, 0x33);
-        titleBar.ButtonPressedBackgroundColor = Windows.UI.Color.FromArgb(255, 0xE4, 0xE6, 0xE9);
-        titleBar.ButtonPressedForegroundColor = Windows.UI.Color.FromArgb(255, 0x2B, 0x2F, 0x33);
+        var now = DateTime.UtcNow;
+
+        if ((now - _lastTitleBarPress).TotalMilliseconds <= GetDoubleClickTime())
+        {
+            _lastTitleBarPress = DateTime.MinValue;
+            ToggleMaximised();
+            return;
+        }
+
+        _lastTitleBarPress = now;
+
+        ReleaseCapture();
+        SendMessage(_handle, WmNcLButtonDown, (IntPtr)HtCaption, IntPtr.Zero);
+    }
+
+    private void OnMinimizeClick(object sender, RoutedEventArgs args)
+    {
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.Minimize();
+        }
+    }
+
+    private void OnMaximizeClick(object sender, RoutedEventArgs args) => ToggleMaximised();
+
+    private void OnCloseClick(object sender, RoutedEventArgs args) => Close();
+
+    private void ToggleMaximised()
+    {
+        if (AppWindow.Presenter is not OverlappedPresenter presenter)
+        {
+            return;
+        }
+
+        if (presenter.State == OverlappedPresenterState.Maximized)
+        {
+            presenter.Restore();
+        }
+        else
+        {
+            presenter.Maximize();
+        }
     }
 
     /// <summary>
@@ -66,8 +147,7 @@ public sealed partial class MainWindow : Window
     /// </remarks>
     private void SizeAndCentre(int logicalWidth, int logicalHeight)
     {
-        var handle = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        var dpi = GetDpiForWindow(handle);
+        var dpi = GetDpiForWindow(_handle);
         var scale = dpi == 0 ? 1.0 : dpi / 96.0;
 
         var width = (int)Math.Round(logicalWidth * scale);
