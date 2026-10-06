@@ -29,6 +29,7 @@
     <!-- Home shell surfaces .................................................. -->
     <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FAFAFA" />
     <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#F4F4F4" />
+    <SolidColorBrush x:Key="SidebarBorderBrush" Color="#F0F1F2" />
 
     <!--
         Navigation rail. The icon colours are Colors rather than Brushes because the

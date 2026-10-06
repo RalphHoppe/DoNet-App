@@ -269,7 +269,7 @@ def home():
     img = Image.new("RGB", (LW * SS, LH * SS), "white")
     dr = ImageDraw.Draw(img)
 
-    PADDING, RAIL_W, GAP, R = 12, 68, 16, 20
+    PADDING, RAIL_W, GAP, R = 16, 82, 24, 20
 
     def rr(box, radius, fill):
         dr.rounded_rectangle([v * SS for v in box], radius=radius * SS, fill=fill)
@@ -282,24 +282,25 @@ def home():
     # Ring mark. XAML straddles a shape's stroke across its edge, so Width 19 with
     # StrokeThickness 7 draws an annulus from d=26 down to d=12. PIL insets the stroke
     # instead, so it has to be given the *outer* circle to land in the same place.
-    ring_cy = PADDING + 24 + 13
-    dr.ellipse([(cx - 13) * SS, (ring_cy - 13) * SS, (cx + 13) * SS, (ring_cy + 13) * SS],
-               outline=BTN, width=int(7 * SS))
+    ring_cy = PADDING + 29 + 15
+    dr.ellipse([(cx - 15) * SS, (ring_cy - 15) * SS, (cx + 15) * SS, (ring_cy + 15) * SS],
+               outline=BTN, width=int(8 * SS))
 
     def disc(cy, icon_key, selected, accent):
-        dr.ellipse([(cx - 20) * SS, (cy - 20) * SS, (cx + 20) * SS, (cy + 20) * SS],
+        dr.ellipse([(cx - 23) * SS, (cy - 23) * SS, (cx + 23) * SS, (cy + 23) * SS],
                    fill=accent if selected else (255, 255, 255))
         colour = (255, 255, 255) if selected else NAV_ICON
-        ox, oy = cx - 9, cy - 9                    # 18x18 icon grid, centred
+        k = 24 / 18.0                              # Viewbox scales the 18-unit grid to 24
+        ox, oy = cx - 12, cy - 12
         for sp in parse(ICONS[icon_key]):
-            dr.line([((ox + x) * SS, (oy + y) * SS) for x, y in sp],
-                    fill=colour, width=int(1.6 * SS), joint="curve")
+            dr.line([((ox + x * k) * SS, (oy + y * k) * SS) for x, y in sp],
+                    fill=colour, width=int(1.6 * k * SS), joint="curve")
 
-    first_top = PADDING + 24 + 26 + 36             # 98
+    first_top = PADDING + 29 + 30 + 46            # 121
     for i, key in enumerate(("Services (briefcase)", "Persons", "Sites (pin)")):
-        disc(first_top + 20 + i * 62, key, i == 0, BTN)
+        disc(first_top + 23 + i * 74, key, i == 0, BTN)
 
-    disc(LH - PADDING - 16 - 20, "Lock", True, LOCK_ACCENT)
+    disc(LH - PADDING - 14 - 23, "Lock", True, LOCK_ACCENT)
 
     return img.resize((LW, LH), Image.LANCZOS)
 

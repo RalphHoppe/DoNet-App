@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace DoNet.Controls;
 
@@ -10,9 +11,17 @@ namespace DoNet.Controls;
 /// One circular button in the home screen's left navigation rail.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Pointer state is tracked here rather than left to the Button's own visual states,
 /// because the Button underneath is only a hit target - it draws nothing. Its states
 /// would have no way to reach the disc and icon that sit above it in the Grid.
+/// </para>
+/// <para>
+/// The states are Storyboards begun by name rather than a VisualStateManager.
+/// <c>GoToState</c> looks for its state groups on the control's template root, and a
+/// UserControl has no template - a well-known way for states to be dropped silently.
+/// <c>Begin</c> has no such failure mode.
+/// </para>
 /// </remarks>
 public sealed partial class NavRailButton : UserControl
 {
@@ -42,10 +51,10 @@ public sealed partial class NavRailButton : UserControl
     {
         InitializeComponent();
 
-        // Visual states do not stick before the tree is live, so the initial selection
-        // is applied on Loaded - without transitions, so a button that starts selected
-        // is simply drawn that way instead of animating into it.
-        Loaded += (_, _) => ApplySelectionState(useTransitions: false);
+        // Storyboards cannot target elements before the tree is live, so the initial
+        // selection is applied on Loaded - and skipped straight to its end value, so a
+        // button that starts selected is simply drawn that way rather than animating in.
+        Loaded += (_, _) => ApplySelectionState(animate: false);
     }
 
     /// <summary>The icon outline, as path mini-language in markup.</summary>
@@ -89,17 +98,38 @@ public sealed partial class NavRailButton : UserControl
 
     private static void OnIsSelectedChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
     {
-        ((NavRailButton)sender).ApplySelectionState(useTransitions: true);
+        ((NavRailButton)sender).ApplySelectionState(animate: true);
     }
 
-    private void ApplySelectionState(bool useTransitions) =>
-        VisualStateManager.GoToState(this, IsSelected ? "Selected" : "Unselected", useTransitions);
+    private void ApplySelectionState(bool animate) =>
+        Play(IsSelected ? "ToSelected" : "ToUnselected", animate);
 
     private void ApplyCommonState() =>
-        VisualStateManager.GoToState(
-            this,
-            _isPressed ? "Pressed" : _isOver ? "PointerOver" : "Normal",
-            useTransitions: true);
+        Play(_isPressed ? "ToPressed" : _isOver ? "ToHover" : "ToNormal", animate: true);
+
+    /// <summary>
+    /// Runs one of the state storyboards, optionally jumping straight to its end.
+    /// </summary>
+    /// <remarks>
+    /// The previous storyboard is deliberately not stopped. A finished Storyboard only
+    /// *holds* the value it animated to - stopping it would snap the property back to
+    /// what it was before, so the disc would flash white between states. Beginning the
+    /// next one takes over the property cleanly.
+    /// </remarks>
+    private void Play(string key, bool animate)
+    {
+        if (Resources[key] is not Storyboard board)
+        {
+            return;
+        }
+
+        board.Begin();
+
+        if (!animate)
+        {
+            board.SkipToFill();
+        }
+    }
 
     private void OnPointerEntered(object sender, PointerRoutedEventArgs args)
     {
