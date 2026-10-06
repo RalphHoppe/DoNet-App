@@ -29,4 +29,14 @@ public interface IVaultService
     /// </summary>
     /// <returns>True if it was correct.</returns>
     Task<bool> TryUnlockAsync(string password, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Destroys the vault, returning the installation to its first-run state.
+    /// </summary>
+    /// <remarks>
+    /// Irreversible, and meant to be. Without the password the wrapped data key can
+    /// never be recovered, so everything it protects is already unreadable - this only
+    /// clears the way for a new password.
+    /// </remarks>
+    Task ResetAsync(CancellationToken cancellationToken = default);
 }

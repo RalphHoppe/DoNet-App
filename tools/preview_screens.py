@@ -13,6 +13,7 @@ _FD = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    "DoNet", "Assets", "Fonts")
 PAC = os.path.join(_FD, "Pacifico-Regular.ttf")
 BAL = os.path.join(_FD, "Baloo2-Regular.ttf")
+BALSB = os.path.join(_FD, "Baloo2-SemiBold.ttf")
 JER = os.path.join(_FD, "Jersey25-Regular.ttf")
 
 W, H = 1546, 980
@@ -33,6 +34,9 @@ WARN_FG = (196, 113, 11)
 OK_BG = (234, 246, 241)
 OK_BORDER = (191, 224, 210)
 OK_FG = (46, 125, 91)
+DANGER = (224, 27, 36)
+DANGER_HEAD = (164, 22, 26)
+DANGER_BODY = (192, 57, 43)
 
 # ---- metrics ---------------------------------------------------------------
 COL = 352
@@ -184,6 +188,71 @@ def lock_screen(error=False):
     return img.resize((W, H), Image.LANCZOS)
 
 
+def trash_icon(dr, x, y, s, colour):
+    u = s / 16.0
+    t = max(1, int(1.3 * u))
+    dr.line([x + 2.9 * u, y + 4.5 * u, x + 13.1 * u, y + 4.5 * u], fill=colour, width=t)
+    dr.line([x + 6.4 * u, y + 4.5 * u, x + 6.4 * u, y + 3.0 * u], fill=colour, width=t)
+    dr.line([x + 6.4 * u, y + 3.0 * u, x + 9.6 * u, y + 3.0 * u], fill=colour, width=t)
+    dr.line([x + 9.6 * u, y + 3.0 * u, x + 9.6 * u, y + 4.5 * u], fill=colour, width=t)
+    dr.line([x + 4.3 * u, y + 4.5 * u, x + 4.3 * u, y + 13.6 * u], fill=colour, width=t)
+    dr.line([x + 11.7 * u, y + 4.5 * u, x + 11.7 * u, y + 13.6 * u], fill=colour, width=t)
+    dr.line([x + 4.3 * u, y + 13.6 * u, x + 11.7 * u, y + 13.6 * u], fill=colour, width=t)
+
+
+def forgot_password():
+    img = Image.new("RGB", (W * SS, H * SS), "white")
+    dr = ImageDraw.Draw(img)
+    col_x = (W - COL) / 2
+
+    block_h = 29 + 26 + 26 + 28 + 20 + 10 + 88 + 32 + BTN_H + 12 + BTN_H
+    y = (H - block_h) / 2 - 24
+
+    draw_logo(img, dr, W / 2, y + 14.5, PAC_SIZE)
+    y += 29 + 26
+
+    f_t = font(BAL, 20)
+    t = "Forgot your password?"
+    b = ink(dr, f_t, t)
+    dr.text(((W * SS - (b[2] - b[0])) / 2 - b[0], (y + 13) * SS - (b[3] - b[1]) / 2 - b[1]),
+            t, font=f_t, fill=TXT_SUB)
+    y += 26 + 28
+
+    f_h = font(BALSB, 16)
+    hb = ink(dr, f_h, "Reset all data")
+    dr.text((col_x * SS - hb[0], (y + 10) * SS - (hb[3] - hb[1]) / 2 - hb[1]),
+            "Reset all data", font=f_h, fill=DANGER_HEAD)
+    y += 20 + 10
+
+    f_b = font(BAL, 16)
+    for i, line in enumerate([
+            "Use this only if you truly forgot your password, and",
+            "you want to erase all data.",
+            "Resetting deletes all your saved data and cannot be",
+            "undone."]):
+        lb = ink(dr, f_b, line)
+        dr.text((col_x * SS - lb[0], (y + 11 + i * 22) * SS - (lb[3] - lb[1]) / 2 - lb[1]),
+                line, font=f_b, fill=DANGER_BODY)
+    y += 88 + 32
+
+    f_j = font(JER, 17)
+    for label, fill, icon in (("RESET", DANGER, True), ("BACK TO LOCK SCREEN", BTN, False)):
+        dr.rounded_rectangle([col_x * SS, y * SS, (col_x + COL) * SS, (y + BTN_H) * SS],
+                             radius=RADIUS * SS, fill=fill)
+        jb = ink(dr, f_j, label)
+        tw = jb[2] - jb[0]
+        group = tw + (16 + 9) * SS if icon else tw
+        gx = (W * SS - group) / 2
+        if icon:
+            trash_icon(dr, gx, (y + BTN_H / 2 - 8) * SS, 16 * SS, (255, 255, 255))
+            gx += (16 + 9) * SS
+        dr.text((gx - jb[0], (y + BTN_H / 2) * SS - (jb[3] - jb[1]) / 2 - jb[1]),
+                label, font=f_j, fill="white")
+        y += BTN_H + 12
+
+    return img.resize((W, H), Image.LANCZOS)
+
+
 def splash():
     img = Image.new("RGB", (W * SS, H * SS), "white")
     dr = ImageDraw.Draw(img)
@@ -254,4 +323,5 @@ if __name__ == "__main__":
     create_password(success=True).save("/tmp/preview/screen2_success.png")
     lock_screen().save("/tmp/preview/screen3_lock.png")
     lock_screen(error=True).save("/tmp/preview/screen3_lock_error.png")
+    forgot_password().save("/tmp/preview/screen4_forgot.png")
     print("written")

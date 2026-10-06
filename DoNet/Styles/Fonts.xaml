@@ -20,11 +20,23 @@
     <!-- Body copy, labels, field text -->
     <FontFamily x:Key="BalooFont">ms-appx:///Assets/Fonts/Baloo2-Regular.ttf#Baloo 2</FontFamily>
 
+    <!--
+        Baloo 2 at weight 600, instanced from the same variable font.
+
+        It carries its own family name rather than declaring itself a bold member of
+        "Baloo 2". Two files claiming the same family is what made an earlier attempt
+        unusable - the loader could not tell them apart - and naming it outright means
+        the heading can never silently fall back to the regular weight.
+    -->
+    <FontFamily x:Key="BalooSemiBoldFont">ms-appx:///Assets/Fonts/Baloo2-SemiBold.ttf#Baloo 2 SemiBold</FontFamily>
+
     <!-- Button captions -->
     <FontFamily x:Key="JerseyFont">ms-appx:///Assets/Fonts/Jersey25-Regular.ttf#Jersey 25</FontFamily>
 
     <!-- Type ramp .......................................................... -->
+    <x:Double x:Key="TitleFontSize">20</x:Double>
     <x:Double x:Key="SubtitleFontSize">16</x:Double>
+    <x:Double x:Key="BodyFontSize">16</x:Double>
     <x:Double x:Key="FieldFontSize">14</x:Double>
     <x:Double x:Key="NoticeFontSize">12.5</x:Double>
     <x:Double x:Key="LinkFontSize">14</x:Double>

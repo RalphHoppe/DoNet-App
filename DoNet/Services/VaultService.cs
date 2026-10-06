@@ -165,6 +165,24 @@ public sealed class VaultService : IVaultService
         }
     }
 
+    public Task ResetAsync(CancellationToken cancellationToken = default)
+    {
+        var path = _vaultPath.Value;
+
+        if (Directory.Exists(Path.GetDirectoryName(path)))
+        {
+            // Deleting a file that is not there is not an error; deleting one in a
+            // directory that is not there is, hence the guard above.
+            File.Delete(path);
+            File.Delete(path + ".tmp");
+        }
+
+        // The encrypted database is deleted here too once it exists. It is unreadable
+        // without the data key either way, but leaving it behind would waste the space
+        // and confuse the next setup.
+        return Task.CompletedTask;
+    }
+
     /// <summary>
     /// Argon2id, on a background thread - it is meant to take a noticeable fraction of a
     /// second, which is exactly how long the UI thread must not be blocked for.

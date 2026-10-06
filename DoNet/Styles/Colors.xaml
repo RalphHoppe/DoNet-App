@@ -46,6 +46,11 @@
     <SolidColorBrush x:Key="NoticeBorderBrush" Color="#F6DEB4" />
     <SolidColorBrush x:Key="NoticeForegroundBrush" Color="#C4710B" />
 
+    <!-- Destructive: the reset action on the forgot-password screen .......... -->
+    <SolidColorBrush x:Key="DangerBrush" Color="#E01B24" />
+    <SolidColorBrush x:Key="DangerHeadingBrush" Color="#A4161A" />
+    <SolidColorBrush x:Key="DangerBodyBrush" Color="#C0392B" />
+
     <!-- Green notice, shown in the same slot when the vault is created ...... -->
     <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="#EAF6F1" />
     <SolidColorBrush x:Key="SuccessBorderBrush" Color="#BFE0D2" />

@@ -9,6 +9,7 @@ A WinUI 3 / Windows App SDK desktop app.
 | Splash | `DoNet/Views/SplashPage.xaml` | The DoNet lockup draws itself on, holds, un-draws, then navigates |
 | Create password | `DoNet/Views/CreatePasswordPage.xaml` | First run only, with validation |
 | Lock | `DoNet/Views/LockPage.xaml` | Every launch after that |
+| Forgot password | `DoNet/Views/ForgotPasswordPage.xaml` | From the lock screen's link |
 
 The splash decides between the last two by asking `IVaultService.IsInitialized`, which
 is true once a vault exists on disk.
@@ -61,6 +62,7 @@ reaches onboarding.
 | --- | --- | --- |
 | Pacifico | Logo wordmark | `Assets/Fonts/Pacifico-Regular.ttf` |
 | Baloo 2 | Body copy, fields | `Assets/Fonts/Baloo2-Regular.ttf` |
+| Baloo 2 SemiBold | Section headings | `Assets/Fonts/Baloo2-SemiBold.ttf` |
 | Jersey 25 | Button captions | `Assets/Fonts/Jersey25-Regular.ttf` |
 
 All three are SIL Open Font License 1.1; the `OFL.txt` files ship alongside them to
@@ -107,7 +109,17 @@ cannot leave behind a half-written vault that nothing can open.
 
 ### Starting over
 
-To get the create-password screen back, delete the vault:
+The forgot-password screen does this from inside the app: `IVaultService.ResetAsync`
+deletes the vault and routes back to onboarding as a first run.
+
+There is deliberately **no recovery path**. The master password is the only way to
+unwrap the data key and it is never stored, so a forgotten password means the data is
+already unreadable — by us as much as by anyone else. The screen says so plainly rather
+than implying a reset is a way back in. There is no confirmation dialog either: reaching
+that screen takes a deliberate click, and it states the consequence twice before
+offering the button.
+
+To do the same by hand, delete the vault:
 
 ```
 %LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState\vault.json
@@ -124,20 +136,13 @@ in Release, not in Debug.
 
 ## Not done yet
 
-| Event | Should do |
-| --- | --- |
-| `LockViewModel.Unlocked` | Go to whatever the first real screen is |
-| `LockViewModel.ForgotPasswordRequested` | Undecided — see below |
+`LockViewModel.Unlocked` is raised and nothing subscribes to it, because there is no
+screen behind the lock screen yet. A correct password shows a temporary "Unlocked."
+confirmation instead of navigating — without it, success and failure would look
+identical. Delete it once `Unlocked` leads somewhere.
 
-There is no screen behind the lock screen yet, so a correct password shows a temporary
-"Unlocked." confirmation instead of navigating. Without it, success and failure would
-look identical. Delete it once `Unlocked` leads somewhere.
-
-**"Forgot password?" is a product decision, not a technical one.** The warning on the
-create-password screen says losing the password loses the data, and the key hierarchy
-makes that literally true — there is no recovery path to build. The realistic options are
-to explain that and offer to wipe and start over, or to add a recovery code at setup time.
-The link is wired to a command that raises an event; nothing happens until that is settled.
+`VaultService.ResetAsync` deletes `vault.json`. It gets one more line to delete the
+encrypted database once that exists.
 
 ## Tools
 
@@ -150,3 +155,4 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/preview_animation.py` | Renders `docs/splash-animation.gif` |
 | `tools/preview_screens.py` | Renders a pixel reconstruction of both screens for comparing against Figma |
 | `tools/validate_xaml.py` | Checks resource keys, `x:Name`s and event handlers without a Windows build |
+| `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |

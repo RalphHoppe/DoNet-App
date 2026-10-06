@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DoNet.Contracts;
+using DoNet.Views;
 
 namespace DoNet.ViewModels;
 
@@ -13,6 +14,7 @@ namespace DoNet.ViewModels;
 public partial class LockViewModel : ObservableObject
 {
     private readonly IVaultService _vault;
+    private readonly INavigationService _navigation;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(UnlockCommand))]
@@ -40,7 +42,11 @@ public partial class LockViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(UnlockCommand))]
     private bool _isUnlocked;
 
-    public LockViewModel(IVaultService vault) => _vault = vault;
+    public LockViewModel(IVaultService vault, INavigationService navigation)
+    {
+        _vault = vault;
+        _navigation = navigation;
+    }
 
     /// <summary>
     /// Raised once the password has been accepted.
@@ -50,12 +56,6 @@ public partial class LockViewModel : ObservableObject
     /// navigate to. This is where that goes.
     /// </remarks>
     public event Action? Unlocked;
-
-    /// <summary>
-    /// Raised when "Forgot password?" is clicked. Also unsubscribed: what this should do
-    /// is a product decision, not a technical one.
-    /// </summary>
-    public event Action? ForgotPasswordRequested;
 
     /// <summary>True once a wrong password has been reported.</summary>
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
@@ -94,7 +94,7 @@ public partial class LockViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ForgotPassword() => ForgotPasswordRequested?.Invoke();
+    private void ForgotPassword() => _navigation.NavigateTo(typeof(ForgotPasswordPage));
 
     private bool CanUnlock() => !IsBusy && !IsUnlocked && Password.Length > 0;
 

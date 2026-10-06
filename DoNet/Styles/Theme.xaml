@@ -17,15 +17,19 @@
     </ResourceDictionary.MergedDictionaries>
 
     <!--
-        The primary call to action: flat teal, 8px radius, Jersey 25 caption.
+        The shared flat-button template: 8px radius, Jersey 25 caption, no border.
 
-        The default WinUI ButtonBackground* theme brushes are overridden inside the
-        style's template rather than with Setters, because the stock template's visual
-        states re-apply those brushes on hover/press and would win over a plain Setter.
+        Hover and press are a translucent black wash over whatever Background the button
+        was given, rather than a second and third brush per colour. That is what lets the
+        primary and destructive buttons share one template instead of duplicating it -
+        and it means a new button colour needs one brush, not four.
+
+        The wash has to be overridden inside the template rather than with Setters,
+        because the stock template's visual states re-apply their own brushes on
+        hover/press and would win over a plain Setter.
     -->
-    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+    <Style x:Key="FlatButtonStyle" TargetType="Button">
         <Setter Property="Foreground" Value="{StaticResource TextOnBrandBrush}" />
-        <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Height" Value="40" />
@@ -42,35 +46,39 @@
                 <ControlTemplate TargetType="Button">
                     <Grid x:Name="Root"
                           Background="{TemplateBinding Background}"
-                          CornerRadius="{TemplateBinding CornerRadius}"
-                          Padding="{TemplateBinding Padding}">
+                          CornerRadius="{TemplateBinding CornerRadius}">
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Background"
-                                                Value="{StaticResource BrandPrimaryHoverBrush}" />
+                                        <Setter Target="Shade.Opacity" Value="0.08" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Background"
-                                                Value="{StaticResource BrandPrimaryPressedBrush}" />
+                                        <Setter Target="Shade.Opacity" Value="0.16" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Background"
-                                                Value="{StaticResource BrandPrimaryDisabledBrush}" />
+                                        <Setter Target="Root.Opacity" Value="0.4" />
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
 
+                        <!-- Sits over the fill but under the content, so only the
+                             background darkens and the caption stays pure white. -->
+                        <Grid x:Name="Shade"
+                              Background="#000000"
+                              Opacity="0"
+                              CornerRadius="{TemplateBinding CornerRadius}" />
+
                         <ContentPresenter x:Name="ContentPresenter"
                                           Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Padding="{TemplateBinding Padding}"
                                           Foreground="{TemplateBinding Foreground}"
                                           FontFamily="{TemplateBinding FontFamily}"
                                           FontSize="{TemplateBinding FontSize}"
@@ -82,6 +90,16 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- The primary call to action. -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource FlatButtonStyle}">
+        <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}" />
+    </Style>
+
+    <!-- Destructive. Only used for "RESET", which erases everything. -->
+    <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource FlatButtonStyle}">
+        <Setter Property="Background" Value="{StaticResource DangerBrush}" />
     </Style>
 
     <!--
@@ -156,6 +174,11 @@
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="TextAlignment" Value="Center" />
         <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Centred screen title, a step up from the subtitle. -->
+    <Style x:Key="TitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextStyle}">
+        <Setter Property="FontSize" Value="{StaticResource TitleFontSize}" />
     </Style>
 
 </ResourceDictionary>
