@@ -26,6 +26,26 @@
     <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="FieldBackgroundBrush" Color="#FFFFFF" />
 
+    <!-- Home shell surfaces .................................................. -->
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FAFAFA" />
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#F4F4F4" />
+
+    <!--
+        Navigation rail. The icon colours are Colors rather than Brushes because the
+        selected state cross-fades between them with a ColorAnimation, which needs the
+        raw value - and because each rail button owns its own SolidColorBrush instance.
+        Animating a shared brush would repaint every button at once.
+    -->
+    <Color x:Key="NavIconColor">#2F8872</Color>
+    <Color x:Key="NavIconSelectedColor">#FFFFFF</Color>
+    <SolidColorBrush x:Key="NavRestBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="{StaticResource BrandPrimaryColor}" />
+    <SolidColorBrush x:Key="LockActionBrush" Color="#F5A623" />
+
+    <!-- Tooltip .............................................................. -->
+    <SolidColorBrush x:Key="TooltipBackgroundBrush" Color="#2B2F33" />
+    <SolidColorBrush x:Key="TooltipForegroundBrush" Color="#FFFFFF" />
+
     <!-- Text ................................................................. -->
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#2B2F33" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5C6066" />

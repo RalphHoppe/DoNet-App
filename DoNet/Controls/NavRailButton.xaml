@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+    NavRailButton - one circular button in the home screen's left rail.
+
+    The disc, the icon and every state are drawn here; the Button at the end of the Grid
+    is an invisible hit target that exists only for click, keyboard activation, focus
+    visuals and the accessible name.
+
+    Two state groups run independently: CommonStates handles the pointer (scale and a
+    darkening wash) and SelectionStates handles selected/unselected (the accent disc
+    fading up and the icon turning white). They never touch the same property, so they
+    cannot fight each other.
+-->
+<UserControl
+    x:Class="DoNet.Controls.NavRailButton"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid x:Name="Root" Width="40" Height="40" Translation="0,0,8">
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal">
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"
+                                         To="1" Duration="0:0:0.16" />
+                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"
+                                         To="1" Duration="0:0:0.16" />
+                        <DoubleAnimation Storyboard.TargetName="Shade" Storyboard.TargetProperty="Opacity"
+                                         To="0" Duration="0:0:0.16" />
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="PointerOver">
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"
+                                         To="1.09" Duration="0:0:0.16">
+                            <DoubleAnimation.EasingFunction>
+                                <CubicEase EasingMode="EaseOut" />
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"
+                                         To="1.09" Duration="0:0:0.16">
+                            <DoubleAnimation.EasingFunction>
+                                <CubicEase EasingMode="EaseOut" />
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                        <DoubleAnimation Storyboard.TargetName="Shade" Storyboard.TargetProperty="Opacity"
+                                         To="0.05" Duration="0:0:0.16" />
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"
+                                         To="0.93" Duration="0:0:0.10" />
+                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"
+                                         To="0.93" Duration="0:0:0.10" />
+                        <DoubleAnimation Storyboard.TargetName="Shade" Storyboard.TargetProperty="Opacity"
+                                         To="0.11" Duration="0:0:0.10" />
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+
+            <VisualStateGroup x:Name="SelectionStates">
+                <VisualState x:Name="Unselected">
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="Accent" Storyboard.TargetProperty="Opacity"
+                                         To="0" Duration="0:0:0.22" />
+                        <ColorAnimation Storyboard.TargetName="Icon"
+                                        Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)"
+                                        To="{StaticResource NavIconColor}" Duration="0:0:0.22" />
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="Selected">
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="Accent" Storyboard.TargetProperty="Opacity"
+                                         To="1" Duration="0:0:0.22" />
+                        <ColorAnimation Storyboard.TargetName="Icon"
+                                        Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)"
+                                        To="{StaticResource NavIconSelectedColor}" Duration="0:0:0.22" />
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid.RenderTransform>
+            <ScaleTransform x:Name="RootScale" CenterX="20" CenterY="20" ScaleX="1" ScaleY="1" />
+        </Grid.RenderTransform>
+
+        <!-- Lifts the disc off the near-white rail, which is otherwise almost the same
+             colour as the button itself. -->
+        <Grid.Shadow>
+            <ThemeShadow />
+        </Grid.Shadow>
+
+        <Ellipse x:Name="Base" Fill="{StaticResource NavRestBrush}" />
+
+        <!-- Fades up over the white disc on selection. Opacity rather than a colour
+             swap, so each button can carry its own accent - teal for navigation,
+             amber for the lock. -->
+        <Ellipse x:Name="Accent" Opacity="0" Fill="{x:Bind AccentBrush, Mode=OneWay}" />
+
+        <Ellipse x:Name="Shade" Opacity="0" Fill="#000000" />
+
+        <!-- A bare Path with Stretch="None" has no layout size of its own, so it goes
+             in a fixed Canvas rather than straight into the Grid. -->
+        <Canvas Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Path x:Name="Icon"
+                  Data="{x:Bind IconData, Mode=OneWay}"
+                  StrokeThickness="1.6"
+                  StrokeLineJoin="Round"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round">
+                <!-- Declared inline so every button owns its instance: the selection
+                     animation writes to this brush's Color, and a shared one would
+                     repaint the whole rail. -->
+                <Path.Stroke>
+                    <SolidColorBrush x:Name="IconStroke" Color="{StaticResource NavIconColor}" />
+                </Path.Stroke>
+            </Path>
+        </Canvas>
+
+        <Button x:Name="Host"
+                Style="{StaticResource NavRailHitStyle}"
+                Command="{x:Bind Command, Mode=OneWay}"
+                CommandParameter="{x:Bind CommandParameter, Mode=OneWay}"
+                AutomationProperties.Name="{x:Bind Label, Mode=OneWay}"
+                PointerEntered="OnPointerEntered"
+                PointerExited="OnPointerExited"
+                PointerPressed="OnPointerPressed"
+                PointerReleased="OnPointerReleased"
+                PointerCanceled="OnPointerExited"
+                PointerCaptureLost="OnPointerExited">
+            <ToolTipService.ToolTip>
+                <ToolTip Content="{x:Bind Label, Mode=OneWay}"
+                         Style="{StaticResource NavToolTipStyle}" />
+            </ToolTipService.ToolTip>
+        </Button>
+    </Grid>
+</UserControl>

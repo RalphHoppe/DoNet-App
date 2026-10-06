@@ -115,7 +115,7 @@ public partial class CreatePasswordViewModel : ObservableObject
             ConfirmPassword = string.Empty;
 
             // No way back: the create screen is finished with for the life of the install.
-            _navigation.NavigateTo(typeof(LockPage), clearBackStack: true);
+            _navigation.NavigateTo(typeof(WelcomePage), clearBackStack: true);
         }
         catch (Exception ex)
         {

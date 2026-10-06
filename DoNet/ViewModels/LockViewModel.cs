@@ -29,33 +29,11 @@ public partial class LockViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasError))]
     private string? _errorMessage;
 
-    /// <summary>
-    /// Confirms the password was accepted.
-    /// </summary>
-    /// <remarks>
-    /// A placeholder for a destination. Until there is a screen behind the lock screen,
-    /// a correct password would otherwise clear the field and do nothing visible, which
-    /// is indistinguishable from a bug. Delete this once <see cref="Unlocked"/> leads
-    /// somewhere.
-    /// </remarks>
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(UnlockCommand))]
-    private bool _isUnlocked;
-
     public LockViewModel(IVaultService vault, INavigationService navigation)
     {
         _vault = vault;
         _navigation = navigation;
     }
-
-    /// <summary>
-    /// Raised once the password has been accepted.
-    /// </summary>
-    /// <remarks>
-    /// Nothing subscribes yet, because there is no screen behind the lock screen to
-    /// navigate to. This is where that goes.
-    /// </remarks>
-    public event Action? Unlocked;
 
     /// <summary>True once a wrong password has been reported.</summary>
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
@@ -73,8 +51,11 @@ public partial class LockViewModel : ObservableObject
             if (await _vault.TryUnlockAsync(Password))
             {
                 Password = string.Empty;
-                IsUnlocked = true;
-                Unlocked?.Invoke();
+
+                // Straight to the welcome screen, which plays and then hands over to
+                // the home screen. The back stack is cleared so Back cannot return to
+                // a lock screen the user has already got past.
+                _navigation.NavigateTo(typeof(WelcomePage), clearBackStack: true);
                 return;
             }
 
@@ -96,7 +77,7 @@ public partial class LockViewModel : ObservableObject
     [RelayCommand]
     private void ForgotPassword() => _navigation.NavigateTo(typeof(ForgotPasswordPage));
 
-    private bool CanUnlock() => !IsBusy && !IsUnlocked && Password.Length > 0;
+    private bool CanUnlock() => !IsBusy && Password.Length > 0;
 
     /// <summary>
     /// Clears the error as soon as the user starts over, so the red border does not
@@ -107,7 +88,6 @@ public partial class LockViewModel : ObservableObject
         if (value.Length > 0)
         {
             ErrorMessage = null;
-            IsUnlocked = false;
         }
     }
 }

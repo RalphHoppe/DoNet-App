@@ -50,6 +50,7 @@ public partial class App : Application
         services.AddTransient<CreatePasswordViewModel>();
         services.AddTransient<LockViewModel>();
         services.AddTransient<ForgotPasswordViewModel>();
+        services.AddTransient<HomeViewModel>();
 
         return services.BuildServiceProvider();
     }
