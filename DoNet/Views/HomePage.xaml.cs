@@ -1,4 +1,3 @@
-using DoNet.Controls;
 using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -13,10 +12,6 @@ namespace DoNet.Views;
 /// </summary>
 public sealed partial class HomePage : Page
 {
-    /// <summary>The design's panel shadow: X 0, Y 6, blur 14, 041516 at 7.06%.</summary>
-    private const double ShadowBlur = 14;
-    private const double ShadowOffsetY = 6;
-
     public HomePage()
     {
         // Before InitializeComponent, not after: x:Bind resolves its root object while
@@ -33,14 +28,6 @@ public sealed partial class HomePage : Page
 
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
-        // Composition needs the elements measured and live, so this waits for Loaded
-        // rather than running in the constructor.
-        // Fully qualified: the Color struct is Windows.UI.Color, while Microsoft.UI
-        // carries only Colors and ColorHelper. Importing the latter does not bring it in.
-        var shadow = Windows.UI.Color.FromArgb(0x12, 0x04, 0x15, 0x16);
-        Elevation.Apply(RailShadowHost, RailPlate, ShadowBlur, ShadowOffsetY, shadow);
-        Elevation.Apply(ContentShadowHost, ContentPlate, ShadowBlur, ShadowOffsetY, shadow);
-
         if (Resources["IntroStoryboard"] is Storyboard intro)
         {
             intro.Begin();

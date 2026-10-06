@@ -116,7 +116,40 @@ being draggable wherever the logo happens to sit.
 The strip *overlays* the frame instead of taking a grid row. Giving `MainWindow` a
 second row would shorten every page by 48px and shift the centred screens, whose
 vertical rhythm was measured against the full window. Home clears the strip with its
-own top padding instead.
+own top padding instead, leaving 6px beneath it.
+
+### Making the strip behave like a real title bar
+
+Removing the system title bar also removes everything it did. The first attempt put it
+back by hand — `ReleaseCapture()` then `SendMessage(WM_NCLBUTTONDOWN, HTCAPTION)` from
+`PointerPressed`, with double-clicks timed against `GetDoubleClickTime()`. That cannot
+work, for a reason worth recording: **`WM_NCLBUTTONDOWN` runs a modal move loop inside
+the message**. The handler does not return until the drag finishes, XAML's input state
+is stale afterwards, and the second click of a double-click is consumed by the move
+loop rather than arriving as a second press — so maximise fired only when the timing
+happened to slip past it.
+
+The supported answer is to *declare* the region rather than emulate the behaviour:
+
+```csharp
+var source = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
+source.SetRegionRects(NonClientRegionKind.Caption, new[] { captionRect });
+source.SetRegionRects(NonClientRegionKind.Passthrough, new[] { captionButtonsRect });
+```
+
+`InputNonClientPointerSource` is the documented companion to
+`SetBorderAndTitleBar(true, false)`: the presenter hides the system caption, and this
+says where the caption actually is. Dragging, double-click maximise, the right-click
+system menu, edge snapping and multi-monitor handoff all come back, implemented by the
+window manager instead of by us. `Passthrough` wins over `Caption` where they overlap,
+which keeps the three dots clickable with their hover states intact.
+
+Two details that are easy to miss. The rects are **physical pixels** relative to the
+client area, so they are scaled by `RasterizationScale` and re-declared on load, on
+resize and on DPI change. And the caption is **inset by the resize border**
+(`SM_CXSIZEFRAME + SM_CXPADDEDBORDER` at the window's DPI): a caption region claims
+every pixel it covers, so running it to the window edge would swallow the top-left
+grab handles and the window could no longer be resized from the top.
 
 Extending content into the title bar is *not* enough on its own: that keeps the system
 caption buttons, which cannot be hidden and would sit exactly where the dots go.
@@ -263,9 +296,16 @@ radius, so shrinking 28 to 24 required re-solving it.
 
 ### Shadows
 
-A circle's drop shadow can be reproduced with a `RadialGradientBrush`, because the disc
-hides the middle and only the Gaussian tail past the rim is ever on screen. That is what
-the rail buttons do — no composition code, nothing to fail.
+The two panels have none. The rail and the content surface are flat `#F5F5F5` on a white
+page and are separated from it by colour alone — no stroke, no shadow. `Elevation.cs`,
+which gave them a composition `DropShadow`, is gone with them; it is in the history if
+it is ever wanted. Dropping it also takes a per-frame composition resize off the window
+during a live drag-resize, and the mask it built was only ever stretched rather than
+rebuilt, so its rounded corners were quietly distorting as the window grew.
+
+The rail *buttons* keep their shadow. A circle's drop shadow can be reproduced with a
+`RadialGradientBrush`, because the disc hides the middle and only the Gaussian tail past
+the rim is ever on screen — no composition code, nothing to fail.
 
 The trap is assuming the tail *starts* at full strength. It does not. A blurred edge
 sits at roughly half the source's opacity, so this design's 7.06% shadow is already down
@@ -298,7 +338,7 @@ otherwise lay the shadow over the panel's own fill.
 `ThemeShadow` was tried first and rendered nothing at all.
 
 The panels are flat — one fill, no stroke. With nothing but a 24px gap between
-them, the shadow is the only thing giving the rail an edge, which is why it is a
+them, the disc shadow is the only thing giving a button an edge, which is why it is a
 real one rather than an approximation.
 
 ### States

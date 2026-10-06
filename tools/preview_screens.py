@@ -327,7 +327,7 @@ def home(LW=1440, LH=900):
     RAIL_R, CARD_R = RAIL_W / 2, 34
     DISC, SPACING, RING_D = 48, 16, 28
     TOP_PAD, RING_GAP, BOTTOM_PAD = 16, 32, 16
-    TOP = TITLEBAR + PAD        # the shell clears the title bar
+    TOP = TITLEBAR + 6          # the shell clears the title bar, with 6 beneath it
 
     SURFACE = (245, 245, 245)
     TEAL = (75, 170, 152)

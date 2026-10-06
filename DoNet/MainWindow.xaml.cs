@@ -3,9 +3,10 @@ using System.Runtime.InteropServices;
 using DoNet.Contracts;
 using DoNet.Views;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Input;
+using Windows.Foundation;
 using Windows.Graphics;
 
 namespace DoNet;
@@ -29,20 +30,18 @@ public sealed partial class MainWindow : Window
     //
     //   width  - the 352px content column plus a 64px margin either side.
     //   height - the tallest screen's content block is 351px and sits 24px above
-    //            centre, so clearing the 40px caption strip by a comfortable margin
+    //            centre, so clearing the 48px caption strip by a comfortable margin
     //            needs (H - 351) / 2 - 24 >= 64, i.e. 527. Rounded up.
     //
     // Below this the content would start colliding with the caption buttons.
     private const int MinimumWidth = 480;
     private const int MinimumHeight = 540;
 
-    private const uint WmNcLButtonDown = 0x00A1;
-    private const int HtCaption = 2;
+    // Resize-border metrics, for keeping the window's grab edges out of the caption.
+    private const int SmCxSizeFrame = 32;
+    private const int SmCxPaddedBorder = 92;
 
     private readonly IntPtr _handle;
-
-    /// <summary>When the title bar was last pressed, for detecting a double-click.</summary>
-    private DateTime _lastTitleBarPress = DateTime.MinValue;
 
     /// <summary>Last known scale factor, to spot the window moving to another monitor.</summary>
     private double _lastScale;
@@ -60,6 +59,11 @@ public sealed partial class MainWindow : Window
         // The XamlRoot does not exist until the tree goes live, so the scale watch
         // cannot be attached from here.
         RootFrame.Loaded += OnRootFrameLoaded;
+
+        // The caption region has to be re-declared whenever its pixel geometry moves:
+        // on first layout, on every resize, and on a DPI change.
+        DragRegion.Loaded += (_, _) => UpdateCaptionRegions();
+        DragRegion.SizeChanged += (_, _) => UpdateCaptionRegions();
 
         var navigation = App.Current.Services.GetRequiredService<INavigationService>();
         navigation.Frame = RootFrame;
@@ -80,14 +84,7 @@ public sealed partial class MainWindow : Window
     private static extern uint GetDpiForWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
-    private static extern uint GetDoubleClickTime();
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ReleaseCapture();
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    private static extern int GetSystemMetricsForDpi(int index, uint dpi);
 
     /// <summary>
     /// Removes the system title bar outright, leaving the caption buttons in
@@ -156,45 +153,73 @@ public sealed partial class MainWindow : Window
         if (Math.Abs(sender.RasterizationScale - _lastScale) > 0.001)
         {
             ApplyMinimumSize();
+            UpdateCaptionRegions();
         }
     }
 
     /// <summary>
-    /// Starts a window drag, or maximises on a double-click.
+    /// Tells the window manager that the top strip is the caption, and that the three
+    /// coloured dots inside it are not.
     /// </summary>
     /// <remarks>
-    /// The drag is handed straight to the window manager rather than being emulated by
-    /// moving the window on pointer events. That is what keeps snapping, multi-monitor
-    /// handoff and restore-on-drag behaving exactly as they do for a real title bar.
+    /// This replaces an earlier attempt that emulated dragging by calling
+    /// ReleaseCapture and posting WM_NCLBUTTONDOWN/HTCAPTION from PointerPressed. That
+    /// approach cannot work properly: WM_NCLBUTTONDOWN runs a *modal* move loop inside
+    /// the message, so the handler does not return until the drag ends, XAML's input
+    /// state is left stale afterwards, and the second click of a double-click is eaten
+    /// by the move loop instead of arriving as a second press - which is why maximise
+    /// worked only intermittently.
     /// <para>
-    /// The double-click has to be detected here as well. The window manager only
-    /// maximises on a genuine WM_NCLBUTTONDBLCLK, and synthesising a button-down per
-    /// press means it never sees one - it sees two unrelated clicks.
+    /// Declaring the region instead hands drag, double-click maximise, right-click
+    /// system menu, edge snapping and multi-monitor handoff back to the window
+    /// manager, which is the only thing that implements them correctly. This is the
+    /// documented companion to SetBorderAndTitleBar(true, false): the presenter hides
+    /// the system caption, and this says where the caption actually is.
+    /// </para>
+    /// <para>
+    /// Rects are in physical pixels relative to the client area, hence the
+    /// RasterizationScale. Passthrough wins over Caption where the two overlap, which
+    /// is what keeps the dots clickable and their hover states alive.
     /// </para>
     /// </remarks>
-    private void OnDragRegionPointerPressed(object sender, PointerRoutedEventArgs args)
+    private void UpdateCaptionRegions()
     {
-        // Buttons mark their own pointer events handled, so a click on a caption dot
-        // never reaches this handler.
-        if (!args.GetCurrentPoint(DragRegion).Properties.IsLeftButtonPressed)
+        if (DragRegion.XamlRoot is not { } root || DragRegion.ActualWidth <= 0)
         {
             return;
         }
 
-        var now = DateTime.UtcNow;
+        var scale = root.RasterizationScale;
+        var source = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
 
-        if ((now - _lastTitleBarPress).TotalMilliseconds <= GetDoubleClickTime())
+        // Hold the caption off the window's own resize edges. A caption region claims
+        // every pixel it covers, so running it to x=0 and y=0 would take the top-left
+        // grab handles with it and the window could no longer be resized from the top.
+        var dpi = GetDpiForWindow(_handle);
+        var border = GetSystemMetricsForDpi(SmCxSizeFrame, dpi)
+                   + GetSystemMetricsForDpi(SmCxPaddedBorder, dpi);
+
+        var width = (int)Math.Round(DragRegion.ActualWidth * scale);
+        var height = (int)Math.Round(DragRegion.ActualHeight * scale);
+
+        source.SetRegionRects(NonClientRegionKind.Caption, new[]
         {
-            _lastTitleBarPress = DateTime.MinValue;
-            ToggleMaximised();
-            return;
-        }
+            new RectInt32(border, border, Math.Max(0, width - (border * 2)),
+                          Math.Max(0, height - border)),
+        });
 
-        _lastTitleBarPress = now;
+        var bounds = CaptionButtons
+            .TransformToVisual(null)
+            .TransformBounds(new Rect(0, 0, CaptionButtons.ActualWidth, CaptionButtons.ActualHeight));
 
-        ReleaseCapture();
-        SendMessage(_handle, WmNcLButtonDown, (IntPtr)HtCaption, IntPtr.Zero);
+        source.SetRegionRects(NonClientRegionKind.Passthrough, new[] { Scale(bounds, scale) });
     }
+
+    private static RectInt32 Scale(Rect r, double scale) => new(
+        (int)Math.Round(r.X * scale),
+        (int)Math.Round(r.Y * scale),
+        (int)Math.Round(r.Width * scale),
+        (int)Math.Round(r.Height * scale));
 
     private void OnMinimizeClick(object sender, RoutedEventArgs args)
     {

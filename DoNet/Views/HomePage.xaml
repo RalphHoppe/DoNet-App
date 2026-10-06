@@ -53,11 +53,11 @@
         64. The rail's corner radius is still half its width, so it stays a true pill.
 
         The top padding clears the 48px title bar, which overlays the frame rather than
-        taking a row of its own. Hard-coding it here rather than giving MainWindow a
-        second row keeps the centred screens 2-4 centred in the full window, which is
-        what their layout was measured against.
+        taking a row of its own, and leaves 6 beneath it. Hard-coding it here rather
+        than giving MainWindow a second row keeps the centred screens 2-4 centred in
+        the full window, which is what their layout was measured against.
     -->
-    <Grid Padding="12,60,12,12">
+    <Grid Padding="12,54,12,12">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="64" />
             <ColumnDefinition Width="20" />
@@ -70,13 +70,8 @@
                 <TranslateTransform x:Name="RailSlide" />
             </Grid.RenderTransform>
 
-            <!-- Empty, and behind the plate: the shadow sprite is parented here so it
-                 draws under the panel instead of washing over its own fill. -->
-            <Border x:Name="RailShadowHost" IsHitTestVisible="False" />
-
-            <!-- A Rectangle rather than a Border because the shadow is shaped from
-                 GetAlphaMask, which Shape has and Border does not. Flat: the design
-                 carries no stroke on either panel. -->
+            <!-- Fully flat: no stroke and no shadow. The panels are separated from the
+                 page by colour alone, F5F5F5 on white. -->
             <Rectangle x:Name="RailPlate"
                        RadiusX="32"
                        RadiusY="32"
@@ -165,8 +160,6 @@
             <Grid.RenderTransform>
                 <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1" />
             </Grid.RenderTransform>
-
-            <Border x:Name="ContentShadowHost" IsHitTestVisible="False" />
 
             <Rectangle x:Name="ContentPlate"
                        RadiusX="34"

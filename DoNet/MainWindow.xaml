@@ -24,11 +24,16 @@
             not shift any page: every screen centres its content in the full window and
             none of them put anything in the top strip.
         -->
+        <!--
+            Declared to the window manager as the caption region in the code-behind,
+            which is what makes dragging, double-click maximise, the right-click system
+            menu and edge snapping work. There is deliberately no PointerPressed
+            handler: emulating a drag from one is what broke all of the above.
+        -->
         <Grid x:Name="DragRegion"
               Height="48"
               VerticalAlignment="Top"
-              Background="Transparent"
-              PointerPressed="OnDragRegionPointerPressed">
+              Background="Transparent">
 
             <!--
                 Home only. Every other screen already presents a large centred lockup
@@ -58,7 +63,8 @@
                                 IsHitTestVisible="False"
                                 Visibility="Collapsed" />
 
-            <StackPanel Orientation="Horizontal"
+            <StackPanel x:Name="CaptionButtons"
+                        Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
                         Margin="0,0,10,0"
