@@ -6,11 +6,14 @@ layout numbers can be checked against the Figma export before they are written i
 This is a design aid only - it is not part of the app build.
 """
 import math
+import os
 from PIL import Image, ImageDraw, ImageFont
 
-PAC = "/tmp/fonts/Pacifico-Regular.ttf"
-BAL = "/tmp/fonts/Baloo2[wght].ttf"
-JER = "/tmp/fonts/Jersey25-Regular.ttf"
+_FD = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                   "DoNet", "Assets", "Fonts")
+PAC = os.path.join(_FD, "Pacifico-Regular.ttf")
+BAL = os.path.join(_FD, "Baloo2-Regular.ttf")
+JER = os.path.join(_FD, "Jersey25-Regular.ttf")
 
 W, H = 1546, 980
 SS = 2  # supersample for clean edges
@@ -20,6 +23,7 @@ TEAL_DARK = (73, 164, 140)
 TEAL_LITE = (131, 205, 180)
 BTN = (66, 152, 130)
 TXT_SUB = (92, 96, 102)
+ERR_FG = (192, 57, 43)
 PLACEHOLDER = (140, 145, 150)
 ICON = (160, 165, 171)
 FIELD_BORDER = (228, 230, 233)
@@ -105,6 +109,78 @@ def warn_icon(dr, x, y, s, colour):
     dr.ellipse([x + 7.2 * u, y + 11.0 * u, x + 8.8 * u, y + 12.6 * u], fill=colour)
 
 
+def eye_icon(dr, x, y, s, colour):
+    """Outline eye on a 16x16 grid: two circular arcs forming the almond, plus a pupil.
+
+    The XAML draws the almond with cubic beziers, which PIL has no primitive for; two
+    arcs through the same three points (0.9,8) (8,3.4) (15.1,8) are visually identical
+    at this size and keep the preview honest about the icon's footprint.
+    """
+    u = s / 16.0
+    t = max(1, int(1.3 * u))
+    r = 7.78 * u
+    for cy_u, a0, a1 in ((11.18, 204.1, 335.9), (4.82, 24.1, 155.9)):
+        c = (x + 8 * u, y + cy_u * u)
+        dr.arc([c[0] - r, c[1] - r, c[0] + r, c[1] + r], a0, a1, fill=colour, width=t)
+    pr = 2.05 * u
+    dr.ellipse([x + 8 * u - pr, y + 8 * u - pr, x + 8 * u + pr, y + 8 * u + pr],
+               outline=colour, width=t)
+
+
+def lock_screen(error=False):
+    """Screen 3. Set error=True to check that the message and the link share the row."""
+    img = Image.new("RGB", (W * SS, H * SS), "white")
+    dr = ImageDraw.Draw(img)
+
+    col_x = (W - COL) / 2
+    block_h = 29 + 26 + 20 + 20 + FIELD_H + 10 + 18 + 22 + BTN_H
+    y = (H - block_h) / 2 - 24
+
+    draw_logo(img, dr, W / 2, y + 14.5, PAC_SIZE)
+    y += 29 + 26
+
+    f_sub = font(BAL, 16)
+    sub = "Welcome! Please enter your password to continue."
+    b = ink(dr, f_sub, sub)
+    dr.text(((W * SS - (b[2] - b[0])) / 2 - b[0], y * SS - b[1]), sub, font=f_sub, fill=TXT_SUB)
+    y += 20 + 20
+
+    # field, with the reveal toggle at the right
+    dr.rounded_rectangle([col_x * SS, y * SS, (col_x + COL) * SS, (y + FIELD_H) * SS],
+                         radius=RADIUS * SS, fill="white", outline=FIELD_BORDER, width=int(1.2 * SS))
+    lock_icon(dr, (col_x + 15) * SS, (y + FIELD_H / 2 - 8) * SS, 16 * SS, ICON)
+    f_ph = font(BAL, 14)
+    ph = "Enter your password"
+    pb = ink(dr, f_ph, ph)
+    dr.text(((col_x + 42) * SS - pb[0], (y + FIELD_H / 2) * SS - (pb[3] - pb[1]) / 2 - pb[1]),
+            ph, font=f_ph, fill=PLACEHOLDER)
+    eye_icon(dr, (col_x + COL - 31) * SS, (y + FIELD_H / 2 - 8) * SS, 16 * SS, ICON)
+    y += FIELD_H + 10
+
+    # link row: error on the left (when shown), "Forgot password?" pinned right
+    f_lk = font(BAL, 14)
+    if error:
+        et = "Incorrect password."
+        eb = ink(dr, f_lk, et)
+        dr.text((col_x * SS - eb[0], (y + 9) * SS - (eb[3] - eb[1]) / 2 - eb[1]),
+                et, font=f_lk, fill=ERR_FG)
+    lt = "Forgot password?"
+    lb = ink(dr, f_lk, lt)
+    dr.text(((col_x + COL) * SS - (lb[2] - lb[0]) - lb[0], (y + 9) * SS - (lb[3] - lb[1]) / 2 - lb[1]),
+            lt, font=f_lk, fill=TXT_SUB)
+    y += 18 + 22
+
+    dr.rounded_rectangle([col_x * SS, y * SS, (col_x + COL) * SS, (y + BTN_H) * SS],
+                         radius=RADIUS * SS, fill=BTN)
+    f_b = font(JER, 17)
+    bt = "CONTINUE"
+    bb = ink(dr, f_b, bt)
+    dr.text(((W * SS - (bb[2] - bb[0])) / 2 - bb[0], (y + BTN_H / 2) * SS - (bb[3] - bb[1]) / 2 - bb[1]),
+            bt, font=f_b, fill="white")
+
+    return img.resize((W, H), Image.LANCZOS)
+
+
 def splash():
     img = Image.new("RGB", (W * SS, H * SS), "white")
     dr = ImageDraw.Draw(img)
@@ -162,6 +238,9 @@ def create_password():
 
 
 if __name__ == "__main__":
+    os.makedirs("/tmp/preview", exist_ok=True)
     splash().save("/tmp/preview/screen1_splash.png")
     create_password().save("/tmp/preview/screen2_create.png")
+    lock_screen().save("/tmp/preview/screen3_lock.png")
+    lock_screen(error=True).save("/tmp/preview/screen3_lock_error.png")
     print("written")

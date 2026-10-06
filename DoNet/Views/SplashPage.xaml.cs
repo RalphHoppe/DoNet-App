@@ -24,6 +24,7 @@ public sealed partial class SplashPage : Page
     private const int WatchdogMs = 6000;
 
     private readonly INavigationService _navigation;
+    private readonly IAppState _appState;
     private bool _started;
 
     public SplashPage()
@@ -31,6 +32,8 @@ public sealed partial class SplashPage : Page
         InitializeComponent();
 
         _navigation = App.Current.Services.GetRequiredService<INavigationService>();
+        _appState = App.Current.Services.GetRequiredService<IAppState>();
+
         Loaded += OnLoaded;
     }
 
@@ -54,8 +57,15 @@ public sealed partial class SplashPage : Page
             // fall through and navigate anyway.
         }
 
-        _navigation.NavigateTo(typeof(CreatePasswordPage), clearBackStack: true);
+        _navigation.NavigateTo(Destination(), clearBackStack: true);
     }
+
+    /// <summary>
+    /// First run goes to onboarding; every launch after that goes to the lock screen.
+    /// Either way the back stack is cleared - there is nothing sensible to go back to.
+    /// </summary>
+    private Type Destination() =>
+        _appState.IsPasswordConfigured ? typeof(LockPage) : typeof(CreatePasswordPage);
 
     private async Task PlaySequenceAsync()
     {

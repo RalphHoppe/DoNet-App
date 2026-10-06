@@ -1,5 +1,6 @@
 using System;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
@@ -31,14 +32,22 @@ public sealed partial class PasswordField : UserControl
         typeof(PasswordField),
         new PropertyMetadata(false, OnHasErrorChanged));
 
+    public static readonly DependencyProperty ShowRevealButtonProperty = DependencyProperty.Register(
+        nameof(ShowRevealButton),
+        typeof(bool),
+        typeof(PasswordField),
+        new PropertyMetadata(false, OnShowRevealButtonChanged));
+
     /// <summary>Guards the two-way sync between the DP and the inner PasswordBox.</summary>
     private bool _syncing;
     private bool _isFocused;
     private bool _isPointerOver;
+    private bool _isRevealed;
 
     public PasswordField()
     {
         InitializeComponent();
+        ApplyRevealState();
 
         FieldBorder.PointerEntered += (_, _) =>
         {
@@ -76,6 +85,20 @@ public sealed partial class PasswordField : UserControl
         set => SetValue(HasErrorProperty, value);
     }
 
+    /// <summary>
+    /// Shows the eye toggle at the right of the field.
+    /// </summary>
+    /// <remarks>
+    /// Off by default. The lock screen offers it because a mistyped password there is a
+    /// dead end; the create-password screen does not, because it already asks for the
+    /// password twice and the design shows no eye.
+    /// </remarks>
+    public bool ShowRevealButton
+    {
+        get => (bool)GetValue(ShowRevealButtonProperty);
+        set => SetValue(ShowRevealButtonProperty, value);
+    }
+
     /// <summary>Moves keyboard focus into the password box itself, not the wrapper.</summary>
     public new bool Focus(FocusState state) => Input.Focus(state);
 
@@ -98,6 +121,42 @@ public sealed partial class PasswordField : UserControl
     private static void OnHasErrorChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args) =>
         ((PasswordField)sender).UpdateVisualState();
 
+    private static void OnShowRevealButtonChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+    {
+        var field = (PasswordField)sender;
+        var show = args.NewValue is true;
+
+        field.RevealToggle.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+
+        // Without a button in the third column the text would end 8px from the border,
+        // so the padding the button was providing moves back onto the PasswordBox.
+        field.Input.Margin = show ? new Thickness(13, 0, 4, 0) : new Thickness(13, 0, 12, 0);
+    }
+
+    private void OnRevealToggleClick(object sender, RoutedEventArgs args)
+    {
+        _isRevealed = !_isRevealed;
+        ApplyRevealState();
+
+        // Hand focus straight back so typing continues uninterrupted - but only for a
+        // pointer click. Doing it unconditionally would trap a keyboard user, who would
+        // Tab to this button, press it, and be thrown back into the field every time.
+        if (RevealToggle.FocusState == FocusState.Pointer)
+        {
+            Input.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private void ApplyRevealState()
+    {
+        Input.PasswordRevealMode = _isRevealed ? PasswordRevealMode.Visible : PasswordRevealMode.Hidden;
+        RevealSlash.Visibility = _isRevealed ? Visibility.Visible : Visibility.Collapsed;
+
+        var label = _isRevealed ? "Hide password" : "Show password";
+        AutomationProperties.SetName(RevealToggle, label);
+        ToolTipService.SetToolTip(RevealToggle, label);
+    }
+
     private void OnInputPasswordChanged(object sender, RoutedEventArgs args)
     {
         if (_syncing)
@@ -110,9 +169,15 @@ public sealed partial class PasswordField : UserControl
         _syncing = false;
     }
 
+    /// <summary>
+    /// Focus is tracked across the whole field, not just the text box, so tabbing onto
+    /// the reveal toggle does not drop the focus ring off the border the user is still in.
+    /// </summary>
     private void OnFocusChanged(object sender, RoutedEventArgs args)
     {
-        _isFocused = Input.FocusState != FocusState.Unfocused;
+        _isFocused = Input.FocusState != FocusState.Unfocused
+                     || RevealToggle.FocusState != FocusState.Unfocused;
+
         UpdateVisualState();
     }
 

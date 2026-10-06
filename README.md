@@ -7,7 +7,11 @@ A WinUI 3 / Windows App SDK desktop app.
 | Screen | File | Notes |
 | --- | --- | --- |
 | Splash | `DoNet/Views/SplashPage.xaml` | The DoNet lockup draws itself on, holds, un-draws, then navigates |
-| Create password | `DoNet/Views/CreatePasswordPage.xaml` | Onboarding step one, with validation |
+| Create password | `DoNet/Views/CreatePasswordPage.xaml` | First run only, with validation |
+| Lock | `DoNet/Views/LockPage.xaml` | Every launch after that |
+
+The splash decides between the last two by asking `IAppState.IsPasswordConfigured`,
+which is true once a vault exists on disk.
 
 ![splash animation](docs/splash-animation.gif)
 
@@ -78,9 +82,28 @@ two itself so that `StaticResource` lookups always resolve.
 
 ## Not done yet
 
-`CreatePasswordViewModel.Submitted` validates the password pair and then fires an event
-that nothing subscribes to. That is the seam the encrypted store plugs into - deriving a
-key from the password, creating the SQLCipher database, and navigating on.
+Three events are raised and nothing subscribes to them. They are the seams the encrypted
+store plugs into, kept out of the views on purpose:
+
+| Event | Should do |
+| --- | --- |
+| `CreatePasswordViewModel.Submitted` | Derive a key, create the SQLCipher database, move on |
+| `LockViewModel.Unlocking` | Verify the password (the AES-GCM tag decides) and return the result |
+| `LockViewModel.ForgotPasswordRequested` | Undecided - see below |
+
+Until `Unlocking` has a subscriber the lock screen's button does nothing, by design: with
+no verifier there is nothing to check against, so waving the user through would be worse
+than standing still.
+
+`AppState` decides "has a password been set" by looking for `vault.json` in the app's
+local folder. That file is never written yet, so a fresh install always routes to
+onboarding. It is the one place to revisit when the vault lands.
+
+**"Forgot password?" is a product decision, not a technical one.** The warning on the
+create-password screen says losing the password loses the data, and the key hierarchy
+makes that literally true - there is no recovery path to build. The realistic options are
+to explain that and offer to wipe and start over, or to add a recovery code at setup time.
+The link is wired to a command that raises an event; nothing happens until that is settled.
 
 ## Tools
 

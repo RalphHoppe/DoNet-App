@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--
     DoNet palette, sampled from the Figma screens.
 
@@ -38,6 +38,8 @@
     <SolidColorBrush x:Key="FieldBorderFocusedBrush" Color="#429882" />
     <SolidColorBrush x:Key="FieldBorderErrorBrush" Color="#D9705F" />
     <SolidColorBrush x:Key="FieldIconBrush" Color="#A0A5AB" />
+    <SolidColorBrush x:Key="FieldIconHoverBrush" Color="#F0F1F2" />
+    <SolidColorBrush x:Key="FieldIconPressedBrush" Color="#E4E6E9" />
 
     <!-- Amber notice (the "do not forget your password" strip) ............... -->
     <SolidColorBrush x:Key="NoticeBackgroundBrush" Color="#FDF4E7" />
