@@ -35,6 +35,14 @@ public interface IPersonDirectory
     Task<int> CountAsync(string? search = null, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// One page and the matching total together. The directory needs both on every
+    /// refresh, and asking separately means two round trips - and, on an encrypted
+    /// store, two chances to pay an open - for one screen update.
+    /// </summary>
+    Task<(IReadOnlyList<Person> Page, int Total)> GetPageWithTotalAsync(
+        int skip, int take, string? search = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Inserts a person, assigning its id and creation time, and returns the stored
     /// record so the caller does not have to guess what the store decided.
     /// </summary>

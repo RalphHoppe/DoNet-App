@@ -157,29 +157,37 @@
                             Style="{StaticResource BareButtonStyle}"
                             ToolTipService.ToolTip="Close"
                             Click="OnCloseClick">
-                        <!-- The title bar's close dot, at dialog scale. -->
-                        <Border Width="38"
-                                Height="38"
-                                CornerRadius="19"
-                                Background="#FF5F57">
-                            <Viewbox Width="15" Height="15">
-                                <Canvas Width="20" Height="20">
-                                    <Path Data="M6.8 6.8L13.2 13.2 M13.2 6.8L6.8 13.2"
-                                          Stroke="#FFFFFF"
-                                          StrokeThickness="1.9"
-                                          StrokeStartLineCap="Round"
-                                          StrokeEndLineCap="Round" />
-                                </Canvas>
-                            </Viewbox>
-                        </Border>
+                        <!--
+                            The title bar's close dot, at dialog scale. No glyph inside:
+                            the red disc is the affordance, the same way the window's own
+                            close dot is, and a cross drawn at this size only adds noise.
+                            The 38px hit target is kept by padding the button, so the mark
+                            is small without being hard to hit.
+                        -->
+                        <Border Width="22"
+                                Height="22"
+                                Margin="8"
+                                CornerRadius="11"
+                                Background="#FF5F57" />
                     </Button>
                 </Grid>
 
                 <!-- Fields .................................................. -->
+                <!--
+                    The scroll bar is pushed out into the card's own right padding rather
+                    than being allowed to take width from the fields. Without this the
+                    right-hand column stops short of where the header ends - visibly so
+                    when Windows is set to always show scroll bars, since the track then
+                    occupies layout space instead of overlaying. The negative margin
+                    widens the viewport by exactly the padding that puts the content back,
+                    so the fields end on the same 40px inset as everything else and the
+                    track sits in the gap beyond them.
+                -->
                 <ScrollViewer Grid.Row="1"
+                              Margin="0,0,-26,0"
+                              Padding="0,0,26,0"
                               VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollMode="Disabled"
-                              Padding="0,0,6,0">
+                              HorizontalScrollMode="Disabled">
                     <Grid x:Name="FieldGrid" RowSpacing="16" ColumnSpacing="24">
                         <Grid.RenderTransform>
                             <TranslateTransform x:Name="FieldShift" Y="0" />

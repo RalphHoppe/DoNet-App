@@ -348,4 +348,87 @@
         <Setter Property="CornerRadius" Value="8" />
     </Style>
 
+    <!--
+        A text box with no chrome and, most importantly, no clear button.
+
+        The stock TextBox template puts a round "x" inside the field whenever it has
+        focus and content. There is no property that turns it off - it is a template
+        part named DeleteButton, and no theme resource reaches it - so the only way to
+        be rid of it is to supply a template without one. That is what this is: the
+        three parts TextBox actually requires (BorderElement, ContentElement and
+        PlaceholderTextContentPresenter, which the control finds by name and drives
+        itself) and nothing else.
+
+        Fewer elements per field is also simply cheaper. A form of sixteen fields drops
+        sixteen buttons, their visual-state groups and their animations out of the tree.
+
+        Colours, padding and sizing deliberately come from the control's own properties
+        rather than being baked in, so the hosting Border can keep setting them the way
+        the rest of the app already does.
+    -->
+    <Style x:Key="BareTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="ScrollViewer.HorizontalScrollMode" Value="Auto" />
+        <Setter Property="ScrollViewer.VerticalScrollMode" Value="Auto" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Hidden" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Hidden" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Grid>
+                        <!--
+                            Named BorderElement because TextBox looks for it; it carries
+                            nothing, since the field's frame is drawn by the Border that
+                            hosts the control.
+                        -->
+                        <Border x:Name="BorderElement"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}" />
+
+                        <!--
+                            TextBox shows and hides this itself, by part name, as the
+                            text changes. It must not take the pointer or the caret will
+                            not land where it was clicked.
+                        -->
+                        <ContentControl x:Name="PlaceholderTextContentPresenter"
+                                        Grid.Row="0"
+                                        Margin="{TemplateBinding Padding}"
+                                        Padding="0"
+                                        Content="{TemplateBinding PlaceholderText}"
+                                        Foreground="{TemplateBinding PlaceholderForeground}"
+                                        FontFamily="{TemplateBinding FontFamily}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        FontWeight="{TemplateBinding FontWeight}"
+                                        HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                        VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                        IsHitTestVisible="False"
+                                        IsTabStop="False" />
+
+                        <ScrollViewer x:Name="ContentElement"
+                                      Padding="{TemplateBinding Padding}"
+                                      HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}"
+                                      VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      IsTabStop="False"
+                                      IsHorizontalRailEnabled="False"
+                                      IsVerticalRailEnabled="False"
+                                      ZoomMode="Disabled"
+                                      AutomationProperties.AccessibilityView="Raw" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

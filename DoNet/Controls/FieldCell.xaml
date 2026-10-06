@@ -147,6 +147,7 @@
 
                 <!-- Free text, and the multiline note. -->
                 <TextBox x:Name="ValueInput"
+                         Style="{StaticResource BareTextBoxStyle}"
                          Grid.Column="0"
                          Visibility="Collapsed"
                          VerticalAlignment="Center"

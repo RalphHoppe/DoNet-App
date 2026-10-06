@@ -447,3 +447,22 @@ width of 820 the search row drops under the title and stretches, and the padding
 tighten from 32/24 to 12/12 — at 480 the three field columns would otherwise have about
 81px each, which is narrower than "DATE OF BIRTH" renders. Card padding stays fixed,
 because a `VisualState` on the page cannot reach inside a `DataTemplate`.
+
+### Why the store keeps one connection open
+
+SQLCipher derives the file key with 256,000 rounds of PBKDF2-HMAC-SHA512, by design, on
+every `PRAGMA key`. That is a deliberate brute-force cost and it is not tunable without
+weakening the encryption. The consequence for the app is the thing to remember:
+
+> **Never open a keyed connection per operation, and never open one on the UI thread.**
+
+`PersonDirectoryService` opens exactly one connection per unlocked session, on a thread
+pool thread, and builds a short-lived `DoNetDbContext` over it for each piece of work.
+Contexts stay per-operation so the change tracker never goes stale; the connection -
+and therefore the key derivation - does not. `Lock()` disposes it, so the next unlock
+re-keys and a locked app holds no usable handle.
+
+The search box debounces 250ms and cancels the query in flight, so a typed word is one
+round trip rather than one per character, and a page plus its total is fetched in a
+single trip instead of two.
+

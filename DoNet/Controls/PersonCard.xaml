@@ -158,7 +158,7 @@
                         BorderThickness="1">
                     <TextBlock x:Name="AvatarText"
                                FontFamily="{StaticResource BalooFont}"
-                               FontSize="18"
+                               FontSize="15"
                                Foreground="{StaticResource FieldLabelBrush}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center" />

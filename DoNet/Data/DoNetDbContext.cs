@@ -13,41 +13,31 @@ namespace DoNet.Data;
 /// requirement that column names not be legible is met by the file encryption, not by
 /// obfuscating the schema. An attacker with the file and no key sees random bytes.
 ///
-/// A context is created per operation rather than kept open. Desktop apps that hold one
-/// context for the process lifetime accumulate tracked entities and start returning
-/// stale data; the cost of opening is paid once at warm-up, during the welcome screen.
+/// The context does not own its connection. <see cref="DoNet.Services.PersonDirectoryService"/>
+/// opens and keys one connection for the unlocked session and hands it in here, because
+/// SQLCipher runs 256,000 rounds of PBKDF2 on every open and paying that per context -
+/// which is what happens if the context builds its own connection from a path and a key -
+/// makes the app feel broken. A short-lived context over a long-lived connection keeps
+/// the change-tracker clean without re-deriving the key.
 /// </remarks>
 public sealed class DoNetDbContext : DbContext
 {
-    private readonly string _path;
-    private readonly string _key;
+    private readonly SqliteConnection _connection;
 
-    public DoNetDbContext(string path, string key)
+    /// <param name="connection">
+    /// An open, keyed connection owned by the caller. EF will not close or dispose a
+    /// connection it did not open, so the handle survives this context.
+    /// </param>
+    public DoNetDbContext(SqliteConnection connection)
     {
-        _path = path;
-        _key = key;
+        _connection = connection;
     }
 
     public DbSet<Person> People => Set<Person>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
-        SqliteConnectionStringBuilder builder = new()
-        {
-            DataSource = _path,
-            Mode = SqliteOpenMode.ReadWriteCreate,
-
-            // Password makes Microsoft.Data.Sqlite issue PRAGMA key on open, which is
-            // what actually engages SQLCipher. Without it the same provider silently
-            // creates a perfectly readable database.
-            Password = _key,
-
-            // Pooling off: a pooled connection would be handed back out still keyed,
-            // which would outlive Lock().
-            Pooling = false,
-        };
-
-        options.UseSqlite(builder.ToString());
+        options.UseSqlite(_connection);
     }
 
     protected override void OnModelCreating(ModelBuilder model)

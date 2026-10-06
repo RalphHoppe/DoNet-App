@@ -27,7 +27,7 @@
             Double, and supplying the wrong type for a key that is actually used throws
             at load rather than being ignored.
         -->
-        <Style x:Key="SearchBoxStyle" TargetType="TextBox">
+        <Style x:Key="SearchBoxStyle" TargetType="TextBox" BasedOn="{StaticResource BareTextBoxStyle}">
             <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
             <Setter Property="FontSize" Value="{StaticResource FieldValueFontSize}" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />

@@ -42,6 +42,7 @@ public sealed partial class PersonsViewModel : ObservableObject
     private readonly IPersonDirectory _directory;
 
     private CancellationTokenSource? _loadCts;
+    private CancellationTokenSource? _searchCts;
 
     /// <summary>Guards against two overlapping "load the next page" requests.</summary>
     private bool _loadingMore;
@@ -109,11 +110,23 @@ public sealed partial class PersonsViewModel : ObservableObject
     public Task PreloadAsync() => _directory.WarmUpAsync();
 
     /// <summary>
+    /// How long the search box waits for typing to settle before it queries.
+    /// </summary>
+    /// <remarks>
+    /// Querying on every keystroke means a round trip per character, and on an
+    /// encrypted store that is the difference between a search box and a stutter.
+    /// 250ms is below the threshold where a pause reads as the app being slow, and
+    /// above a fast typist's inter-key interval, so a typed word is one query.
+    /// </remarks>
+    private const int SearchDebounceMs = 250;
+
+    /// <summary>
     /// Returns the directory to its pre-unlock condition. Called when the app locks.
     /// </summary>
     public void Reset()
     {
         _loadCts?.Cancel();
+        _searchCts?.Cancel();
 
         People.Clear();
         SetProperty(ref _searchText, string.Empty, nameof(SearchText));
@@ -131,19 +144,35 @@ public sealed partial class PersonsViewModel : ObservableObject
 
     /// <summary>Loads the first page. Safe to call again; a second call cancels the first.</summary>
     [RelayCommand]
-    public async Task LoadAsync()
+    public Task LoadAsync() => LoadCoreAsync(showLoading: true);
+
+    /// <summary>
+    /// Loads the first page.
+    /// </summary>
+    /// <param name="showLoading">
+    /// Whether to drop to the loading state first. False while the user is searching:
+    /// replacing the results with a spinner on every refinement makes the screen flash
+    /// and is slower to read than letting the old results sit for one more moment.
+    /// </param>
+    private async Task LoadCoreAsync(bool showLoading)
     {
         _loadCts?.Cancel();
         _loadCts?.Dispose();
         _loadCts = new CancellationTokenSource();
         CancellationToken token = _loadCts.Token;
 
-        State = DirectoryState.Loading;
+        if (showLoading)
+        {
+            State = DirectoryState.Loading;
+        }
 
         try
         {
-            IReadOnlyList<Person> page =
-                await _directory.GetPageAsync(0, PageSize, SearchText, token).ConfigureAwait(true);
+            // One trip for the page and its total. Two calls meant taking the store's
+            // lock twice for a single screen refresh.
+            (IReadOnlyList<Person> page, int total) =
+                await _directory.GetPageWithTotalAsync(0, PageSize, SearchText, token)
+                    .ConfigureAwait(true);
 
             if (token.IsCancellationRequested)
             {
@@ -156,7 +185,6 @@ public sealed partial class PersonsViewModel : ObservableObject
                 People.Add(person);
             }
 
-            int total = await _directory.CountAsync(SearchText, token).ConfigureAwait(true);
             HasMore = People.Count < total;
 
             // "Empty" means the store holds nothing at all. With a search term in play
@@ -189,8 +217,8 @@ public sealed partial class PersonsViewModel : ObservableObject
         _loadingMore = true;
         try
         {
-            IReadOnlyList<Person> page = await _directory
-                .GetPageAsync(People.Count, PageSize, SearchText)
+            (IReadOnlyList<Person> page, int total) = await _directory
+                .GetPageWithTotalAsync(People.Count, PageSize, SearchText)
                 .ConfigureAwait(true);
 
             foreach (Person person in page)
@@ -198,7 +226,6 @@ public sealed partial class PersonsViewModel : ObservableObject
                 People.Add(person);
             }
 
-            int total = await _directory.CountAsync(SearchText).ConfigureAwait(true);
             HasMore = People.Count < total;
         }
         catch (Exception)
@@ -317,9 +344,42 @@ public sealed partial class PersonsViewModel : ObservableObject
         await LoadAsync().ConfigureAwait(true);
     }
 
+    /// <summary>
+    /// Queries after the typing stops, not on every character.
+    /// </summary>
+    /// <remarks>
+    /// Each keystroke cancels the previous wait, so a burst of typing produces exactly
+    /// one query. The cancellation token also reaches the query itself, so a search
+    /// that is already in flight when the next character arrives is abandoned rather
+    /// than left to finish and overwrite newer results.
+    /// </remarks>
     partial void OnSearchTextChanged(string value)
     {
         _ = value;
-        _ = LoadAsync();
+
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+
+        _ = SearchAfterPauseAsync(_searchCts.Token);
+    }
+
+    private async Task SearchAfterPauseAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(SearchDebounceMs, token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return;                     // another character arrived; that call owns it
+        }
+
+        if (token.IsCancellationRequested)
+        {
+            return;
+        }
+
+        await LoadCoreAsync(showLoading: false).ConfigureAwait(true);
     }
 }
