@@ -63,8 +63,18 @@ public sealed partial class MainWindow : Window
 
         var navigation = App.Current.Services.GetRequiredService<INavigationService>();
         navigation.Frame = RootFrame;
+        navigation.Navigated += OnNavigated;
         navigation.NavigateTo(typeof(SplashPage));
     }
+
+    /// <summary>
+    /// Shows the title bar's logo on the home screen and nowhere else. The other pages
+    /// each draw their own large lockup, and the two together look like a mistake.
+    /// </summary>
+    private void OnNavigated(object? sender, Type pageType) =>
+        TitleLogo.Visibility = pageType == typeof(HomePage)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);

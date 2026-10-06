@@ -47,13 +47,20 @@
         the smallest window the app allows up to a 4K display. Only the content area
         changes size; the rail, the discs and the icons never do.
 
-        Sizes come from the design's exported SVG and property panels. Note that the
-        rail's corner radius equals half its width, so the panel is a true pill.
+        Sizes come from the design's exported SVG and property panels, scaled by 6/7
+        against the first cut so the rail reads as chrome beside the other screens:
+        disc 48 (the title bar's own height), icon 24 (half the disc, as before), rail
+        64. The rail's corner radius is still half its width, so it stays a true pill.
+
+        The top padding clears the 48px title bar, which overlays the frame rather than
+        taking a row of its own. Hard-coding it here rather than giving MainWindow a
+        second row keeps the centred screens 2-4 centred in the full window, which is
+        what their layout was measured against.
     -->
-    <Grid Padding="14">
+    <Grid Padding="12,60,12,12">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="76" />
-            <ColumnDefinition Width="24" />
+            <ColumnDefinition Width="64" />
+            <ColumnDefinition Width="20" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -71,8 +78,8 @@
                  GetAlphaMask, which Shape has and Border does not. Flat: the design
                  carries no stroke on either panel. -->
             <Rectangle x:Name="RailPlate"
-                       RadiusX="38"
-                       RadiusY="38"
+                       RadiusX="32"
+                       RadiusY="32"
                        Fill="{StaticResource SurfaceBrush}" />
 
             <Grid>
@@ -84,27 +91,30 @@
 
                 <!-- The logo mark, straight from the design's SVG: a 32px ring with a
                      16px hole, filled left to right. Two nested closed subpaths, so the
-                     hole falls out of either fill rule. -->
-                <Canvas Grid.Row="0"
-                        Width="32"
-                        Height="32"
-                        Margin="0,18,0,0"
-                        HorizontalAlignment="Center">
-                    <Path Data="M32 16C32 24.8366 24.8366 32 16 32C7.16344 32 0 24.8366 0 16C0 7.16344 7.16344 0 16 0C24.8366 0 32 7.16344 32 16ZM8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8C11.5817 8 8 11.5817 8 16Z">
-                        <Path.Fill>
-                            <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                <GradientStop Offset="0" Color="#4BAA98" />
-                                <GradientStop Offset="1" Color="#8CD7C5" />
-                            </LinearGradientBrush>
-                        </Path.Fill>
-                    </Path>
-                </Canvas>
+                     hole falls out of either fill rule. The Viewbox takes it to 28
+                     without the path data being touched. -->
+                <Viewbox Grid.Row="0"
+                         Width="28"
+                         Height="28"
+                         Margin="0,16,0,0"
+                         HorizontalAlignment="Center">
+                    <Canvas Width="32" Height="32">
+                        <Path Data="M32 16C32 24.8366 24.8366 32 16 32C7.16344 32 0 24.8366 0 16C0 7.16344 7.16344 0 16 0C24.8366 0 32 7.16344 32 16ZM8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8C11.5817 8 8 11.5817 8 16Z">
+                            <Path.Fill>
+                                <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                    <GradientStop Offset="0" Color="#4BAA98" />
+                                    <GradientStop Offset="1" Color="#8CD7C5" />
+                                </LinearGradientBrush>
+                            </Path.Fill>
+                        </Path>
+                    </Canvas>
+                </Viewbox>
 
                 <!-- Top-aligned, as in the design. The gap above is twice the spacing
                      between the discs, which keeps the rhythm obvious. -->
                 <StackPanel Grid.Row="1"
-                            Margin="0,38,0,0"
-                            Spacing="19"
+                            Margin="0,32,0,0"
+                            Spacing="16"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Top">
 
@@ -136,7 +146,7 @@
                 -->
                 <controls:NavRailButton
                     Grid.Row="2"
-                    Margin="0,0,0,18"
+                    Margin="0,0,0,16"
                     HorizontalAlignment="Center"
                     Label="Lock DoNet"
                     AccentBrush="{StaticResource LockActionBrush}"
@@ -159,8 +169,8 @@
             <Border x:Name="ContentShadowHost" IsHitTestVisible="False" />
 
             <Rectangle x:Name="ContentPlate"
-                       RadiusX="40"
-                       RadiusY="40"
+                       RadiusX="34"
+                       RadiusY="34"
                        Fill="{StaticResource SurfaceBrush}" />
         </Grid>
     </Grid>

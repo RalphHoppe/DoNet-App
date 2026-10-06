@@ -322,10 +322,12 @@ def home(LW=1440, LH=900):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from gen_nav_icons import ICONS, RING, flatten
 
-    PAD, RAIL_W, GAP = 14, 76, 24
-    RAIL_R, CARD_R = RAIL_W / 2, 40
-    DISC, SPACING, RING_D = 56, 19, 32
-    TOP_PAD, RING_GAP, BOTTOM_PAD = 18, 38, 18
+    TITLEBAR, LOGO_W = 48, 100
+    PAD, RAIL_W, GAP = 12, 64, 20
+    RAIL_R, CARD_R = RAIL_W / 2, 34
+    DISC, SPACING, RING_D = 48, 16, 28
+    TOP_PAD, RING_GAP, BOTTOM_PAD = 16, 32, 16
+    TOP = TITLEBAR + PAD        # the shell clears the title bar
 
     SURFACE = (245, 245, 245)
     TEAL = (75, 170, 152)
@@ -339,13 +341,27 @@ def home(LW=1440, LH=900):
         dr.rounded_rectangle([v * SS for v in box], radius=radius * SS, fill=fill,
                              outline=outline, width=int(w * SS))
 
-    rr((PAD, PAD, PAD + RAIL_W, LH - PAD), RAIL_R, SURFACE)
-    rr((PAD + RAIL_W + GAP, PAD, LW - PAD, LH - PAD), CARD_R, SURFACE)
+    rr((PAD, TOP, PAD + RAIL_W, LH - PAD), RAIL_R, SURFACE)
+    rr((PAD + RAIL_W + GAP, TOP, LW - PAD, LH - PAD), CARD_R, SURFACE)
+
+    # Title bar. The lockup is left-aligned at the same 14px inset the caption dots
+    # use on the right; draw_logo centres, so its own width measurement is mirrored
+    # here to turn a left edge into a centre.
+    pac = LOGO_W * 0.6788 / 3.083
+    _b = ink(dr, font(PAC, pac), "DoNet")
+    _tw = _b[2] - _b[0]
+    _total = (_tw + _tw * RING_RATIO + _tw * GAP_RATIO) / SS
+    draw_logo(img, dr, 14 + _total / 2, TITLEBAR / 2, pac)
+
+    # 12px dots on a 20px pitch, 14px from the right edge: red outermost.
+    for i, col in enumerate(((0xFF, 0x5F, 0x57), (0xFE, 0xBC, 0x2E), (0x28, 0xC8, 0x40))):
+        dcx, dcy = LW - 20 - i * 20, TITLEBAR / 2
+        dr.ellipse([(dcx - 6) * SS, (dcy - 6) * SS, (dcx + 6) * SS, (dcy + 6) * SS], fill=col)
 
     cx = PAD + RAIL_W / 2
 
-    # logo ring, gradient left to right across its 32px box
-    rx, ry = cx - RING_D / 2, PAD + TOP_PAD
+    # logo ring, gradient left to right across its box
+    rx, ry = cx - RING_D / 2, TOP + TOP_PAD
     for i in range(RING_D * SS):
         t = i / (RING_D * SS - 1)
         col = tuple(round(a + (b - a) * t) for a, b in zip(TEAL, TEAL_LIGHT))
@@ -353,7 +369,8 @@ def home(LW=1440, LH=900):
     mask = Image.new("L", (RING_D * SS, RING_D * SS), 0)
     md = ImageDraw.Draw(mask)
     md.ellipse([0, 0, RING_D * SS - 1, RING_D * SS - 1], fill=255)
-    md.ellipse([8 * SS, 8 * SS, 24 * SS - 1, 24 * SS - 1], fill=0)
+    md.ellipse([RING_D / 4 * SS, RING_D / 4 * SS,
+                RING_D * 3 / 4 * SS - 1, RING_D * 3 / 4 * SS - 1], fill=0)
     ring = img.crop((int(rx * SS), int(ry * SS),
                      int(rx * SS) + RING_D * SS, int(ry * SS) + RING_D * SS))
     base = Image.new("RGB", ring.size, SURFACE)
@@ -366,15 +383,15 @@ def home(LW=1440, LH=900):
                    fill=accent if selected else (255, 255, 255))
         colour = (255, 255, 255) if selected else TEAL
         spec = ICONS[key]
-        ox, oy = cx - 14, cy - 14
+        k = 24 / 28.0          # the Viewbox in NavRailButton, strokes included
         for sub in spec["paths"]:
             for pts, closed in flatten(sub):
-                p = [((ox + px) * SS, (oy + py) * SS) for px, py in pts]
+                p = [((cx + (px - 14) * k) * SS, (cy + (py - 14) * k) * SS) for px, py in pts]
                 if closed:
                     p.append(p[0])
-                dr.line(p, fill=colour, width=int(spec["w"] * SS), joint="curve")
+                dr.line(p, fill=colour, width=max(1, round(spec["w"] * k * SS)), joint="curve")
 
-    top = PAD + TOP_PAD + RING_D + RING_GAP
+    top = TOP + TOP_PAD + RING_D + RING_GAP
     discs = [(top + DISC / 2 + i * (DISC + SPACING), key, i == 0, TEAL)
              for i, key in enumerate(("Services", "Persons", "Sites"))]
     discs.append((LH - PAD - BOTTOM_PAD - DISC / 2, "Lock", True, AMBER))

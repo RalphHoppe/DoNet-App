@@ -11,7 +11,7 @@ A WinUI 3 / Windows App SDK desktop app.
 | Lock | `DoNet/Views/LockPage.xaml` | Every launch after that |
 | Forgot password | `DoNet/Views/ForgotPasswordPage.xaml` | From the lock screen's link |
 | Welcome | `DoNet/Views/WelcomePage.xaml` | "Welcome to DoNet" writes itself on, then hands over to home |
-| Home | `DoNet/Views/HomePage.xaml` | Navigation rail; the content surface is still empty |
+| Home | `DoNet/Views/HomePage.xaml` | Navigation rail and the title-bar logo; the content surface is still empty |
 
 ### Where each screen leads
 
@@ -93,8 +93,20 @@ rhythm drifts.
 ## Window chrome
 
 There is no system title bar. `OverlappedPresenter.SetBorderAndTitleBar(true, false)`
-removes it outright, leaving the three coloured dots in `MainWindow.xaml` as the only
-chrome — green minimise, amber maximise, red close, left to right.
+removes it outright, leaving a 48px strip in `MainWindow.xaml` as the only chrome: the
+three coloured dots at the right — green minimise, amber maximise, red close, left to
+right — and the DoNet lockup at the left, inset 14px to match them.
+
+That lockup is shown on the home screen and nowhere else, toggled from the navigation
+service's `Navigated` event. Splash, create-password, lock and forgot-password each
+present a large centred logo already, and two at once reads as a duplication rather
+than as branding. It is also `IsHitTestVisible="False"`, or the window would stop
+being draggable wherever the logo happens to sit.
+
+The strip *overlays* the frame instead of taking a grid row. Giving `MainWindow` a
+second row would shorten every page by 48px and shift the centred screens, whose
+vertical rhythm was measured against the full window. Home clears the strip with its
+own top padding instead.
 
 Extending content into the title bar is *not* enough on its own: that keeps the system
 caption buttons, which cannot be hidden and would sit exactly where the dots go.
@@ -214,6 +226,31 @@ the line below it collapse into `M14 17.5V21` and the fill disappears.
 arcs and cubics the other preview scripts never needed), checks each one fits its 28px
 box with its stroke, and rasterises a sheet to compare against the design.
 
+### Sizing
+
+The first cut was built at disc 56 / rail 76 and read as too heavy next to the other
+screens, so the shell is scaled by **6/7**. The factor was chosen to land on whole
+numbers that mean something rather than on a round percentage:
+
+| | first cut | now |
+|---|---|---|
+| disc | 56 | **48** — the same height as the title bar |
+| icon | 28 | **24** — half the disc, exactly as before, and a standard size |
+| rail | 76 | **64**, corner radius 32, still a true pill |
+| ring | 32 | 28 |
+| disc spacing | 19 | 16 |
+| outer padding | 14 | 12, and 60 at the top to clear the title bar |
+| rail→content gap | 24 | 20 |
+| content radius | 40 | 34 |
+
+The icon paths were *not* re-authored. They stay on their native 28 grid and the
+`Viewbox` in `NavRailButton` takes them to 24, which scales the stroke widths with
+them — 2.0 becomes 1.71 and 2.2 becomes 1.89 without a number being retyped.
+
+The drop shadow is a design token, not a dimension, so `0 / 6 / 14 at 7.06%` is
+unchanged. Its gradient stops are *not* unchanged: that fit is a function of the disc's
+radius, so shrinking 28 to 24 required re-solving it.
+
 ### Shadows
 
 A circle's drop shadow can be reproduced with a `RadialGradientBrush`, because the disc
@@ -224,9 +261,10 @@ The trap is assuming the tail *starts* at full strength. It does not. A blurred 
 sits at roughly half the source's opacity, so this design's 7.06% shadow is already down
 to **3.18% exactly where the disc ends**, and halves again every ~2.5px. The first
 attempt ramped evenly from 7.06% at the rim and read as a hard grey collar rather than a
-shadow — 2.2× too dark against the rail. The stops are now a numeric fit to a 56px disc
+shadow — 2.2× too dark against the rail. The stops are a numeric fit to the disc
 convolved with σ 7 (a Figma/CSS blur radius is two σ), accurate to 0.4 of one alpha
-level across r=28–42, the only band that is visible.
+level across the only band that is visible. At the current 48px disc that is 3.12% at
+r=24, fitted over r=24–40.
 
 Two smaller traps live in the same element. A top margin does not offset a
 centre-aligned child — it shrinks the layout slot and the centring then halves the

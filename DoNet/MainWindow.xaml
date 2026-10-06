@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:DoNet"
+    xmlns:controls="using:DoNet.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -24,10 +25,28 @@
             none of them put anything in the top strip.
         -->
         <Grid x:Name="DragRegion"
-              Height="40"
+              Height="48"
               VerticalAlignment="Top"
               Background="Transparent"
               PointerPressed="OnDragRegionPointerPressed">
+
+            <!--
+                Home only. Every other screen already presents a large centred lockup
+                and a second one up here would read as a duplication rather than as
+                branding, so the code-behind toggles this off the navigation service's
+                Navigated event. Smaller than the 118 the centred screens use, because
+                here it is chrome rather than the focal point.
+
+                Not hit-testable: the drag region has to receive the press, or the
+                window would stop moving wherever the logo happens to sit.
+            -->
+            <controls:DoNetLogo x:Name="TitleLogo"
+                                Width="100"
+                                Margin="14,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsHitTestVisible="False"
+                                Visibility="Collapsed" />
 
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right"
