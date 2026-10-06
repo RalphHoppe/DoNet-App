@@ -25,6 +25,8 @@ public enum HomeSection
 public partial class HomeViewModel : ObservableObject
 {
     private readonly INavigationService _navigation;
+    private readonly IVaultService _vault;
+    private readonly PersonsViewModel _persons;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsServicesSelected))]
@@ -35,7 +37,13 @@ public partial class HomeViewModel : ObservableObject
     // look like a failure to load.
     private HomeSection _selectedSection = HomeSection.Persons;
 
-    public HomeViewModel(INavigationService navigation) => _navigation = navigation;
+    public HomeViewModel(
+        INavigationService navigation, IVaultService vault, PersonsViewModel persons)
+    {
+        _navigation = navigation;
+        _vault = vault;
+        _persons = persons;
+    }
 
     public bool IsServicesSelected => SelectedSection == HomeSection.Services;
 
@@ -57,5 +65,15 @@ public partial class HomeViewModel : ObservableObject
     /// into the unlocked app.
     /// </summary>
     [RelayCommand]
-    private void Lock() => _navigation.NavigateTo(typeof(LockPage), clearBackStack: true);
+    private void Lock()
+    {
+        // Locking has to mean something now that the records are in an encrypted file.
+        // Dropping the data key closes the database; clearing the directory removes the
+        // decrypted copies that were sitting in the grid. Navigating alone would leave
+        // every record on screen behind the lock screen, in memory and one Back away.
+        _persons.Reset();
+        _vault.Lock();
+
+        _navigation.NavigateTo(typeof(LockPage), clearBackStack: true);
+    }
 }

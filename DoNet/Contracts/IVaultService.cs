@@ -15,6 +15,19 @@ public interface IVaultService
     /// </summary>
     bool IsInitialized { get; }
 
+    /// <summary>True while the data key is held, i.e. between unlocking and locking.</summary>
+    bool IsUnlocked { get; }
+
+    /// <summary>
+    /// The key the encrypted database is opened with. Valid only while
+    /// <see cref="IsUnlocked"/>; throws otherwise rather than returning something
+    /// unusable, because a silent empty key would create a second, unencrypted database.
+    /// </summary>
+    string DatabaseKey { get; }
+
+    /// <summary>Drops the data key, closing the database to further reads.</summary>
+    void Lock();
+
     /// <summary>
     /// Creates the vault for <paramref name="password"/>.
     /// </summary>

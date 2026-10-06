@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DoNet.Models;
 
@@ -46,12 +47,14 @@ public sealed class Person
     public string Note { get; set; } = string.Empty;
 
     /// <summary>Heading on the card. Falls back when the person has no name yet.</summary>
+    [NotMapped]
     public string DisplayName =>
         string.IsNullOrWhiteSpace($"{FirstName} {LastName}".Trim())
             ? "Person record"
             : $"{FirstName} {LastName}".Trim();
 
     /// <summary>The initial shown in the card's avatar.</summary>
+    [NotMapped]
     public string Initial
     {
         get
@@ -63,6 +66,7 @@ public sealed class Person
         }
     }
 
+    [NotMapped]
     public string CreatedAtDisplay =>
         CreatedAt == default ? string.Empty : CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
 

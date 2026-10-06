@@ -72,16 +72,47 @@ public sealed partial class PersonCard : UserControl
         static string Or(string value) => string.IsNullOrWhiteSpace(value) ? Dash : value;
     }
 
-    private void OnMenuOpened(object? sender, object args)
+    private bool _menuOpen;
+
+    /// <summary>
+    /// Opens or closes the drawer.
+    /// </summary>
+    /// <remarks>
+    /// The items are hit-test invisible while closed. They are still in the tree with
+    /// zero opacity, and without this an invisible Delete would sit over the card's
+    /// first field, catching clicks aimed at the record.
+    /// </remarks>
+    private void SetMenu(bool open)
     {
-        if (Resources["MenuIntro"] is Storyboard intro)
+        if (_menuOpen == open)
         {
-            intro.Begin();
+            return;
+        }
+
+        _menuOpen = open;
+
+        EditItem.IsHitTestVisible = open;
+        DeleteItem.IsHitTestVisible = open;
+
+        if (Resources[open ? "MenuOpen" : "MenuClose"] is Storyboard board)
+        {
+            board.Begin();
         }
     }
 
+    private void OnMenuToggle(object sender, RoutedEventArgs args) => SetMenu(!_menuOpen);
+
+    /// <summary>
+    /// Light dismiss. A drawer attached to the card closes when the pointer leaves the
+    /// card, which is the gesture people already make when they change their mind.
+    /// </summary>
+    private void OnCardPointerExited(object sender, PointerRoutedEventArgs args)
+        => SetMenu(false);
+
     private void OnDoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
     {
+        SetMenu(false);
+
         if (Person is { } person)
         {
             OpenRequested?.Invoke(this, person);
@@ -90,7 +121,7 @@ public sealed partial class PersonCard : UserControl
 
     private void OnEditClick(object sender, RoutedEventArgs args)
     {
-        MenuFlyout.Hide();
+        SetMenu(false);
 
         if (Person is { } person)
         {
@@ -100,7 +131,7 @@ public sealed partial class PersonCard : UserControl
 
     private void OnDeleteClick(object sender, RoutedEventArgs args)
     {
-        MenuFlyout.Hide();
+        SetMenu(false);
 
         if (Person is { } person)
         {

@@ -20,6 +20,12 @@ public sealed partial class ConfirmDialog : UserControl
         InitializeComponent();
 
         _host.PropertyChanged += OnHostPropertyChanged;
+
+        // HomePage is rebuilt on every unlock, and the view model is a singleton, so
+        // without this each lock/unlock cycle leaves another detached dialog listening
+        // to it. They all react, all try to animate, and the ones no longer in the
+        // visual tree throw while doing it.
+        Unloaded += (_, _) => _host.PropertyChanged -= OnHostPropertyChanged;
     }
 
     private void OnHostPropertyChanged(object? sender, PropertyChangedEventArgs args)

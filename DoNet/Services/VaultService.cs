@@ -45,6 +45,34 @@ public sealed class VaultService : IVaultService
 
     private readonly Lazy<string> _vaultPath = new(ResolveVaultPath);
 
+    /// <summary>
+    /// The unwrapped data key, base64, held only while the app is unlocked.
+    /// </summary>
+    /// <remarks>
+    /// A string rather than a byte array, which is a real compromise: strings cannot be
+    /// zeroed and live until the GC collects them. It is what the connection string API
+    /// takes, and the alternative - issuing PRAGMA key by hand on every connection -
+    /// trades that for a different set of sharp edges. The key never reaches disk, and
+    /// <see cref="Lock"/> drops it.
+    /// </remarks>
+    private string? _databaseKey;
+
+    public bool IsUnlocked => _databaseKey is not null;
+
+    /// <summary>
+    /// The key the encrypted database is opened with. Only valid while unlocked.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The app is locked.</exception>
+    public string DatabaseKey => _databaseKey
+        ?? throw new InvalidOperationException(
+            "The vault is locked. The database cannot be opened without unlocking first.");
+
+    /// <summary>
+    /// Drops the data key. After this the database cannot be read until the password is
+    /// entered again, which is the entire point of the lock button.
+    /// </summary>
+    public void Lock() => _databaseKey = null;
+
     public bool IsInitialized
     {
         get
@@ -85,6 +113,11 @@ public sealed class VaultService : IVaultService
         {
             using var aes = new AesGcm(keyEncryptionKey, TagBytes);
             aes.Encrypt(nonce, dataKey, wrapped, tag);
+
+            // Captured before the finally wipes it. Creating a vault leaves the app
+            // unlocked - the user goes straight to the home screen from here, and
+            // without this the database would be unopenable until the first re-login.
+            _databaseKey = Convert.ToBase64String(dataKey);
         }
         finally
         {
@@ -147,9 +180,9 @@ public sealed class VaultService : IVaultService
             using var aes = new AesGcm(keyEncryptionKey, tag.Length);
             aes.Decrypt(nonce, wrapped, tag, dataKey);
 
-            // The data key is correct here and is what the encrypted database will be
-            // opened with. Nothing consumes it yet, so it is wiped rather than kept
-            // lying around in memory.
+            // The data key is correct here. Retained so the encrypted database can be
+            // opened; dropped again by Lock().
+            _databaseKey = Convert.ToBase64String(dataKey);
             return true;
         }
         catch (AuthenticationTagMismatchException)
@@ -167,6 +200,9 @@ public sealed class VaultService : IVaultService
 
     public Task ResetAsync(CancellationToken cancellationToken = default)
     {
+        // The old key cannot open anything after the vault is gone.
+        _databaseKey = null;
+
         var path = _vaultPath.Value;
 
         if (Directory.Exists(Path.GetDirectoryName(path)))
@@ -245,21 +281,5 @@ public sealed class VaultService : IVaultService
     /// The packaged app's local folder, with a fallback for running without package
     /// identity so the app is still debuggable unpackaged.
     /// </summary>
-    private static string ResolveVaultPath()
-    {
-        string folder;
-
-        try
-        {
-            folder = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
-        }
-        catch (Exception)
-        {
-            folder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "DoNet");
-        }
-
-        return Path.Combine(folder, FileName);
-    }
+    private static string ResolveVaultPath() => Path.Combine(AppPaths.DataFolder, FileName);
 }

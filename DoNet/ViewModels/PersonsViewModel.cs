@@ -108,6 +108,27 @@ public sealed partial class PersonsViewModel : ObservableObject
     /// </summary>
     public Task PreloadAsync() => _directory.WarmUpAsync();
 
+    /// <summary>
+    /// Returns the directory to its pre-unlock condition. Called when the app locks.
+    /// </summary>
+    public void Reset()
+    {
+        _loadCts?.Cancel();
+
+        People.Clear();
+        SetProperty(ref _searchText, string.Empty, nameof(SearchText));
+        HasMore = false;
+        IsDialogOpen = false;
+        IsConfirmingDelete = false;
+        PendingDelete = null;
+        State = DirectoryState.Loading;
+
+        (_directory as Services.PersonDirectoryService)?.Reset();
+
+        OnPropertyChanged(nameof(HasCards));
+        OnPropertyChanged(nameof(HasNoMatches));
+    }
+
     /// <summary>Loads the first page. Safe to call again; a second call cancels the first.</summary>
     [RelayCommand]
     public async Task LoadAsync()

@@ -63,6 +63,16 @@
 
     <!-- Composition root; see App.xaml.cs. -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+
+    <!--
+      EF Core over SQLCipher. The .Core package is deliberate: the ordinary
+      Microsoft.EntityFrameworkCore.Sqlite package drags in bundle_e_sqlite3, whose
+      native library has no encryption and would win the reference fight against the
+      cipher build. Pairing .Core with bundle_e_sqlcipher is the supported way to get
+      an encrypted SQLite under EF.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.31" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
   </ItemGroup>
 
   <!--
@@ -78,7 +88,12 @@
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <!--
+      Trimming is off, including for Release. EF Core builds its model by reflecting
+      over entity types, and the trimmer cannot see those reference paths - it would
+      strip members the model needs and the failure would appear at runtime in a
+      packaged build, which is the worst place to discover it.
+    -->
+    <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
 </Project>

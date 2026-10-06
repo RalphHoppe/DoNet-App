@@ -25,9 +25,33 @@ public sealed partial class PersonDialog : UserControl
         InitializeComponent();
 
         _host.PropertyChanged += OnHostPropertyChanged;
+        ViewModel.PropertyChanged += OnDialogPropertyChanged;
+
+        // HomePage is rebuilt on every unlock, and the view model is a singleton, so
+        // without this each lock/unlock cycle leaves another detached dialog listening
+        // to it. They all react, all try to animate, and the ones no longer in the
+        // visual tree throw while doing it.
+        Unloaded += (_, _) =>
+        {
+            _host.PropertyChanged -= OnHostPropertyChanged;
+            ViewModel.PropertyChanged -= OnDialogPropertyChanged;
+        };
     }
 
     public PersonDialogViewModel ViewModel { get; }
+
+    /// <summary>Animates the switch between preview and edit.</summary>
+    private void OnDialogPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        // Only when the dialog is already up. Opening runs its own entrance, and
+        // playing both at once makes the panel visibly stutter.
+        if (args.PropertyName == nameof(PersonDialogViewModel.Mode)
+            && Root.Visibility == Visibility.Visible
+            && Resources["ModeChangeStoryboard"] is Storyboard change)
+        {
+            change.Begin();
+        }
+    }
 
     private void OnHostPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {

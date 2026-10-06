@@ -1,7 +1,12 @@
+using System;
+using System.Globalization;
+using System.Linq;
+using DoNet.Models;
 using DoNet.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
+using Microsoft.UI.Xaml.Input;
 
 namespace DoNet.Controls;
 
@@ -18,18 +23,44 @@ public enum FieldCellKind
     Automatic,
 }
 
+/// <summary>Which editor a <see cref="FieldCell"/> uses when it is editable.</summary>
+public enum FieldInputKind
+{
+    Text,
+    Email,
+    Phone,
+    PostalCode,
+
+    /// <summary>Wraps and accepts newlines. The note.</summary>
+    Multiline,
+
+    /// <summary>A calendar. Date of birth.</summary>
+    Date,
+
+    /// <summary>A fixed list.</summary>
+    Gender,
+
+    /// <summary>A list that can still be typed into.</summary>
+    Country,
+}
+
 /// <summary>
 /// One labelled field box. See the XAML for why this exists once rather than eighteen
 /// times.
 /// </summary>
 public sealed partial class FieldCell : UserControl
 {
+    /// <summary>The format the design asks for: "DD / MM / YYYY".</summary>
+    private const string DateFormat = "dd / MM / yyyy";
+
     /// <summary>
-    /// Guards the two-way sync between <see cref="Value"/> and the input controls, so
-    /// writing the property from code does not bounce back through TextChanged and
-    /// reset the caret while the user is typing.
+    /// Guards the two-way sync between <see cref="Value"/> and the editors, so writing
+    /// the property from code does not bounce back through a change event and reset the
+    /// caret while the user is typing.
     /// </summary>
     private bool _syncing;
+
+    private bool _revealed;
 
     public FieldCell()
     {
@@ -53,6 +84,10 @@ public sealed partial class FieldCell : UserControl
         nameof(Kind), typeof(FieldCellKind), typeof(FieldCell),
         new PropertyMetadata(FieldCellKind.Display, OnAnyPropertyChanged));
 
+    public static readonly DependencyProperty InputKindProperty = DependencyProperty.Register(
+        nameof(InputKind), typeof(FieldInputKind), typeof(FieldCell),
+        new PropertyMetadata(FieldInputKind.Text, OnAnyPropertyChanged));
+
     public static readonly DependencyProperty IsSecretProperty = DependencyProperty.Register(
         nameof(IsSecret), typeof(bool), typeof(FieldCell),
         new PropertyMetadata(false, OnAnyPropertyChanged));
@@ -64,6 +99,10 @@ public sealed partial class FieldCell : UserControl
     public static readonly DependencyProperty ShowGenerateProperty = DependencyProperty.Register(
         nameof(ShowGenerate), typeof(bool), typeof(FieldCell),
         new PropertyMetadata(false, OnAnyPropertyChanged));
+
+    public static readonly DependencyProperty TabOrderProperty = DependencyProperty.Register(
+        nameof(TabOrder), typeof(int), typeof(FieldCell),
+        new PropertyMetadata(0, OnAnyPropertyChanged));
 
     public string Label
     {
@@ -89,6 +128,12 @@ public sealed partial class FieldCell : UserControl
         set => SetValue(KindProperty, value);
     }
 
+    public FieldInputKind InputKind
+    {
+        get => (FieldInputKind)GetValue(InputKindProperty);
+        set => SetValue(InputKindProperty, value);
+    }
+
     /// <summary>Masks the value and offers a reveal toggle.</summary>
     public bool IsSecret
     {
@@ -106,6 +151,21 @@ public sealed partial class FieldCell : UserControl
     {
         get => (bool)GetValue(ShowGenerateProperty);
         set => SetValue(ShowGenerateProperty, value);
+    }
+
+    /// <summary>
+    /// Where this cell sits in the Tab sequence.
+    /// </summary>
+    /// <remarks>
+    /// Set on the inner editor rather than on the cell, because the editor is what
+    /// takes focus. Without it Tab follows the visual tree, which for a three-column
+    /// grid built from three stacked panels means going down the whole first column
+    /// before reaching the top of the second.
+    /// </remarks>
+    public int TabOrder
+    {
+        get => (int)GetValue(TabOrderProperty);
+        set => SetValue(TabOrderProperty, value);
     }
 
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -137,57 +197,41 @@ public sealed partial class FieldCell : UserControl
         bool automatic = Kind == FieldCellKind.Automatic;
         bool editable = Kind == FieldCellKind.Editable && !automatic;
         bool hasValue = !string.IsNullOrEmpty(Value);
+        string value = Value ?? string.Empty;
 
-        Shell.Background = automatic
-            ? (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardAvatarBrush"]
-            : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundBrush"];
+        Shell.Background = Brush(automatic ? "CardAvatarBrush" : "CardBackgroundBrush");
 
-        if (editable && IsSecret)
+        ValueText.Visibility = Visibility.Collapsed;
+        ValueInput.Visibility = Visibility.Collapsed;
+        SecretInput.Visibility = Visibility.Collapsed;
+        ChoiceInput.Visibility = Visibility.Collapsed;
+        DateInput.Visibility = Visibility.Collapsed;
+
+        if (!editable)
         {
-            ValueText.Visibility = Visibility.Collapsed;
-            ValueInput.Visibility = Visibility.Collapsed;
-            SecretInput.Visibility = Visibility.Visible;
-            SecretInput.PlaceholderText = Placeholder;
-
-            _syncing = true;
-            if (SecretInput.Password != (Value ?? string.Empty))
-            {
-                SecretInput.Password = Value ?? string.Empty;
-            }
-            _syncing = false;
+            ShowReadOnly(automatic, hasValue, value);
         }
-        else if (editable)
+        else if (IsSecret)
         {
-            ValueText.Visibility = Visibility.Collapsed;
-            SecretInput.Visibility = Visibility.Collapsed;
-            ValueInput.Visibility = Visibility.Visible;
-            ValueInput.PlaceholderText = Placeholder;
-
-            _syncing = true;
-            if (ValueInput.Text != (Value ?? string.Empty))
-            {
-                ValueInput.Text = Value ?? string.Empty;
-            }
-            _syncing = false;
+            ShowSecret(value);
         }
         else
         {
-            ValueInput.Visibility = Visibility.Collapsed;
-            SecretInput.Visibility = Visibility.Collapsed;
-            ValueText.Visibility = Visibility.Visible;
-
-            // A secret is masked on the preview dialog too, and revealed deliberately.
-            // The design does not show a toggle there, but rendering a stored account
-            // password in plain text the instant a record is opened is a shoulder
-            // surfing problem that the design cannot have intended.
-            ValueText.Text = automatic ? Placeholder
-                           : !hasValue ? "\u2014"
-                           : IsSecret && !_revealed ? new string('\u2022', 10)
-                           : Value;
-
-            ValueText.Foreground = automatic
-                ? (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SearchPlaceholderBrush"]
-                : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"];
+            switch (InputKind)
+            {
+                case FieldInputKind.Gender:
+                    ShowChoice(value, Catalogs.Genders, editableText: false);
+                    break;
+                case FieldInputKind.Country:
+                    ShowChoice(value, Catalogs.Countries, editableText: true);
+                    break;
+                case FieldInputKind.Date:
+                    ShowDate(value);
+                    break;
+                default:
+                    ShowText(value);
+                    break;
+            }
         }
 
         RevealButton.Visibility = IsSecret && !automatic ? Visibility.Visible : Visibility.Collapsed;
@@ -197,9 +241,165 @@ public sealed partial class FieldCell : UserControl
         CopyButton.Visibility = ShowCopy && !automatic ? Visibility.Visible : Visibility.Collapsed;
         CopyButton.IsEnabled = hasValue;
         CopyShell.Opacity = hasValue ? 1.0 : 0.45;
+
+        ApplyTabOrder();
     }
 
-    private bool _revealed;
+    private void ShowReadOnly(bool automatic, bool hasValue, string value)
+    {
+        ValueText.Visibility = Visibility.Visible;
+
+        // A secret is masked on the preview dialog too, and revealed deliberately.
+        // The design does not show a toggle there, but rendering a stored account
+        // password in plain text the instant a record is opened is a shoulder
+        // surfing problem that the design cannot have intended.
+        ValueText.Text = automatic ? Placeholder
+                       : !hasValue ? "\u2014"
+                       : IsSecret && !_revealed ? new string('\u2022', 10)
+                       : value;
+
+        ValueText.Foreground = Brush(automatic ? "SearchPlaceholderBrush" : "TextPrimaryBrush");
+        ValueText.TextWrapping = InputKind == FieldInputKind.Multiline
+            ? TextWrapping.Wrap
+            : TextWrapping.NoWrap;
+    }
+
+    private void ShowSecret(string value)
+    {
+        SecretInput.Visibility = Visibility.Visible;
+        SecretInput.PlaceholderText = Placeholder;
+
+        _syncing = true;
+        if (SecretInput.Password != value)
+        {
+            SecretInput.Password = value;
+        }
+        _syncing = false;
+    }
+
+    private void ShowText(string value)
+    {
+        ValueInput.Visibility = Visibility.Visible;
+        ValueInput.PlaceholderText = Placeholder;
+
+        bool multiline = InputKind == FieldInputKind.Multiline;
+        ValueInput.AcceptsReturn = multiline;
+        ValueInput.TextWrapping = multiline ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        ValueInput.MinHeight = multiline ? 44 : 0;
+
+        ValueInput.InputScope = ScopeFor(InputKind);
+
+        _syncing = true;
+        if (ValueInput.Text != value)
+        {
+            ValueInput.Text = value;
+        }
+        _syncing = false;
+    }
+
+    private void ShowChoice(
+        string value, System.Collections.Generic.IReadOnlyList<string> options, bool editableText)
+    {
+        ChoiceInput.Visibility = Visibility.Visible;
+        ChoiceInput.PlaceholderText = Placeholder;
+        ChoiceInput.IsEditable = editableText;
+
+        if (ChoiceInput.ItemsSource is null)
+        {
+            ChoiceInput.ItemsSource = options;
+        }
+
+        _syncing = true;
+
+        // A stored value that is not in the list still has to show. For the editable
+        // country box that is just its text; for the fixed gender list, selecting
+        // nothing leaves the placeholder visible rather than silently rewriting the
+        // record to something it never said.
+        string? match = options.FirstOrDefault(
+            o => string.Equals(o, value, StringComparison.OrdinalIgnoreCase));
+
+        ChoiceInput.SelectedItem = match;
+
+        if (editableText && ChoiceInput.Text != value)
+        {
+            ChoiceInput.Text = value;
+        }
+
+        _syncing = false;
+    }
+
+    private void ShowDate(string value)
+    {
+        DateInput.Visibility = Visibility.Visible;
+        DateInput.PlaceholderText = string.IsNullOrEmpty(Placeholder) ? "DD / MM / YYYY" : Placeholder;
+
+        _syncing = true;
+        DateInput.Date = TryParseDate(value, out DateTimeOffset parsed) ? parsed : null;
+        _syncing = false;
+    }
+
+    /// <summary>
+    /// Parses what the store holds.
+    /// </summary>
+    /// <remarks>
+    /// Invariant culture with an explicit format, because the stored string must mean
+    /// the same thing on every machine. Parsing with the current culture would read
+    /// 03/04/2001 as March on one install and April on another, silently changing
+    /// people's birthdays when the record moves.
+    /// </remarks>
+    private static bool TryParseDate(string value, out DateTimeOffset result)
+    {
+        result = default;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return DateTimeOffset.TryParseExact(
+                   value, DateFormat, CultureInfo.InvariantCulture,
+                   DateTimeStyles.None, out result)
+               || DateTimeOffset.TryParse(
+                   value, CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
+    }
+
+    private static InputScope ScopeFor(FieldInputKind kind)
+    {
+        InputScopeNameValue name = kind switch
+        {
+            FieldInputKind.Email => InputScopeNameValue.EmailSmtpAddress,
+            FieldInputKind.Phone => InputScopeNameValue.TelephoneNumber,
+            FieldInputKind.PostalCode => InputScopeNameValue.AlphanumericFullWidth,
+            _ => InputScopeNameValue.Default,
+        };
+
+        InputScope scope = new();
+        scope.Names.Add(new InputScopeName(name));
+        return scope;
+    }
+
+    private void ApplyTabOrder()
+    {
+        if (TabOrder <= 0)
+        {
+            return;
+        }
+
+        ValueInput.TabIndex = TabOrder;
+        SecretInput.TabIndex = TabOrder;
+        ChoiceInput.TabIndex = TabOrder;
+        DateInput.TabIndex = TabOrder;
+    }
+
+    private static Microsoft.UI.Xaml.Media.Brush Brush(string key)
+        => (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[key];
+
+    private void Commit(string value)
+    {
+        _syncing = true;
+        Value = value;
+        _syncing = false;
+    }
 
     private void OnRevealClick(object sender, RoutedEventArgs args)
     {
@@ -212,9 +412,7 @@ public sealed partial class FieldCell : UserControl
     }
 
     private void OnGenerateClick(object sender, RoutedEventArgs args)
-    {
-        Value = PasswordGenerator.Generate();
-    }
+        => Value = PasswordGenerator.Generate();
 
     private void OnCopyClick(object sender, RoutedEventArgs args)
     {
@@ -240,25 +438,50 @@ public sealed partial class FieldCell : UserControl
 
     private void OnInputChanged(object sender, TextChangedEventArgs args)
     {
-        if (_syncing)
+        if (!_syncing)
         {
-            return;
+            Commit(ValueInput.Text);
         }
-
-        _syncing = true;
-        Value = ValueInput.Text;
-        _syncing = false;
     }
 
     private void OnSecretChanged(object sender, RoutedEventArgs args)
+    {
+        if (!_syncing)
+        {
+            Commit(SecretInput.Password);
+        }
+    }
+
+    private void OnChoiceChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (!_syncing && ChoiceInput.SelectedItem is string picked)
+        {
+            Commit(picked);
+        }
+    }
+
+    /// <summary>A country typed by hand rather than picked from the list.</summary>
+    private void OnChoiceTextSubmitted(ComboBox sender, ComboBoxTextSubmittedEventArgs args)
+    {
+        if (!_syncing)
+        {
+            Commit(args.Text);
+
+            // Tells the ComboBox we handled it, so it does not try to add the text to
+            // the items source.
+            args.Handled = true;
+        }
+    }
+
+    private void OnDateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
     {
         if (_syncing)
         {
             return;
         }
 
-        _syncing = true;
-        Value = SecretInput.Password;
-        _syncing = false;
+        Commit(args.NewDate is { } date
+            ? date.ToString(DateFormat, CultureInfo.InvariantCulture)
+            : string.Empty);
     }
 }

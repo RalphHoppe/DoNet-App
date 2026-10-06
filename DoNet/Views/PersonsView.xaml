@@ -142,7 +142,20 @@
                         <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
                         <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
                         <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="Transparent" />
-                        <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
+            
+            <!--
+                Without these the focused and pointer-over visual states in the stock
+                TextBox template set Foreground to the theme brush, which on a machine
+                running Windows in dark mode is white - white text on a white card, so
+                you cannot see what you are typing. RequestedTheme="Light" on the
+                Application fixes the root cause; these make the control independent of
+                it regardless.
+            -->
+            <SolidColorBrush x:Key="TextControlForeground" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundDisabled" Color="#8C9196" />
+            <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
                         <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
                         <Thickness x:Key="TextControlThemePadding">0</Thickness>
                         <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>

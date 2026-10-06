@@ -16,6 +16,11 @@ public partial class App : Application
 
     public App()
     {
+        // Loads the SQLCipher native library. The .Core EF package does not do this for
+        // us the way the all-in-one package would, and without it the first connection
+        // fails with "You need to call SQLitePCL.raw.SetProvider()".
+        SQLitePCL.Batteries_V2.Init();
+
         InitializeComponent();
         Services = ConfigureServices();
     }

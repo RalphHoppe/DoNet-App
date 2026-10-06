@@ -5,16 +5,22 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    IsTabStop="False">
 
     <!--
         One labelled field box, in every variant the two dialogs need: read-only with a
-        COPY button, editable with a placeholder, automatic (greyed, assigned by the
-        store), and secret (masked with a reveal toggle, optionally with AUTO GENERATE).
+        COPY button, editable, automatic (greyed, assigned by the store), and secret
+        (masked with a reveal toggle, optionally with AUTO GENERATE).
 
         Built once rather than eighteen times. The add and preview dialogs are the same
         grid of cells in different modes, so duplicating this markup per field would
         guarantee they drift apart.
+
+        InputKind decides which editor appears: a date gets a calendar, gender and
+        country get pickers, phone and email get the right keyboards. A form where every
+        field is a bare text box is how a directory ends up holding "UK", "U.K." and
+        "united kingdom" as three different countries.
     -->
 
     <Border x:Name="Shell"
@@ -40,6 +46,19 @@
             <x:Double x:Key="TextControlThemeMinWidth">0</x:Double>
 
             <!--
+                Without these the focused and pointer-over visual states in the stock
+                TextBox template set Foreground to the theme brush, which on a machine
+                running Windows in dark mode is white - white text on a white card, so
+                you cannot see what you are typing. RequestedTheme="Light" on the
+                Application fixes the root cause; these make the control independent of
+                it regardless.
+            -->
+            <SolidColorBrush x:Key="TextControlForeground" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundDisabled" Color="#8C9196" />
+
+            <!--
                 PasswordBox has PlaceholderText but no PlaceholderForeground property -
                 TextBox has both, and the asymmetry is easy to walk into. The theme
                 resource is honoured by both controls, so the placeholder is coloured
@@ -48,6 +67,46 @@
             <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#7B8491" />
             <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#7B8491" />
             <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#7B8491" />
+
+            <!-- The same treatment for the combo box, which uses its own key family. -->
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundUnfocused" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="ComboBoxForeground" Color="#2B2F33" />
+            <SolidColorBrush x:Key="ComboBoxForegroundPointerOver" Color="#2B2F33" />
+            <SolidColorBrush x:Key="ComboBoxForegroundPressed" Color="#2B2F33" />
+            <SolidColorBrush x:Key="ComboBoxForegroundFocused" Color="#2B2F33" />
+            <SolidColorBrush x:Key="ComboBoxForegroundFocusedPressed" Color="#2B2F33" />
+            <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#7B8491" />
+            <SolidColorBrush x:Key="ComboBoxPlaceHolderForegroundFocusedPressed" Color="#7B8491" />
+            <Thickness x:Key="ComboBoxBorderThemeThickness">0</Thickness>
+            <Thickness x:Key="ComboBoxPadding">0</Thickness>
+            <Thickness x:Key="ComboBoxEditableTextPadding">0</Thickness>
+            <x:Double x:Key="ComboBoxMinHeight">0</x:Double>
+
+            <!-- And for the calendar picker. -->
+            <SolidColorBrush x:Key="CalendarDatePickerBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBackgroundPressed" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBackgroundFocused" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBackgroundDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBorderBrushPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBorderBrushPressed" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBorderBrushFocused" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerBorderBrushDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="CalendarDatePickerTextForeground" Color="#2B2F33" />
+            <SolidColorBrush x:Key="CalendarDatePickerTextForegroundSelected" Color="#2B2F33" />
+            <SolidColorBrush x:Key="CalendarDatePickerTextForegroundPointerOver" Color="#2B2F33" />
+            <SolidColorBrush x:Key="CalendarDatePickerTextForegroundPressed" Color="#2B2F33" />
+            <Thickness x:Key="CalendarDatePickerBorderThemeThickness">0</Thickness>
+            <Thickness x:Key="CalendarDatePickerTopHeaderMargin">0</Thickness>
         </Border.Resources>
 
         <Grid RowSpacing="6">
@@ -82,10 +141,11 @@
                            FontSize="{StaticResource FieldValueFontSize}"
                            Foreground="{StaticResource TextPrimaryBrush}"
                            TextTrimming="CharacterEllipsis"
+                           TextWrapping="NoWrap"
                            LineStackingStrategy="BlockLineHeight"
                            LineHeight="20" />
 
-                <!-- Editable value. -->
+                <!-- Free text, and the multiline note. -->
                 <TextBox x:Name="ValueInput"
                          Grid.Column="0"
                          Visibility="Collapsed"
@@ -117,6 +177,40 @@
                              PasswordRevealMode="Hidden"
                              PasswordChanged="OnSecretChanged" />
 
+                <!-- Gender and country. -->
+                <ComboBox x:Name="ChoiceInput"
+                          Grid.Column="0"
+                          Visibility="Collapsed"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Center"
+                          FontFamily="{StaticResource BalooFont}"
+                          FontSize="{StaticResource FieldValueFontSize}"
+                          Foreground="{StaticResource TextPrimaryBrush}"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Padding="0"
+                          MinHeight="0"
+                          MinWidth="0"
+                          SelectionChanged="OnChoiceChanged"
+                          TextSubmitted="OnChoiceTextSubmitted" />
+
+                <!-- Date of birth. -->
+                <CalendarDatePicker x:Name="DateInput"
+                                    Grid.Column="0"
+                                    Visibility="Collapsed"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Center"
+                                    FontFamily="{StaticResource BalooFont}"
+                                    FontSize="{StaticResource FieldValueFontSize}"
+                                    Foreground="{StaticResource TextPrimaryBrush}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="0"
+                                    MinHeight="0"
+                                    MinWidth="0"
+                                    DateFormat="{}{day.integer(2)} / {month.integer(2)} / {year.full}"
+                                    DateChanged="OnDateChanged" />
+
                 <!-- Reveal toggle for secret fields. -->
                 <Button x:Name="RevealButton"
                         Grid.Column="1"
@@ -125,11 +219,11 @@
                         Height="28"
                         VerticalAlignment="Center"
                         Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Show or hide"
                         Click="OnRevealClick">
                     <Viewbox Width="18" Height="18">
                         <Canvas Width="20" Height="20">
-                            <Path x:Name="EyeGlyph"
-                                  Data="M10 4C5.5 4 2.2 7.4 1 10C2.2 12.6 5.5 16 10 16C14.5 16 17.8 12.6 19 10C17.8 7.4 14.5 4 10 4Z M12.5 10A2.5 2.5 0 1 1 7.5 10A2.5 2.5 0 1 1 12.5 10"
+                            <Path Data="M10 4C5.5 4 2.2 7.4 1 10C2.2 12.6 5.5 16 10 16C14.5 16 17.8 12.6 19 10C17.8 7.4 14.5 4 10 4Z M12.5 10A2.5 2.5 0 1 1 7.5 10A2.5 2.5 0 1 1 12.5 10"
                                   Stroke="{StaticResource FieldLabelBrush}"
                                   StrokeThickness="1.4"
                                   StrokeStartLineCap="Round"
