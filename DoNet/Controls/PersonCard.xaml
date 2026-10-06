@@ -141,8 +141,12 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Identity row -->
-            <Grid Grid.Row="0" ColumnSpacing="16">
+            <!--
+                Identity row. Lifted above the field grid so the drawer, which opens
+                downward out of its own bounds, draws over the fields instead of under
+                them.
+            -->
+            <Grid Grid.Row="0" ColumnSpacing="16" Canvas.ZIndex="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -195,7 +199,19 @@
                     Icon-only. At this size a label would set the bar's width, and the
                     two actions are the two most recognisable icons there are.
                 -->
-                <Grid Grid.Column="2" Width="36" VerticalAlignment="Top">
+                <!--
+                    Fixed at the closed size and centred on the avatar. The two action
+                    buttons below the dots keep their layout space even at zero opacity,
+                    so letting this host size to its content made the identity row as
+                    tall as the whole open drawer - which is the gap above the dots - and
+                    made the card resize as the drawer grew. Pinning the host to 36x36
+                    lets both the surface and the buttons overflow downward without
+                    touching layout.
+                -->
+                <Grid Grid.Column="2"
+                      Width="36"
+                      Height="36"
+                      VerticalAlignment="Center">
 
                     <Border x:Name="MenuSurface"
                             Width="36"

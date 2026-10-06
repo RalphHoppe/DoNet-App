@@ -373,6 +373,13 @@
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="MinWidth" Value="0" />
         <Setter Property="UseSystemFocusVisuals" Value="False" />
+
+        <!--
+            Control.HorizontalContentAlignment defaults to Center, and the stock TextBox
+            template never binds it, so it never shows. This template does bind it, which
+            means it has to be set here or every field centres its text and placeholder.
+        -->
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="ScrollViewer.HorizontalScrollMode" Value="Auto" />
         <Setter Property="ScrollViewer.VerticalScrollMode" Value="Auto" />

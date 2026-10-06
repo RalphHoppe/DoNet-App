@@ -287,6 +287,11 @@ public sealed partial class FieldCell : UserControl
         ValueInput.TextWrapping = multiline ? TextWrapping.Wrap : TextWrapping.NoWrap;
         ValueInput.MinHeight = multiline ? 44 : 0;
 
+        // A note is read from its first line down; a one-line field is centred in its
+        // row. Same control, so the alignment has to follow the kind.
+        ValueInput.VerticalContentAlignment =
+            multiline ? VerticalAlignment.Top : VerticalAlignment.Center;
+
         ValueInput.InputScope = ScopeFor(InputKind);
 
         _syncing = true;

@@ -125,7 +125,15 @@
                        LineStackingStrategy="BlockLineHeight"
                        LineHeight="14" />
 
-            <Grid Grid.Row="1" ColumnSpacing="10" MinHeight="30">
+            <!--
+                No ColumnSpacing. A Grid puts its spacing between every pair of adjacent
+                columns, including ones that have collapsed to zero width, so the three
+                Auto columns below cost 30px of dead space on the right of every field
+                whenever their buttons are hidden - which is the whole add/edit form.
+                The gap belongs to the buttons, so each one carries it as a left margin
+                and a collapsed button contributes nothing.
+            -->
+            <Grid Grid.Row="1" MinHeight="30">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -214,6 +222,7 @@
 
                 <!-- Reveal toggle for secret fields. -->
                 <Button x:Name="RevealButton"
+                        Margin="10,0,0,0"
                         Grid.Column="1"
                         Visibility="Collapsed"
                         Width="28"
@@ -243,6 +252,7 @@
 
                 <!-- AUTO GENERATE, on the two password fields in the add/edit form. -->
                 <Button x:Name="GenerateButton"
+                        Margin="10,0,0,0"
                         Grid.Column="2"
                         Visibility="Collapsed"
                         VerticalAlignment="Center"
@@ -265,6 +275,7 @@
 
                 <!-- COPY, on the preview dialog. -->
                 <Button x:Name="CopyButton"
+                        Margin="10,0,0,0"
                         Grid.Column="3"
                         Visibility="Collapsed"
                         VerticalAlignment="Center"
