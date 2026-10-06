@@ -31,15 +31,12 @@
     <SolidColorBrush x:Key="FieldBackgroundBrush" Color="#FFFFFF" />
 
     <!--
-        The home shell's two panels. The design stacks FFFFFF at 72.16% under BEBEBE at
-        16.1%, which over a white page composites to F5F5F5; both panels share it, and
-        what separates them is the stroke rather than the fill.
-
-        SurfaceStrokeBrush is the design's 041516 at 8.63%, kept as an alpha colour
-        rather than flattened so it stays correct wherever the panel is placed.
+        The home shell's two panels, which share one flat fill and carry no stroke at
+        all. The design stacks FFFFFF at 72.16% under BEBEBE at 16.1%; over the white
+        page that composites to F5F5F5, so the panels read against the background and
+        against each other on the gap alone.
     -->
     <SolidColorBrush x:Key="SurfaceBrush" Color="#F5F5F5" />
-    <SolidColorBrush x:Key="SurfaceStrokeBrush" Color="#16041516" />
 
     <!--
         Navigation rail. The icon colours are Colors rather than Brushes because the
@@ -49,7 +46,7 @@
     <Color x:Key="NavIconSelectedColor">#FFFFFF</Color>
     <SolidColorBrush x:Key="NavRestBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="NavSelectedBrush" Color="{StaticResource BrandPrimaryColor}" />
-    <SolidColorBrush x:Key="LockActionBrush" Color="#F5A623" />
+    <SolidColorBrush x:Key="LockActionBrush" Color="#F59E0B" />
 
     <!-- FFFFFF at 40%, the design's 1px inside stroke on each disc. Invisible on the
          white resting disc, a soft inner lip on the filled one. -->

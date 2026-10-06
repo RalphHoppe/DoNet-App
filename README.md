@@ -229,6 +229,10 @@ otherwise lay the shadow over the panel's own fill.
 
 `ThemeShadow` was tried first and rendered nothing at all.
 
+The panels are flat — one fill, no stroke. With nothing but a 24px gap between
+them, the shadow is the only thing giving the rail an edge, which is why it is a
+real one rather than an approximation.
+
 ### States
 
 The rail buttons drive their states with named `Storyboard`s rather than a

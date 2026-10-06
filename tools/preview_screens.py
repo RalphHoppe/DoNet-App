@@ -328,10 +328,9 @@ def home(LW=1440, LH=900):
     TOP_PAD, RING_GAP, BOTTOM_PAD = 18, 38, 18
 
     SURFACE = (245, 245, 245)
-    STROKE = (224, 226, 226)
     TEAL = (75, 170, 152)
     TEAL_LIGHT = (140, 215, 197)
-    AMBER = (245, 166, 35)
+    AMBER = (245, 158, 11)
 
     img = Image.new("RGB", (LW * SS, LH * SS), (255, 255, 255))
     dr = ImageDraw.Draw(img)
@@ -340,8 +339,8 @@ def home(LW=1440, LH=900):
         dr.rounded_rectangle([v * SS for v in box], radius=radius * SS, fill=fill,
                              outline=outline, width=int(w * SS))
 
-    rr((PAD, PAD, PAD + RAIL_W, LH - PAD), RAIL_R, SURFACE, STROKE, 1)
-    rr((PAD + RAIL_W + GAP, PAD, LW - PAD, LH - PAD), CARD_R, SURFACE, STROKE, 1)
+    rr((PAD, PAD, PAD + RAIL_W, LH - PAD), RAIL_R, SURFACE)
+    rr((PAD + RAIL_W + GAP, PAD, LW - PAD, LH - PAD), CARD_R, SURFACE)
 
     cx = PAD + RAIL_W / 2
 
