@@ -11,20 +11,30 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Brand ................................................................ -->
-    <!-- The light end of the logo ring's gradient, from the design's SVG. -->
-    <Color x:Key="BrandTealLightColor">#8CD7C5</Color>
-    <Color x:Key="BrandTealDeepColor">#49A48C</Color>
-    <Color x:Key="BrandTealSoftColor">#83CDB4</Color>
-    <Color x:Key="BrandPrimaryColor">#4BAA98</Color>
-    <Color x:Key="BrandPrimaryHoverColor">#449989</Color>
-    <Color x:Key="BrandPrimaryPressedColor">#3C887A</Color>
-    <Color x:Key="BrandPrimaryDisabledColor">#BBDFD8</Color>
+    <!--
+        Brand ................................................................
 
-    <SolidColorBrush x:Key="BrandPrimaryBrush" Color="{StaticResource BrandPrimaryColor}" />
-    <SolidColorBrush x:Key="BrandPrimaryHoverBrush" Color="{StaticResource BrandPrimaryHoverColor}" />
-    <SolidColorBrush x:Key="BrandPrimaryPressedBrush" Color="{StaticResource BrandPrimaryPressedColor}" />
-    <SolidColorBrush x:Key="BrandPrimaryDisabledBrush" Color="{StaticResource BrandPrimaryDisabledColor}" />
+        Written as literals rather than shared <Color x:Key> resources. The WinUI 3
+        default XAML namespace maps the Microsoft.UI.* namespaces, and the Color struct
+        is Windows.UI.Color - so a bare <Color> element raises WMC0011 "Unknown type"
+        from the XAML compiler. (Thickness and x:Double in this project do not, because
+        they are Microsoft.UI.Xaml.Thickness and a XAML language primitive.) The
+        resource still works at runtime, but it is nine warnings for no gain.
+
+        Only five values exist and none appears more than three times. The canonical
+        palette, which is what to edit if the brand moves:
+
+            teal            #4BAA98   primary, nav selection, ring gradient start
+            teal light      #8CD7C5   ring gradient end
+            teal deep       #49A48C   logo gradient start
+            teal soft       #83CDB4   logo gradient end
+            hover/pressed   #449989 / #3C887A   derived, 0.90x and 0.80x the teal
+            disabled        #BBDFD8   derived, 62% toward white
+    -->
+    <SolidColorBrush x:Key="BrandPrimaryBrush" Color="#4BAA98" />
+    <SolidColorBrush x:Key="BrandPrimaryHoverBrush" Color="#449989" />
+    <SolidColorBrush x:Key="BrandPrimaryPressedBrush" Color="#3C887A" />
+    <SolidColorBrush x:Key="BrandPrimaryDisabledBrush" Color="#BBDFD8" />
 
     <!-- Surfaces ............................................................. -->
     <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FFFFFF" />
@@ -42,10 +52,8 @@
         Navigation rail. The icon colours are Colors rather than Brushes because the
         selection animation is a ColorAnimation into each button's own brush instance.
     -->
-    <Color x:Key="NavIconColor">#4BAA98</Color>
-    <Color x:Key="NavIconSelectedColor">#FFFFFF</Color>
     <SolidColorBrush x:Key="NavRestBrush" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="NavSelectedBrush" Color="{StaticResource BrandPrimaryColor}" />
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="#4BAA98" />
     <SolidColorBrush x:Key="LockActionBrush" Color="#F59E0B" />
 
     <!-- FFFFFF at 40%, the design's 1px inside stroke on each disc. Invisible on the

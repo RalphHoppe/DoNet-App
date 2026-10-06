@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--
     NavRailButton - one circular button in the home screen's left rail.
 
@@ -27,7 +27,7 @@
                              To="1" Duration="0:0:0.22" />
             <ColorAnimation Storyboard.TargetName="IconStroke"
                             Storyboard.TargetProperty="Color"
-                            To="{StaticResource NavIconSelectedColor}" Duration="0:0:0.22" />
+                            To="#FFFFFF" Duration="0:0:0.22" />
         </Storyboard>
 
         <Storyboard x:Key="ToUnselected">
@@ -35,7 +35,7 @@
                              To="0" Duration="0:0:0.22" />
             <ColorAnimation Storyboard.TargetName="IconStroke"
                             Storyboard.TargetProperty="Color"
-                            To="{StaticResource NavIconColor}" Duration="0:0:0.22" />
+                            To="#4BAA98" Duration="0:0:0.22" />
         </Storyboard>
 
         <Storyboard x:Key="ToNormal">
@@ -140,7 +140,7 @@
                          animation writes this brush's Color, and a shared one would
                          repaint the whole rail at once. -->
                     <Path.Stroke>
-                        <SolidColorBrush x:Name="IconStroke" Color="{StaticResource NavIconColor}" />
+                        <SolidColorBrush x:Name="IconStroke" Color="#4BAA98" />
                     </Path.Stroke>
                 </Path>
             </Canvas>

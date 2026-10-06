@@ -26,8 +26,8 @@
         -->
         <LinearGradientBrush x:Key="LockupBrush" MappingMode="Absolute"
                              StartPoint="0,0" EndPoint="447.99,103.4">
-            <GradientStop Offset="0" Color="{StaticResource BrandTealDeepColor}" />
-            <GradientStop Offset="1" Color="{StaticResource BrandTealSoftColor}" />
+            <GradientStop Offset="0" Color="#49A48C" />
+            <GradientStop Offset="1" Color="#83CDB4" />
         </LinearGradientBrush>
     </UserControl.Resources>
 

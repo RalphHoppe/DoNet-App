@@ -1,7 +1,6 @@
 using DoNet.Controls;
 using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -36,7 +35,9 @@ public sealed partial class HomePage : Page
     {
         // Composition needs the elements measured and live, so this waits for Loaded
         // rather than running in the constructor.
-        var shadow = Color.FromArgb(0x12, 0x04, 0x15, 0x16);
+        // Fully qualified: the Color struct is Windows.UI.Color, while Microsoft.UI
+        // carries only Colors and ColorHelper. Importing the latter does not bring it in.
+        var shadow = Windows.UI.Color.FromArgb(0x12, 0x04, 0x15, 0x16);
         Elevation.Apply(RailShadowHost, RailPlate, ShadowBlur, ShadowOffsetY, shadow);
         Elevation.Apply(ContentShadowHost, ContentPlate, ShadowBlur, ShadowOffsetY, shadow);
 

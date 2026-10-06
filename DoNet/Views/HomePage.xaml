@@ -93,8 +93,8 @@
                     <Path Data="M32 16C32 24.8366 24.8366 32 16 32C7.16344 32 0 24.8366 0 16C0 7.16344 7.16344 0 16 0C24.8366 0 32 7.16344 32 16ZM8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8C11.5817 8 8 11.5817 8 16Z">
                         <Path.Fill>
                             <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                <GradientStop Offset="0" Color="{StaticResource BrandPrimaryColor}" />
-                                <GradientStop Offset="1" Color="{StaticResource BrandTealLightColor}" />
+                                <GradientStop Offset="0" Color="#4BAA98" />
+                                <GradientStop Offset="1" Color="#8CD7C5" />
                             </LinearGradientBrush>
                         </Path.Fill>
                     </Path>
