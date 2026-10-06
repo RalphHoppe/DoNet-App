@@ -18,6 +18,17 @@ public sealed partial class MainWindow : Window
     private const int DesignWidth = 1280;
     private const int DesignHeight = 810;
 
+    // The smallest window the layout still works in, derived rather than picked:
+    //
+    //   width  - the 352px content column plus a 64px margin either side.
+    //   height - the tallest screen's content block is 351px and sits 24px above
+    //            centre, so clearing the 40px caption strip by a comfortable margin
+    //            needs (H - 351) / 2 - 24 >= 64, i.e. 527. Rounded up.
+    //
+    // Below this the content would start colliding with the caption buttons.
+    private const int MinimumWidth = 480;
+    private const int MinimumHeight = 540;
+
     private const uint WmNcLButtonDown = 0x00A1;
     private const int HtCaption = 2;
 
@@ -26,6 +37,9 @@ public sealed partial class MainWindow : Window
     /// <summary>When the title bar was last pressed, for detecting a double-click.</summary>
     private DateTime _lastTitleBarPress = DateTime.MinValue;
 
+    /// <summary>Last known scale factor, to spot the window moving to another monitor.</summary>
+    private double _lastScale;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -33,7 +47,12 @@ public sealed partial class MainWindow : Window
         _handle = WinRT.Interop.WindowNative.GetWindowHandle(this);
 
         ConfigureTitleBar();
+        ApplyMinimumSize();
         SizeAndCentre(DesignWidth, DesignHeight);
+
+        // The XamlRoot does not exist until the tree goes live, so the scale watch
+        // cannot be attached from here.
+        RootFrame.Loaded += OnRootFrameLoaded;
 
         var navigation = App.Current.Services.GetRequiredService<INavigationService>();
         navigation.Frame = RootFrame;
@@ -68,6 +87,58 @@ public sealed partial class MainWindow : Window
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
+        }
+    }
+
+    /// <summary>
+    /// Stops the window being resized smaller than the layout can take.
+    /// </summary>
+    /// <remarks>
+    /// The limits are given in physical pixels and the presenter does not scale them,
+    /// so they are multiplied by the monitor's DPI here - on a 150% display an
+    /// unscaled 480 would really mean 320 and let the window shrink past the point the
+    /// content fits. Maximising is deliberately left alone; only the floor is fixed.
+    /// </remarks>
+    private void ApplyMinimumSize()
+    {
+        if (AppWindow.Presenter is not OverlappedPresenter presenter)
+        {
+            return;
+        }
+
+        var dpi = GetDpiForWindow(_handle);
+        var scale = dpi == 0 ? 1.0 : dpi / 96.0;
+
+        presenter.PreferredMinimumWidth = (int)Math.Round(MinimumWidth * scale);
+        presenter.PreferredMinimumHeight = (int)Math.Round(MinimumHeight * scale);
+
+        _lastScale = scale;
+    }
+
+    private void OnRootFrameLoaded(object sender, RoutedEventArgs args)
+    {
+        RootFrame.Loaded -= OnRootFrameLoaded;
+
+        if (RootFrame.XamlRoot is { } xamlRoot)
+        {
+            xamlRoot.Changed += OnXamlRootChanged;
+        }
+    }
+
+    /// <summary>
+    /// Recalculates the minimum size when the window moves to a monitor with a
+    /// different scale factor.
+    /// </summary>
+    /// <remarks>
+    /// The presenter keeps the pixel values it was given across a DPI change, which
+    /// silently loosens or tightens the limit by the ratio between the two monitors.
+    /// This fires for ordinary size changes too, hence the scale comparison.
+    /// </remarks>
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        if (Math.Abs(sender.RasterizationScale - _lastScale) > 0.001)
+        {
+            ApplyMinimumSize();
         }
     }
 

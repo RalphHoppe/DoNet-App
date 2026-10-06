@@ -97,6 +97,28 @@ Two consequences, both handled in `MainWindow.xaml.cs`:
 Snap Layouts (hovering the maximise button on Windows 11) is the one thing lost; it is
 tied to the system maximise button, which no longer exists.
 
+### Minimum size
+
+The window stops shrinking at **480 x 540**, which is derived rather than picked:
+
+| | |
+| --- | --- |
+| Width | the 352px content column plus a 64px margin either side |
+| Height | the tallest screen's block is 351px and sits 24px above centre, so clearing the 40px caption strip needs `(H - 351) / 2 - 24 >= 64` |
+
+Below that the content starts colliding with the caption buttons. At the floor the
+forgot-password screen — the tallest — still clears them by 30px.
+
+`PreferredMinimumWidth`/`Height` take **physical pixels and are not DPI-scaled by the
+presenter** ([#10475](https://github.com/microsoft/microsoft-ui-xaml/issues/10475)), so
+`ApplyMinimumSize` multiplies by the monitor's DPI. Unscaled, 480 would really mean 320
+on a 150% display. The presenter also keeps its pixel values across a DPI change
+([#10452](https://github.com/microsoft/microsoft-ui-xaml/issues/10452)), which silently
+loosens the limit when the window moves to a monitor with a different scale, so
+`XamlRoot.Changed` recalculates it.
+
+There is no maximum: maximising is left alone, only the floor is fixed.
+
 ## Layout
 
 The design is a fixed 352 px column, centred, sitting 24 px above the optical centre of
