@@ -28,42 +28,6 @@
     <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="FieldBackgroundBrush" Color="#FFFFFF" />
 
-    <!-- Home shell surfaces .................................................. -->
-    <!--
-        Rail and content surface are the same colour: the design stacks FFFFFF at 72.16%
-        under BEBEBE at 16.1%, which over a white page composites to F5F5F5. What tells
-        the two panels apart is the stroke, not the fill.
-
-        CardStrokeBrush is the design's 041516 at 8.63%, kept as an alpha colour rather
-        than flattened, so it stays correct wherever the panel is placed.
-    -->
-    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#F5F5F5" />
-    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#F5F5F5" />
-    <SolidColorBrush x:Key="CardStrokeBrush" Color="#16041516" />
-
-    <!--
-        Navigation rail. The icon colours are Colors rather than Brushes because the
-        selected state cross-fades between them with a ColorAnimation, which needs the
-        raw value - and because each rail button owns its own SolidColorBrush instance.
-        Animating a shared brush would repaint every button at once.
-    -->
-    <!-- Literal rather than a reference to BrandPrimaryColor: a Color element's content
-         is parsed as a colour, so a StaticResource here would not resolve. Keep in step
-         with the brand teal by hand. -->
-    <Color x:Key="NavIconColor">#4BAA98</Color>
-    <Color x:Key="NavIconSelectedColor">#FFFFFF</Color>
-    <SolidColorBrush x:Key="NavRestBrush" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="NavSelectedBrush" Color="{StaticResource BrandPrimaryColor}" />
-
-    <!-- FFFFFF at 40%, the design's 1px inside stroke on each disc. Invisible on the
-         white resting disc, a soft inner lip on the filled one. -->
-    <SolidColorBrush x:Key="NavDiscEdgeBrush" Color="#66FFFFFF" />
-    <SolidColorBrush x:Key="LockActionBrush" Color="#F5A623" />
-
-    <!-- Tooltip .............................................................. -->
-    <SolidColorBrush x:Key="TooltipBackgroundBrush" Color="#2B2F33" />
-    <SolidColorBrush x:Key="TooltipForegroundBrush" Color="#FFFFFF" />
-
     <!-- Text ................................................................. -->
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#2B2F33" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5C6066" />

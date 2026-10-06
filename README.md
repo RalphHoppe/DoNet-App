@@ -10,22 +10,20 @@ A WinUI 3 / Windows App SDK desktop app.
 | Create password | `DoNet/Views/CreatePasswordPage.xaml` | First run only, with validation |
 | Lock | `DoNet/Views/LockPage.xaml` | Every launch after that |
 | Forgot password | `DoNet/Views/ForgotPasswordPage.xaml` | From the lock screen's link |
-| Welcome | `DoNet/Views/WelcomePage.xaml` | "Welcome to DoNet" writes itself on, then hands over to home |
-| Home | `DoNet/Views/HomePage.xaml` | Navigation rail; the content surface is still empty |
+| Welcome | `DoNet/Views/WelcomePage.xaml` | "Welcome to DoNet" writes itself on; currently the last screen |
 
 ### Where each screen leads
 
 ```
-splash ──► create password ──┐                     ┌──► lock ──► forgot password
-            (first run)      ├──► welcome ──► home ─┤              │        │
-       └──► lock ────────────┘                      └── lock ◄─────┘        │
-                                                         button             ▼
+splash ──► create password ──┐                ┌──► lock ──► forgot password
+            (first run)      ├──► welcome ────┤              │        │
+       └──► lock ────────────┘                └──────────────┘        ▼
                                                                     create password
                                                                       (after reset)
 ```
 
-Both ways in go through the welcome screen rather than landing on home directly. It is
-the same draw-on trick as the splash, minus the ring.
+Both ways in go through the welcome screen. It is the same draw-on trick as the splash,
+minus the ring.
 
 The splash decides between the last two by asking `IVaultService.IsInitialized`, which
 is true once a vault exists on disk.
@@ -135,37 +133,6 @@ loosens the limit when the window moves to a monitor with a different scale, so
 
 There is no maximum: maximising is left alone, only the floor is fixed.
 
-## The navigation rail
-
-Each rail button draws its own disc, icon and states; the `Button` underneath
-(`NavRailHitStyle`) is an invisible hit target that exists only for click, keyboard
-activation, focus visuals and the accessible name. Its own visual states would have no
-way to reach the disc and icon sitting above it in the Grid, so pointer state is tracked
-in `NavRailButton.xaml.cs` instead.
-
-Two state groups run independently and never touch the same property, so they cannot
-fight each other:
-
-| Group | Drives |
-| --- | --- |
-| `CommonStates` | pointer — scale 1.09 on hover, 0.93 on press, plus a darkening wash |
-| `SelectionStates` | selected — the accent disc fading up, and the icon turning white |
-
-Selection fades an **accent disc up over the white one** rather than animating the white
-disc's colour. Two reasons: a `ColorAnimation` writes into the brush instance, so a
-shared `StaticResource` brush would repaint every button in the rail at once; and
-opacity lets each button carry its own accent — teal for the three destinations, amber
-for the lock. The icon colour *is* animated, but to a hard-coded white, which is correct
-for both accents.
-
-The lock button is permanently "selected" so it is always filled. It is an action, not a
-destination, so it never takes part in the rail's selection.
-
-Tooltips use `NavToolTipStyle`. The Border starts fully opaque and the `Opened` state
-animates it up from zero, rather than starting hidden — if that state name ever stops
-matching what `ToolTip` drives, the tooltip loses its animation instead of becoming
-invisible.
-
 ## Layout
 
 The design is a fixed 352 px column, centred, sitting 24 px above the optical centre of
@@ -228,20 +195,12 @@ in Release, not in Debug.
 
 ## Not done yet
 
-The home screen's content surface is deliberately empty — the three sections have no
-content yet, so it is the bare surface from the design. It becomes the host when those
-screens arrive.
+The home screen has been removed and is being rebuilt from the design. `WelcomePage`
+is the last screen in the flow until it returns; the `NavigateTo` call it used to make
+is marked with a comment where it belongs.
 
 `VaultService.ResetAsync` deletes `vault.json`. It gets one more line to delete the
 encrypted database once that exists.
-
-The caption buttons overlap the top-right of the content surface. Harmless while that
-surface is empty; revisit when something is drawn up there, since the top 40px is also
-the window's drag region.
-
-`ThemeShadow` on the rail buttons is the one piece of this that has never been seen
-running. If it renders too heavily, deleting the `Grid.Shadow` and `Translation` from
-`NavRailButton.xaml` leaves everything else intact.
 
 ## Tools
 
@@ -251,9 +210,8 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | --- | --- |
 | `tools/gen_logo_control.py` | Regenerates `Controls/DoNetLogo.xaml` from the Pacifico outlines |
 | `tools/gen_wordmark_control.py` | Regenerates `Controls/WelcomeWordmark.xaml` — same trick, no ring |
-| `tools/render_icons.py` | Rasterises the inline icon geometries, arcs included |
 | `tools/extract_logo_geometry.py` | Prints the raw geometry and arc lengths; holds the ring proportions |
 | `tools/preview_animation.py` | Renders `docs/splash-animation.gif` |
-| `tools/preview_screens.py` | Renders a pixel reconstruction of both screens for comparing against Figma |
+| `tools/preview_screens.py` | Renders a pixel reconstruction of the four screens for comparing against the design |
 | `tools/validate_xaml.py` | Checks resource keys, `x:Name`s and event handlers without a Windows build |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |

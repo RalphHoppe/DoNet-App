@@ -37,11 +37,6 @@ OK_FG = (46, 125, 91)
 DANGER = (224, 27, 36)
 DANGER_HEAD = (164, 22, 26)
 DANGER_BODY = (192, 57, 43)
-RAIL_BG = (245, 245, 245)
-CONTENT_BG = (245, 245, 245)
-NAV_ICON = (75, 170, 152)
-CARD_STROKE = (224, 226, 226)   # 041516 @ 8.63% over F5F5F5
-LOCK_ACCENT = (245, 166, 35)
 
 # ---- metrics ---------------------------------------------------------------
 COL = 352
@@ -258,55 +253,6 @@ def forgot_password():
     return img.resize((W, H), Image.LANCZOS)
 
 
-def home(LW=1280, LH=810):
-    """The home screen: navigation rail plus the (still empty) content surface."""
-    import sys
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from render_icons import ICONS, parse
-
-    # window is 1280x810 logical; this canvas is 1546x980, so work in logical units
-    # and scale at the end
-    img = Image.new("RGB", (LW * SS, LH * SS), "white")
-    dr = ImageDraw.Draw(img)
-
-    PADDING, RAIL_W, GAP, R = 14, 74, 24, 40
-
-    def rr(box, radius, fill, outline=None, w=0):
-        dr.rounded_rectangle([v * SS for v in box], radius=radius * SS, fill=fill,
-                             outline=outline, width=int(w * SS))
-
-    rr((PADDING, PADDING, PADDING + RAIL_W, LH - PADDING), R, RAIL_BG, CARD_STROKE, 2)
-    rr((PADDING + RAIL_W + GAP, PADDING, LW - PADDING, LH - PADDING), R, CONTENT_BG,
-       CARD_STROKE, 2)
-
-    cx = PADDING + RAIL_W / 2                      # 46
-
-    # Ring mark. XAML straddles a shape's stroke across its edge, so Width 19 with
-    # StrokeThickness 7 draws an annulus from d=26 down to d=12. PIL insets the stroke
-    # instead, so it has to be given the *outer* circle to land in the same place.
-    ring_cy = PADDING + 18 + 14
-    dr.ellipse([(cx - 14) * SS, (ring_cy - 14) * SS, (cx + 14) * SS, (ring_cy + 14) * SS],
-               outline=BTN, width=int(7.5 * SS))
-
-    def disc(cy, icon_key, selected, accent):
-        dr.ellipse([(cx - 28) * SS, (cy - 28) * SS, (cx + 28) * SS, (cy + 28) * SS],
-                   fill=accent if selected else (255, 255, 255))
-        colour = (255, 255, 255) if selected else NAV_ICON
-        k = 28 / 18.0                              # Viewbox scales the 18-unit grid to 28
-        ox, oy = cx - 14, cy - 14
-        for sp in parse(ICONS[icon_key]):
-            dr.line([((ox + x * k) * SS, (oy + y * k) * SS) for x, y in sp],
-                    fill=colour, width=int(1.6 * k * SS), joint="curve")
-
-    first_top = PADDING + 18 + 28 + 43            # 103
-    for i, key in enumerate(("Services (briefcase)", "Persons", "Sites (pin)")):
-        disc(first_top + 28 + i * 75, key, i == 0, BTN)
-
-    disc(LH - PADDING - 13 - 28, "Lock", True, LOCK_ACCENT)
-
-    return img.resize((LW, LH), Image.LANCZOS)
-
-
 def splash():
     img = Image.new("RGB", (W * SS, H * SS), "white")
     dr = ImageDraw.Draw(img)
@@ -378,5 +324,4 @@ if __name__ == "__main__":
     lock_screen().save("/tmp/preview/screen3_lock.png")
     lock_screen(error=True).save("/tmp/preview/screen3_lock_error.png")
     forgot_password().save("/tmp/preview/screen4_forgot.png")
-    home().save("/tmp/preview/screen5_home.png")
     print("written")
