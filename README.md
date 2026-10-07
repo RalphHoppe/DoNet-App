@@ -563,6 +563,23 @@ Deferred controls need one extra thing: a modal can be created *because* it is a
 supposed to be showing, so the property change that opens it fired before the instance
 existed. Both now reconcile with the view model on `Loaded`.
 
+### A failed open still holds the file
+
+`SqliteConnection.Open()` leaves a handle on the file when it throws. SQLite opens it,
+reads the header, rejects it, and the managed wrapper keeps the handle until something
+disposes it.
+
+That is not a tidy-up detail here. The connection that failed was never assigned to the
+field `CloseAsync` disposes, so it was invisible - and a locked `donet.db` is a file the
+password reset cannot delete. The one action that recovers from an unreadable database
+was being blocked by the failed attempt to read it. Opening is now wrapped so a failure
+disposes before it rethrows.
+
+Deleting during a reset also retries a few times. The gap between a handle being
+released and Windows agreeing it has been is real - a just-disposed connection, an
+indexer, a virus scanner - and failing a destructive one-shot operation on a
+hundred-millisecond race leaves a half-erased vault.
+
 ### Spending the time the user is already spending
 
 Four moments where the app is free and nobody is waiting on it. `Services/IdleWork.cs`

@@ -278,7 +278,7 @@ public sealed class VaultService : IVaultService
     /// user in the broken state this method exists to prevent, and they need to know
     /// now rather than at the next launch.
     /// </exception>
-    public Task ResetAsync(CancellationToken cancellationToken = default)
+    public async Task ResetAsync(CancellationToken cancellationToken = default)
     {
         // The old key cannot open anything after the vault is gone.
         _databaseKey = null;
@@ -289,22 +289,15 @@ public sealed class VaultService : IVaultService
         if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
         {
             // Nothing was ever written, so there is nothing to erase.
-            return Task.CompletedTask;
+            return;
         }
 
         var failures = new List<string>();
 
-        // Deleting a file that is not there is not an error, so no existence checks -
-        // only the directory had to be confirmed, above.
         foreach (var path in Targets(vault))
         {
-            try
+            if (!await TryDeleteAsync(path, cancellationToken).ConfigureAwait(false))
             {
-                File.Delete(path);
-            }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-            {
-                AppLog.Error($"Could not delete '{Path.GetFileName(path)}' during reset", error);
                 failures.Add(Path.GetFileName(path));
             }
         }
@@ -316,8 +309,46 @@ public sealed class VaultService : IVaultService
                 + string.Join(", ", failures)
                 + ". Close the app and try again.");
         }
+    }
 
-        return Task.CompletedTask;
+    /// <summary>
+    /// Deletes a file, retrying briefly if Windows says it is in use.
+    /// </summary>
+    /// <remarks>
+    /// Deleting a file that is not there is not an error, so there is no existence
+    /// check - only the directory had to be confirmed by the caller.
+    ///
+    /// The retries are for the gap between a handle being released and Windows
+    /// agreeing that it has been. A database connection that has just been disposed,
+    /// an indexer, a virus scanner reading the file it watched appear: all of them
+    /// produce a sharing violation that is gone a moment later. Failing a destructive
+    /// one-shot operation on a hundred-millisecond race would leave the user with a
+    /// half-erased vault and no obvious way forward.
+    /// </remarks>
+    private static async Task<bool> TryDeleteAsync(string path, CancellationToken cancellationToken)
+    {
+        const int attempts = 4;
+
+        for (var attempt = 1; attempt <= attempts; attempt++)
+        {
+            try
+            {
+                File.Delete(path);
+                return true;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                if (attempt == attempts)
+                {
+                    AppLog.Error($"Could not delete '{Path.GetFileName(path)}' during reset", error);
+                    return false;
+                }
+
+                await Task.Delay(120 * attempt, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Everything a reset has to remove, in one place so none is forgotten.</summary>

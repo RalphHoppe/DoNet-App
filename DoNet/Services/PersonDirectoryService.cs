@@ -58,6 +58,13 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
     /// </remarks>
     private const int SlowOperationMs = 150;
 
+    /// <summary>
+    /// SQLITE_NOTADB. With SQLCipher this almost always means the key is wrong rather
+    /// than the file being corrupt, because every page including the header is
+    /// encrypted - a wrong key makes the whole file look like noise.
+    /// </summary>
+    private const int NotADatabase = 26;
+
     private static readonly Lazy<bool> NativeProvider = new(
         () =>
         {
@@ -174,14 +181,43 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
                 _ = NativeProvider.Value;
 
                 SqliteConnection opened = new(builder.ToString());
-                opened.Open();
 
-                using SqliteCommand pragma = opened.CreateCommand();
+                try
+                {
+                    opened.Open();
 
-                // WAL lets reads proceed without blocking, and NORMAL avoids an fsync
-                // per commit while remaining crash-safe under WAL.
-                pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
-                pragma.ExecuteNonQuery();
+                    using SqliteCommand pragma = opened.CreateCommand();
+
+                    // WAL lets reads proceed without blocking, and NORMAL avoids an
+                    // fsync per commit while remaining crash-safe under WAL.
+                    pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
+                    pragma.ExecuteNonQuery();
+                }
+                catch (Exception error)
+                {
+                    // A failed Open still leaves a handle on the file. SQLite opens it,
+                    // reads the header, rejects it, and the managed wrapper keeps the
+                    // handle until something disposes it - which nothing did, because
+                    // the connection was never assigned to _connection and so was
+                    // invisible to CloseAsync.
+                    //
+                    // That is not a tidy-up detail. A locked donet.db is a file the
+                    // password reset cannot delete, so the one action that recovers
+                    // from an unreadable database was being blocked by the failed
+                    // attempt to read it.
+                    opened.Dispose();
+
+                    if (error is SqliteException { SqliteErrorCode: NotADatabase })
+                    {
+                        AppLog.Error(
+                            "The database exists but this key cannot decrypt it. That "
+                            + "means it was left behind by an earlier password - "
+                            + "resetting the password removes it and starts clean.",
+                            error);
+                    }
+
+                    throw;
+                }
 
                 return opened;
             },
@@ -402,6 +438,10 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
         {
             _connection?.Dispose();
             _connection = null;
+
+            // No-op while pooling is off, and the one line that would stop a pooled,
+            // still-keyed handle outliving the lock screen if it is ever turned on.
+            SqliteConnection.ClearAllPools();
         }
         finally
         {
