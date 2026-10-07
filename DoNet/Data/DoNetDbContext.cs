@@ -48,8 +48,11 @@ public sealed class DoNetDbContext : DbContext
             entity.HasKey(p => p.Id);
             entity.Property(p => p.Id).ValueGeneratedOnAdd();
 
-            // Indexed because the directory sorts by it on every page.
-            entity.HasIndex(p => p.Id);
+            // No explicit index on Id. An INTEGER PRIMARY KEY in SQLite *is* the table's
+            // rowid, so ordering and seeking by it are already free; adding an index
+            // would create a second B-tree holding the same keys and charge every insert
+            // and delete to maintain it. The directory's only other access pattern is a
+            // LIKE '%term%' search, which no index can serve.
         });
     }
 }

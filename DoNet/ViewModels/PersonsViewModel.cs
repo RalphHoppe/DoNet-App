@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DoNet.Contracts;
 using DoNet.Models;
+using DoNet.Services;
 
 namespace DoNet.ViewModels;
 
@@ -136,7 +137,10 @@ public sealed partial class PersonsViewModel : ObservableObject
         PendingDelete = null;
         State = DirectoryState.Loading;
 
-        (_directory as Services.PersonDirectoryService)?.Reset();
+        // Not awaited: locking must feel instant, and the vault has already dropped the
+        // key by the time this runs. Observed so a failure to close is still recorded
+        // rather than surfacing later as an unobserved task exception.
+        _directory.CloseAsync().Observe("Closing the directory on lock");
 
         OnPropertyChanged(nameof(HasCards));
         OnPropertyChanged(nameof(HasNoMatches));

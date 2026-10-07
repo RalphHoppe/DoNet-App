@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using DoNet.Contracts;
+using DoNet.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -51,13 +52,22 @@ public sealed partial class SplashPage : Page
         {
             await Task.WhenAny(PlaySequenceAsync(), Task.Delay(WatchdogMs));
         }
-        catch (Exception)
+        catch (Exception error)
         {
             // An animation failure must never strand the user on a blank splash -
             // fall through and navigate anyway.
+            AppLog.Error("The splash animation failed", error);
         }
 
-        _navigation.NavigateTo(Destination(), clearBackStack: true);
+        try
+        {
+            _navigation.NavigateTo(Destination(), clearBackStack: true);
+        }
+        catch (Exception error)
+        {
+            // Inside an async void handler, so this would otherwise end the process.
+            AppLog.Error("Navigating away from the splash failed", error);
+        }
     }
 
     /// <summary>

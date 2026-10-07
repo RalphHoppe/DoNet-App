@@ -58,7 +58,11 @@ public sealed partial class FieldCell : UserControl
     /// the property from code does not bounce back through a change event and reset the
     /// caret while the user is typing.
     /// </summary>
+    /// <summary>How long the COPY button reads "COPIED" after a press.</summary>
+    private const int CopyFeedbackMs = 1200;
+
     private bool _syncing;
+    private int _copyGeneration;
 
     private bool _revealed;
 
@@ -435,10 +439,31 @@ public sealed partial class FieldCell : UserControl
     }
 
     /// <summary>Returns the COPY label to its resting text shortly after a copy.</summary>
+    /// <remarks>
+    /// Generation-counted. Two copies in quick succession used to leave two timers
+    /// running, and the first to finish reset the label while the second copy was still
+    /// meant to be showing - so the confirmation vanished about a second early. Only the
+    /// most recent press owns the label.
+    ///
+    /// Wrapped because an async void handler that throws takes the process with it.
+    /// </remarks>
     private async void StartCopyReset()
     {
-        await System.Threading.Tasks.Task.Delay(1200);
-        CopyLabel.Text = "COPY";
+        int generation = unchecked(++_copyGeneration);
+
+        try
+        {
+            await System.Threading.Tasks.Task.Delay(CopyFeedbackMs);
+
+            if (generation == _copyGeneration)
+            {
+                CopyLabel.Text = "COPY";
+            }
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Resetting the copy label failed", error);
+        }
     }
 
     private void OnInputChanged(object sender, TextChangedEventArgs args)

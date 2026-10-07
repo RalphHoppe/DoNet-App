@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using DoNet.Contracts;
 using DoNet.ViewModels;
+using DoNet.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -58,21 +59,32 @@ public sealed partial class WelcomePage : Page
         // ample cover for an encrypted file open - so the directory has its first page
         // ready instead of showing a spinner the moment it appears. Deliberately not
         // awaited: the welcome animation must never wait on storage.
-        _ = App.Current.Services.GetRequiredService<PersonsViewModel>().PreloadAsync();
+        App.Current.Services
+            .GetRequiredService<PersonsViewModel>()
+            .PreloadAsync()
+            .Observe("Opening the person store during the welcome screen");
 
         try
         {
             await Task.WhenAny(PlaySequenceAsync(), Task.Delay(WatchdogMs));
         }
-        catch (Exception)
+        catch (Exception error)
         {
             // An animation failure must never strand the user here - fall through
             // and navigate anyway.
+            AppLog.Error("The welcome animation failed", error);
         }
 
-        // Clearing the back stack matters more here than on the splash: without it,
-        // Back from the home screen would replay the welcome and land straight back.
-        _navigation.NavigateTo(typeof(HomePage), clearBackStack: true);
+        try
+        {
+            // Clearing the back stack matters more here than on the splash: without it,
+            // Back from the home screen would replay the welcome and land straight back.
+            _navigation.NavigateTo(typeof(HomePage), clearBackStack: true);
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Navigating to the home screen failed", error);
+        }
     }
 
     private async Task PlaySequenceAsync()

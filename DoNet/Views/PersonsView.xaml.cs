@@ -1,4 +1,6 @@
+using System;
 using DoNet.Models;
+using DoNet.Services;
 using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -22,11 +24,25 @@ public sealed partial class PersonsView : UserControl
 
     public PersonsViewModel ViewModel { get; }
 
+    /// <summary>
+    /// Releases this control's compiled bindings. Called when the host page is leaving
+    /// for good; see <see cref="HomePage.OnNavigatedFrom"/> for why it is not automatic.
+    /// </summary>
+    public void ReleaseBindings() => Bindings.StopTracking();
+
+
     private async void OnLoaded(object sender, RoutedEventArgs args)
     {
-        // The store was already opened while the welcome screen was animating, so this
-        // is usually just the first page arriving rather than a cold open.
-        await ViewModel.LoadAsync();
+        try
+        {
+            // The store was already opened while the welcome screen was animating, so
+            // this is usually just the first page arriving rather than a cold open.
+            await ViewModel.LoadAsync();
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Loading the directory failed", error);
+        }
     }
 
     private void OnCardOpen(object? sender, Person person) => ViewModel.OpenPreview(person);
@@ -56,9 +72,18 @@ public sealed partial class PersonsView : UserControl
 
         double remaining = scroller.ScrollableHeight - scroller.VerticalOffset;
 
-        if (remaining <= scroller.ViewportHeight * 0.75)
+        if (remaining > scroller.ViewportHeight * 0.75)
+        {
+            return;
+        }
+
+        try
         {
             await ViewModel.LoadMoreAsync();
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Loading more records failed", error);
         }
     }
 }

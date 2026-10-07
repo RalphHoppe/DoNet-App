@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DoNet.Contracts;
@@ -34,10 +36,41 @@ namespace DoNet.Services;
 /// </remarks>
 public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
 {
+    /// <summary>
+    /// Loads the SQLCipher native library, once, on whichever thread needs it first.
+    /// </summary>
+    /// <remarks>
+    /// The .Core EF package does not call this for us the way the all-in-one package
+    /// would, and without it the first connection fails with "You need to call
+    /// SQLitePCL.raw.SetProvider()". It used to run in the App constructor, which put a
+    /// native DLL load on the path between process start and the first pixel. Here it
+    /// happens on the thread pool, behind the splash, and only if the database is
+    /// actually opened.
+    /// </remarks>
+    /// <summary>
+    /// Operations slower than this get written to the log.
+    /// </summary>
+    /// <remarks>
+    /// Only the outliers. Logging every query would put a file append on the path of
+    /// every keystroke, which is the kind of instrumentation that becomes the
+    /// performance problem. 150ms is roughly nine frames - comfortably past the point
+    /// where a person notices the UI waiting.
+    /// </remarks>
+    private const int SlowOperationMs = 150;
+
+    private static readonly Lazy<bool> NativeProvider = new(
+        () =>
+        {
+            SQLitePCL.Batteries_V2.Init();
+            return true;
+        },
+        LazyThreadSafetyMode.ExecutionAndPublication);
+
     private readonly IVaultService _vault;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     private SqliteConnection? _connection;
+    private bool _disposed;
 
     public PersonDirectoryService(IVaultService vault)
     {
@@ -49,7 +82,7 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
         // Called from the welcome screen, which only runs after a successful unlock.
         // If the key is not there yet there is nothing useful to do, and failing here
         // would turn a timing detail into a visible error.
-        if (!_vault.IsUnlocked)
+        if (_disposed || !_vault.IsUnlocked)
         {
             return;
         }
@@ -87,6 +120,8 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
         string path = AppPaths.DatabasePath;
         string key = _vault.DatabaseKey;
 
+        long startedAt = Stopwatch.GetTimestamp();
+
         SqliteConnection connection = await Task.Run(
             () =>
             {
@@ -105,6 +140,8 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
                     Pooling = false,
                 };
 
+                _ = NativeProvider.Value;
+
                 SqliteConnection opened = new(builder.ToString());
                 opened.Open();
 
@@ -120,6 +157,14 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
             cancellationToken).ConfigureAwait(false);
 
         _connection = connection;
+
+        // Worth a line in the log every time. This is the one unavoidably expensive
+        // thing the app does - 256,000 rounds of PBKDF2 - and having the real number
+        // from a real machine is what tells us whether a complaint about slowness is
+        // this or something else.
+        AppLog.Info(
+            "Database opened and keyed in "
+            + $"{Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds:F0} ms");
 
         // EnsureCreated rather than migrations: there is one schema version so far, and
         // migrations would add a toolchain for a problem that does not exist yet. This
@@ -144,9 +189,19 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
     /// every query would execute on whichever thread called it, which for a search box
     /// is the UI thread.
     /// </remarks>
+    /// <param name="operation">
+    /// Filled in by the compiler with the calling method's name, so a slow-operation
+    /// warning says which one was slow without every call site having to pass a string.
+    /// </param>
     private async Task<T> WithDatabaseAsync<T>(
-        Func<DoNetDbContext, CancellationToken, Task<T>> work, CancellationToken cancellationToken)
+        Func<DoNetDbContext, CancellationToken, Task<T>> work,
+        CancellationToken cancellationToken,
+        [CallerMemberName] string operation = "")
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        long startedAt = Stopwatch.GetTimestamp();
+
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -163,6 +218,13 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
         finally
         {
             _gate.Release();
+
+            double elapsed = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
+
+            if (elapsed >= SlowOperationMs)
+            {
+                AppLog.Warn($"{operation} took {elapsed:F0} ms");
+            }
         }
     }
 
@@ -289,16 +351,85 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
     /// <summary>
     /// Closes the database. Called when the app locks, so the next unlock re-keys.
     /// </summary>
-    public void Reset()
+    /// <remarks>
+    /// Takes the gate first. Disposing the connection while a query is still running on
+    /// it is a native-level race - the managed object goes away underneath a sqlite3
+    /// handle that is mid-statement - and the result is an access violation rather than
+    /// a catchable exception. Locking is asynchronous and the user has already been sent
+    /// to the lock screen by the time it completes; the key is dropped separately and
+    /// immediately, so nothing waits on this.
+    /// </remarks>
+    public async Task CloseAsync()
     {
-        _connection?.Dispose();
-        _connection = null;
+        if (_disposed)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            _connection?.Dispose();
+            _connection = null;
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
+    /// <summary>
+    /// Shutdown. Closes the database cleanly if it can do so safely.
+    /// </summary>
+    /// <remarks>
+    /// Dispose cannot be asynchronous, so it waits briefly for whatever is running
+    /// rather than awaiting it. In practice the gate is free immediately - queries here
+    /// are measured in milliseconds - and the wait exists for the case where it is not.
+    ///
+    /// If the wait times out the connection is deliberately left alone. Disposing it
+    /// while a statement is executing is a native-level race, and an access violation
+    /// as the window closes is still a crash in the eyes of anyone watching. Letting
+    /// the process end instead costs nothing: the OS closes the handle, and the
+    /// write-ahead log is recovered on the next open, which is exactly what WAL is for.
+    /// </remarks>
     public void Dispose()
     {
-        Reset();
-        _gate.Dispose();
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
+        bool acquired = false;
+
+        try
+        {
+            acquired = _gate.Wait(TimeSpan.FromSeconds(1));
+
+            if (acquired)
+            {
+                _connection?.Dispose();
+                _connection = null;
+            }
+            else
+            {
+                AppLog.Warn("Database still busy at shutdown; left it to the OS to close.");
+            }
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Closing the database at shutdown failed", error);
+        }
+        finally
+        {
+            if (acquired)
+            {
+                _gate.Release();
+            }
+
+            _gate.Dispose();
+        }
     }
 
     /// <summary>

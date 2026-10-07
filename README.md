@@ -466,3 +466,75 @@ The search box debounces 250ms and cancels the query in flight, so a typed word 
 round trip rather than one per character, and a page plus its total is fetched in a
 single trip instead of two.
 
+## Stability and performance
+
+### Nothing fails silently
+
+Three handlers are installed in the `App` constructor, before anything else runs,
+because they cover different ground in WinUI 3:
+
+| Handler | Catches | Can it save the app? |
+| --- | --- | --- |
+| `Application.UnhandledException` | UI thread | Yes |
+| `AppDomain.UnhandledException` | background threads | No - already terminating |
+| `TaskScheduler.UnobservedTaskException` | faulted tasks nobody awaited | N/A - fires at GC |
+
+Background-thread failures do **not** reach the `Application` event in WinUI 3, which
+is why the `AppDomain` one is not redundant. And the exception the `Application` event
+hands over usually arrives with its stack trace stripped, so the most recent
+first-chance exception is kept and substituted when the stack is missing.
+
+UI-thread failures are marked handled and the app carries on - but only up to five in
+ten seconds. Blanket swallowing sounds safer than it is: an exception thrown from
+layout repeats every frame, and a handler that always recovers turns that into an
+unkillable app burning a core. Past the limit it is allowed to end.
+
+Everything lands in `%LOCALAPPDATA%\...\logs\donet.log`, rolling at 256 KB with one
+previous file kept. The logger never throws and switches itself off after a write
+failure - a logger that fails while reporting a failure turns a diagnosable fault into
+an undiagnosable one. Nothing sensitive is written: exception text and timings only,
+never a field value, a password or a key.
+
+### async void
+
+Seven event handlers were `async void`. An exception in one of those has no caller to
+catch it and kills the process. All seven are wrapped. Fire-and-forget tasks go through
+`.Observe(context)`, which attaches a failure-only continuation so the exception is seen
+and logged at the moment it happens rather than whenever the task is collected.
+
+### What was measured, and what is logged
+
+The app logs the one genuinely expensive thing it does - keying the database - on every
+open, and any database operation that crosses 150ms. Only the outliers: putting a file
+append on the path of every keystroke is the kind of instrumentation that becomes the
+performance problem. If something feels slow, the log says whether it was the key
+derivation or something else.
+
+### Deliberate decisions
+
+- **One connection per unlocked session.** See above; this is the single biggest win.
+- **No index on `Id`.** An `INTEGER PRIMARY KEY` in SQLite *is* the rowid, so ordering
+  by it is already free. The index that was there built a second B-tree over the same
+  keys and charged every insert to maintain it. The only other access pattern is
+  `LIKE '%term%'`, which no index can serve.
+- **The native SQLCipher library loads lazily**, on the thread pool, instead of in the
+  `App` constructor - it was a native DLL load sitting between process start and the
+  first pixel.
+- **`x:Bind` bindings are released on navigating away from the home screen.** Compiled
+  bindings subscribe straight to `PropertyChanged` and never unsubscribe; with a
+  singleton view model that means every lock/unlock cycle stranded a whole page tree in
+  memory. Safe here only because the home screen is never navigated back to.
+- **Closing waits for in-flight work.** Disposing a `SqliteConnection` mid-statement is
+  a native race, and an access violation as the window closes is still a crash. If the
+  wait times out the connection is left for the OS and WAL recovers on next open.
+- **Workstation concurrent GC, `TieredPGO`, ReadyToRun on Release.**
+
+### Considered and not done
+
+`PersonDialog` is built eagerly with the home screen - sixteen `FieldCell`s and their
+inputs - even though it is invisible until used. `x:Load` would defer that, but the
+control also owns the subscription that tells it when to open, so deferring it means
+moving that trigger out to the host. That is a structural change with real regression
+risk, and this round was about stability. It wants a measurement first: the home intro
+animation is ~0.54s and may already cover the cost.
+

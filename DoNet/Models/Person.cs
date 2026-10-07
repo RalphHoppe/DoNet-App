@@ -53,43 +53,10 @@ public sealed class Person
             ? "Person record"
             : $"{FirstName} {LastName}".Trim();
 
-    /// <summary>The initial shown in the card's avatar.</summary>
-    [NotMapped]
-    public string Initial
-    {
-        get
-        {
-            string source = !string.IsNullOrWhiteSpace(FirstName) ? FirstName
-                          : !string.IsNullOrWhiteSpace(LastName) ? LastName
-                          : string.Empty;
-            return source.Length > 0 ? source[..1].ToUpperInvariant() : "\u2014";
-        }
-    }
-
+    /// <summary>Creation stamp, formatted for display. Empty until the store assigns one.</summary>
     [NotMapped]
     public string CreatedAtDisplay =>
         CreatedAt == default ? string.Empty : CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
 
     public Person Clone() => (Person)MemberwiseClone();
-
-    /// <summary>
-    /// Fields the directory search matches against. Secrets are excluded on purpose:
-    /// a search box should never be a way to confirm a password by guessing at it.
-    /// </summary>
-    public bool Matches(string term)
-    {
-        if (string.IsNullOrWhiteSpace(term))
-        {
-            return true;
-        }
-
-        return Contains(FirstName) || Contains(LastName) || Contains(Email)
-            || Contains(Country) || Contains(City) || Contains(State)
-            || Contains(PhoneNumber) || Contains(Note)
-            || Id.ToString().Contains(term, StringComparison.OrdinalIgnoreCase);
-
-        bool Contains(string value) =>
-            !string.IsNullOrEmpty(value)
-            && value.Contains(term, StringComparison.OrdinalIgnoreCase);
-    }
 }

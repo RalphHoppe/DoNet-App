@@ -1,5 +1,7 @@
+using System;
 using System.ComponentModel;
 using DoNet.ViewModels;
+using DoNet.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -56,6 +58,19 @@ public sealed partial class ConfirmDialog : UserControl
 
     private void OnCancelClick(object sender, RoutedEventArgs args) => _host.CancelDelete();
 
+    /// <remarks>
+    An async void handler that throws takes the process down - there is no caller to
+    catch it and the framework has nowhere to send it. Every one of them is wrapped.
+    /// </remarks>
     private async void OnConfirmClick(object sender, RoutedEventArgs args)
-        => await _host.ConfirmDeleteAsync();
+    {
+        try
+        {
+            await _host.ConfirmDeleteAsync();
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Deleting a person failed", error);
+        }
+    }
 }

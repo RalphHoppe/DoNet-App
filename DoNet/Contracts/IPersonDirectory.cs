@@ -51,4 +51,10 @@ public interface IPersonDirectory
     Task UpdateAsync(Person person, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Closes the store and discards the key material held by the open connection.
+    /// Called when the app locks.
+    /// </summary>
+    Task CloseAsync();
 }

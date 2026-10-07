@@ -16,10 +16,9 @@ public partial class App : Application
 
     public App()
     {
-        // Loads the SQLCipher native library. The .Core EF package does not do this for
-        // us the way the all-in-one package would, and without it the first connection
-        // fails with "You need to call SQLitePCL.raw.SetProvider()".
-        SQLitePCL.Batteries_V2.Init();
+        // First statement in the process that we control. Anything that throws before
+        // this is invisible, so nothing goes above it.
+        CrashHandler.Install(this);
 
         InitializeComponent();
         Services = ConfigureServices();
@@ -42,7 +41,29 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         _window = new MainWindow();
+
+        // WinUI desktop has no application-level exit event, so the main window closing
+        // is the shutdown hook. Disposing the provider disposes the singletons that hold
+        // unmanaged resources - in particular it closes the encrypted database, which
+        // lets SQLite check the write-ahead log back into the main file instead of
+        // leaving a -wal beside it for the next launch to recover.
+        _window.Closed += OnMainWindowClosed;
+
         _window.Activate();
+    }
+
+    private void OnMainWindowClosed(object sender, WindowEventArgs args)
+    {
+        try
+        {
+            (Services as IDisposable)?.Dispose();
+            AppLog.Info("--- DoNet closed ---");
+        }
+        catch (Exception error)
+        {
+            // Shutdown is not a place to throw; the window is already going.
+            AppLog.Error("Shutdown failed", error);
+        }
     }
 
     private static ServiceProvider ConfigureServices()

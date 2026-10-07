@@ -84,6 +84,29 @@
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
 
+  <!--
+    Runtime tuning. These are the settings a desktop app wants and the defaults do not
+    always give it.
+  -->
+  <PropertyGroup>
+    <!--
+      Workstation, concurrent GC. Server GC sizes its heaps per core and collects in
+      parallel, which suits a machine doing nothing but serving requests; in a desktop
+      app it costs memory and produces longer individual pauses. Concurrent (background)
+      collection keeps gen2 work off the thread that is drawing.
+    -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+
+    <!--
+      Dynamic PGO. The runtime watches which types and branches actually occur and
+      re-jits hot methods specialised for them - which matters here because the UI is
+      built on interface and virtual dispatch that PGO can devirtualise. On by default
+      in .NET 8; set explicitly so it survives a future default change.
+    -->
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+
   <!-- Publish Properties -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>

@@ -176,6 +176,7 @@
                            Fill="{StaticResource SurfaceBrush}" />
 
                 <views:PersonsView
+                    x:Name="DirectoryView"
                     Visibility="{x:Bind ViewModel.IsPersonsSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
             </Grid>
             </Grid>
@@ -184,7 +185,7 @@
                 Modals, outside the padded shell and last in the tree so they sit above it.
                 Both are driven by the same PersonsViewModel singleton that backs the grid.
             -->
-            <views:PersonDialog />
+            <views:PersonDialog x:Name="PersonModal" />
             <views:ConfirmDialog />
         </Grid>
     </Page>

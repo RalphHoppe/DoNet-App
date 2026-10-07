@@ -1,5 +1,7 @@
+using System;
 using System.ComponentModel;
 using DoNet.ViewModels;
+using DoNet.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -112,6 +114,26 @@ public sealed partial class PersonDialog : UserControl
 
     private void OnCancelClick(object sender, RoutedEventArgs args) => _host.CloseDialog();
 
+    /// <remarks>
+    An async void handler that throws takes the process down - there is no caller to
+    catch it and the framework has nowhere to send it. Every one of them is wrapped.
+    /// </remarks>
     private async void OnPrimaryClick(object sender, RoutedEventArgs args)
-        => await _host.CommitDialogAsync();
+    {
+        try
+        {
+            await _host.CommitDialogAsync();
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Saving a person failed", error);
+        }
+    }
+
+    /// <summary>
+    /// Releases this control's compiled bindings. Called when the host page is leaving
+    /// for good; see <see cref="HomePage.OnNavigatedFrom"/> for why it is not automatic.
+    /// </summary>
+    public void ReleaseBindings() => Bindings.StopTracking();
+
 }
