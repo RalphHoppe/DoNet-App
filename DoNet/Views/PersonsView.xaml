@@ -276,11 +276,9 @@
                 <StackPanel VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <ProgressRing IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
-                                  Width="36"
-                                  Height="36"
-                                  Foreground="{StaticResource BrandPrimaryBrush}"
-                                  HorizontalAlignment="Center" />
+                    <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                       Kind="Loading"
+                                       IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
                     <TextBlock Text="Opening the directory"
                                Style="{StaticResource StateTitleStyle}"
                                Margin="0,16,0,0" />
@@ -291,16 +289,9 @@
                 <StackPanel VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
-                        <Canvas Width="28" Height="28">
-                            <Path Data="M18.5 12.5C20.7091 12.5 22.5 10.7091 22.5 8.5C22.5 6.29086 20.7091 4.5 18.5 4.5 M23 23.5V21.5C23 19.8431 21.9 18.4 20.4 17.9 M11 12.5C13.2091 12.5 15 10.7091 15 8.5C15 6.29086 13.2091 4.5 11 4.5C8.79086 4.5 7 6.29086 7 8.5C7 10.7091 8.79086 12.5 11 12.5Z M17 23.5V21.5C17 19.2909 15.2091 17.5 13 17.5H9C6.79086 17.5 5 19.2909 5 21.5V23.5"
-                                  Stroke="{StaticResource FieldLabelBrush}"
-                                  StrokeThickness="1.6"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round" />
-                        </Canvas>
-                    </Viewbox>
+                    <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                       Kind="Empty"
+                                       IsActive="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
                     <TextBlock Text="No persons yet"
                                Style="{StaticResource StateTitleStyle}"
                                Margin="0,16,0,0" />
@@ -312,15 +303,9 @@
                 <StackPanel VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             Visibility="{x:Bind ViewModel.HasNoMatches, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
-                        <Canvas Width="28" Height="28">
-                            <Path Data="M21 12.5A8.5 8.5 0 1 1 4 12.5A8.5 8.5 0 1 1 21 12.5 M18.8 18.8L25 25"
-                                  Stroke="{StaticResource FieldLabelBrush}"
-                                  StrokeThickness="1.6"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round" />
-                        </Canvas>
-                    </Viewbox>
+                    <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                       Kind="NoMatch"
+                                       IsActive="{x:Bind ViewModel.HasNoMatches, Mode=OneWay}" />
                     <TextBlock Text="Nothing matches that search"
                                Style="{StaticResource StateTitleStyle}"
                                Margin="0,16,0,0" />
@@ -332,16 +317,9 @@
                 <StackPanel VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <Viewbox Width="44" Height="44" HorizontalAlignment="Center">
-                        <Canvas Width="28" Height="28">
-                            <Path Data="M14 4.5L25 23.5H3L14 4.5Z M14 11.5V16.5 M14 19.8V20.2"
-                                  Stroke="{StaticResource ErrorForegroundBrush}"
-                                  StrokeThickness="1.6"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round" />
-                        </Canvas>
-                    </Viewbox>
+                    <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                       Kind="Error"
+                                       IsActive="{x:Bind ViewModel.IsError, Mode=OneWay}" />
                     <TextBlock Text="The directory could not be opened"
                                Style="{StaticResource StateTitleStyle}"
                                Margin="0,16,0,0" />

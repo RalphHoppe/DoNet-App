@@ -563,6 +563,35 @@ Deferred controls need one extra thing: a modal can be created *because* it is a
 supposed to be showing, so the property change that opens it fired before the instance
 existed. Both now reconcile with the view model on `Loaded`.
 
+### The four directory states
+
+`Controls/StateArt.xaml` draws the loading, empty, no-match and error illustrations.
+They share one motif - a 92x60 record card on a 120x92 canvas - so they read as the
+same object in four conditions rather than four unrelated icons: contents not yet
+arrived, an empty slot, a lens finding nothing, a card that stayed locked.
+
+Two constraints shaped the implementation more than the drawing did.
+
+**Every animation moves opacity or a transform, nothing else.** Those are
+*independent* animations, which the compositor runs on its own thread. Width, height
+and `StrokeDashOffset` would be *dependent* animations, tied to the UI thread. That
+distinction is not academic here: the loading illustration plays at the exact moment
+the app is busiest, and an indicator that stutters while you wait for it is worse than
+no indicator at all.
+
+**`IsActive` is a separate property from visibility.** A collapsed element still runs
+its storyboards, so binding only `Visibility` would leave three unseen animations
+looping forever, waking the compositor sixty times a second to draw nothing. The host
+binds the same view-model flag to both, and the control starts exactly one storyboard.
+
+Each illustration is `x:Load="False"` and realised through `FindName` when `Kind` is
+applied, so an instance builds only the picture it was asked for - four of these sit on
+the Persons screen at once, and building all four drawings in all four instances would
+be sixteen pictures to show one.
+
+The error state shakes once and stops. A looping error animation keeps shouting at
+someone who has already understood.
+
 ### The compiler as reviewer
 
 `.editorconfig` at the repo root raises a curated set of analyzer rules to warning.
