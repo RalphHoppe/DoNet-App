@@ -127,8 +127,9 @@ public sealed partial class PersonDialog : UserControl
     private void OnCancelClick(object sender, RoutedEventArgs args) => _host.CloseDialog();
 
     /// <remarks>
-    An async void handler that throws takes the process down - there is no caller to
-    catch it and the framework has nowhere to send it. Every one of them is wrapped.
+    /// An async void handler that throws takes the process down - there is no caller
+    /// to catch it and the framework has nowhere to send it. Every one of them is
+    /// wrapped.
     /// </remarks>
     private async void OnPrimaryClick(object sender, RoutedEventArgs args)
     {
