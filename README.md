@@ -581,9 +581,21 @@ middle column:
 | 2 | Last Name | left |
 | 3 | Gender | middle |
 | 4 | Date of Birth | left |
-| … | … | alternating to Phone Number |
-| 11-15 | Email through Recovery Words | right |
+| 5 | Country | middle |
+| 6 | State | left |
+| 7 | City | middle |
+| 8 | Street | left |
+| 9 | Postal Code | middle |
+| 10 | Phone Number | left |
+| 11 | Email | right |
+| 12 | Email Password | right |
+| 13 | Recovery Email | right |
+| 14 | Recovery Password | right |
+| 15 | Recovery Words | right |
 | 16 | Note | full width |
+
+`#` and `Created At` are not in the list: both are assigned on save and have no input
+to focus.
 
 No arrangement of `TabIndex` can interleave two containers, so `PersonDialog` drives
 Tab itself from `PreviewKeyDown`, walking an explicit ordered list. It deliberately does
