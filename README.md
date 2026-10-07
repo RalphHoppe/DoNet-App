@@ -563,6 +563,38 @@ Deferred controls need one extra thing: a modal can be created *because* it is a
 supposed to be showing, so the property change that opens it fired before the instance
 existed. Both now reconcile with the view model on `Loaded`.
 
+### Tab order, and why TabIndex could not do it
+
+`TabIndex` is only compared **within a container**: `FrameworkElement.TabFocusNavigation`
+defaults to `Local`, so indices are ranked against siblings, not globally. The dialog's
+three columns are separate `StackPanel`s, which meant the tab indices on the cells only
+ever reordered each column internally. Tabbing walked the middle panel top to bottom -
+First Name, Gender, Country - and only then moved to the next panel.
+
+The order the form actually needs is the schema order, and it zigzags, because the
+design puts Last Name under the record number on the left while First Name heads the
+middle column:
+
+| # | field | column |
+| --- | --- | --- |
+| 1 | First Name | middle |
+| 2 | Last Name | left |
+| 3 | Gender | middle |
+| 4 | Date of Birth | left |
+| … | … | alternating to Phone Number |
+| 11-15 | Email through Recovery Words | right |
+| 16 | Note | full width |
+
+No arrangement of `TabIndex` can interleave two containers, so `PersonDialog` drives
+Tab itself from `PreviewKeyDown`, walking an explicit ordered list. It deliberately does
+not trap focus: tabbing past the last field, or back past the first, is left unhandled
+so focus carries on to the buttons and out of the dialog. A form you cannot tab out of
+is worse than one that tabs oddly.
+
+The cells still carry a matching `TabOrder`. It cannot cross columns, but it keeps each
+column internally correct, so the built-in behaviour stays sensible if the handler ever
+does not run.
+
 ### A failed open still holds the file
 
 `SqliteConnection.Open()` leaves a handle on the file when it throws. SQLite opens it,

@@ -1,5 +1,9 @@
 using System;
 using System.ComponentModel;
+using DoNet.Controls;
+using Microsoft.UI.Input;
+using Windows.System;
+using Windows.UI.Core;
 using DoNet.ViewModels;
 using DoNet.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,6 +57,85 @@ public sealed partial class PersonDialog : UserControl
     }
 
     public PersonDialogViewModel ViewModel { get; }
+
+    /// <summary>
+    /// The fields in the order a person fills them in, which is the order the schema
+    /// defines them in: who they are, where they are, how to reach them, then the
+    /// recovery block.
+    /// </summary>
+    /// <remarks>
+    /// This exists because XAML cannot express it. Tab order comes from TabIndex, but
+    /// TabIndex is only compared <i>within a container</i> - FrameworkElement's
+    /// TabFocusNavigation defaults to Local - and the three columns are separate
+    /// panels. So tabbing walked one panel top to bottom and only then moved to the
+    /// next, which is why First Name led to Gender rather than Last Name.
+    ///
+    /// The order below zigzags between the left and middle columns, because the design
+    /// puts Last Name under the record number on the left while First Name heads the
+    /// middle. No arrangement of TabIndex can interleave two containers, so the dialog
+    /// drives the Tab key itself.
+    ///
+    /// Cells still carry a matching TabOrder. It cannot cross columns, but it keeps
+    /// each column internally correct, so the built-in behaviour stays sensible if
+    /// this handler ever does not run.
+    /// </remarks>
+    private FieldCell[] FieldsInTabOrder => new[]
+    {
+        FirstNameCell, LastNameCell, GenderCell, DobCell,
+        CountryCell, StateCell, CityCell, StreetCell,
+        PostalCodeCell, PhoneCell,
+        EmailCell, EmailPasswordCell,
+        RecoveryEmailCell, RecoveryPasswordCell, RecoveryWordsCell,
+        NoteCell,
+    };
+
+    /// <summary>
+    /// Moves focus field by field in schema order, forwards on Tab and backwards on
+    /// Shift+Tab.
+    /// </summary>
+    /// <remarks>
+    /// Preview rather than the bubbling event, so the decision is made before the
+    /// focus manager acts on it.
+    ///
+    /// Deliberately does not trap focus. Tabbing past the last field, or back past the
+    /// first, is left unhandled so the framework carries on to the buttons and out of
+    /// the dialog - a form you cannot tab out of is worse than one that tabs oddly.
+    /// Focus that is not in a field at all is left alone for the same reason.
+    /// </remarks>
+    private void OnFieldKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key != VirtualKey.Tab)
+        {
+            return;
+        }
+
+        FieldCell[] order = FieldsInTabOrder;
+        object? focused = FocusManager.GetFocusedElement(XamlRoot);
+
+        int current = Array.FindIndex(order, cell => cell.OwnsFocus(focused));
+
+        if (current < 0)
+        {
+            return;
+        }
+
+        bool back = InputKeyboardSource
+            .GetKeyStateForCurrentThread(VirtualKey.Shift)
+            .HasFlag(CoreVirtualKeyStates.Down);
+
+        int next = current + (back ? -1 : 1);
+
+        if (next < 0 || next >= order.Length)
+        {
+            return;
+        }
+
+        if (order[next].TryFocus())
+        {
+            args.Handled = true;
+        }
+    }
+
 
     /// <summary>Animates the switch between preview and edit.</summary>
     private void OnDialogPropertyChanged(object? sender, PropertyChangedEventArgs args)

@@ -104,7 +104,8 @@
         </Storyboard>
     </UserControl.Resources>
 
-    <Grid x:Name="Root" Visibility="Collapsed">
+    <Grid x:Name="Root" Visibility="Collapsed"
+          PreviewKeyDown="OnFieldKeyDown">
 
         <Rectangle x:Name="Scrim" Fill="#59000000" Tapped="OnScrimTapped" />
 
@@ -217,33 +218,33 @@
                                                 Value="{x:Bind ViewModel.IdDisplay, Mode=OneWay}"
                                                 Kind="{x:Bind ViewModel.AutoFieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="LAST NAME"
-                                                TabOrder="3"
+                            <controls:FieldCell x:Name="LastNameCell" Label="LAST NAME"
+                                                TabOrder="2"
                                                 Placeholder="Enter last name"
                                                 Value="{x:Bind ViewModel.LastName, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="DATE OF BIRTH"
-                                                TabOrder="6"
+                            <controls:FieldCell x:Name="DobCell" Label="DATE OF BIRTH"
+                                                TabOrder="4"
                                                 InputKind="Date"
                                                 Placeholder="DD / MM / YYYY"
                                                 Value="{x:Bind ViewModel.DateOfBirth, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="STATE"
-                                                TabOrder="9"
+                            <controls:FieldCell x:Name="StateCell" Label="STATE"
+                                                TabOrder="6"
                                                 Placeholder="Enter state"
                                                 Value="{x:Bind ViewModel.State, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="STREET"
-                                                TabOrder="12"
+                            <controls:FieldCell x:Name="StreetCell" Label="STREET"
+                                                TabOrder="8"
                                                 Placeholder="Enter street address"
                                                 Value="{x:Bind ViewModel.Street, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="PHONE NUMBER"
-                                                TabOrder="15"
+                            <controls:FieldCell x:Name="PhoneCell" Label="PHONE NUMBER"
+                                                TabOrder="10"
                                                 InputKind="Phone"
                                                 Placeholder="Enter phone number"
                                                 Value="{x:Bind ViewModel.PhoneNumber, Mode=TwoWay}"
@@ -253,34 +254,34 @@
 
                         <!-- Middle column -->
                         <StackPanel x:Name="MiddleColumn" Grid.Row="0" Grid.Column="1" Spacing="16">
-                            <controls:FieldCell Label="FIRST NAME"
+                            <controls:FieldCell x:Name="FirstNameCell" Label="FIRST NAME"
                                                 TabOrder="1"
                                                 Placeholder="Enter first name"
                                                 Value="{x:Bind ViewModel.FirstName, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="GENDER"
-                                                TabOrder="4"
+                            <controls:FieldCell x:Name="GenderCell" Label="GENDER"
+                                                TabOrder="3"
                                                 InputKind="Gender"
                                                 Placeholder="Enter gender"
                                                 Value="{x:Bind ViewModel.Gender, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="COUNTRY"
-                                                TabOrder="7"
+                            <controls:FieldCell x:Name="CountryCell" Label="COUNTRY"
+                                                TabOrder="5"
                                                 InputKind="Country"
                                                 Placeholder="Enter country"
                                                 Value="{x:Bind ViewModel.Country, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="CITY"
-                                                TabOrder="10"
+                            <controls:FieldCell x:Name="CityCell" Label="CITY"
+                                                TabOrder="7"
                                                 Placeholder="Enter city"
                                                 Value="{x:Bind ViewModel.City, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="POSTAL CODE"
-                                                TabOrder="13"
+                            <controls:FieldCell x:Name="PostalCodeCell" Label="POSTAL CODE"
+                                                TabOrder="9"
                                                 InputKind="PostalCode"
                                                 Placeholder="Enter postal code"
                                                 Value="{x:Bind ViewModel.PostalCode, Mode=TwoWay}"
@@ -290,15 +291,15 @@
 
                         <!-- Right column: the email account and its recovery -->
                         <StackPanel x:Name="RightColumn" Grid.Row="0" Grid.Column="2" Spacing="16">
-                            <controls:FieldCell Label="EMAIL"
-                                                TabOrder="2"
+                            <controls:FieldCell x:Name="EmailCell" Label="EMAIL"
+                                                TabOrder="11"
                                                 InputKind="Email"
                                                 Placeholder="Enter primary email address"
                                                 Value="{x:Bind ViewModel.Email, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            <controls:FieldCell Label="EMAIL PASSWORD"
-                                                TabOrder="5"
+                            <controls:FieldCell x:Name="EmailPasswordCell" Label="EMAIL PASSWORD"
+                                                TabOrder="12"
                                                 Placeholder="Enter email account password"
                                                 IsSecret="True"
                                                 ShowGenerate="True"
@@ -339,23 +340,23 @@
                                                    Style="{StaticResource DialogLabelStyle}" />
                                     </Grid>
 
-                                    <controls:FieldCell Label="RECOVERY EMAIL"
-                                                TabOrder="8"
+                                    <controls:FieldCell x:Name="RecoveryEmailCell" Label="RECOVERY EMAIL"
+                                                TabOrder="13"
                                                 InputKind="Email"
                                                         Placeholder="Enter recovery email address"
                                                         Value="{x:Bind ViewModel.RecoveryEmail, Mode=TwoWay}"
                                                         Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                         ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                    <controls:FieldCell Label="RECOVERY PASSWORD (OPTIONAL)"
-                                                TabOrder="11"
+                                    <controls:FieldCell x:Name="RecoveryPasswordCell" Label="RECOVERY PASSWORD (OPTIONAL)"
+                                                TabOrder="14"
                                                         Placeholder="Enter recovery password"
                                                         IsSecret="True"
                                                         ShowGenerate="True"
                                                         Value="{x:Bind ViewModel.RecoveryPassword, Mode=TwoWay}"
                                                         Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                         ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                    <controls:FieldCell Label="RECOVERY WORDS"
-                                                TabOrder="14"
+                                    <controls:FieldCell x:Name="RecoveryWordsCell" Label="RECOVERY WORDS"
+                                                TabOrder="15"
                                                         Placeholder="Enter recovery words"
                                                         IsSecret="True"
                                                         Value="{x:Bind ViewModel.RecoveryWords, Mode=TwoWay}"

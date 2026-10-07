@@ -172,6 +172,52 @@ public sealed partial class FieldCell : UserControl
         set => SetValue(TabOrderProperty, value);
     }
 
+    /// <summary>
+    /// The input this cell is currently showing, or null if it is showing none -
+    /// a display cell, or an automatic one like the record number.
+    /// </summary>
+    /// <remarks>
+    /// One cell hosts four different inputs and shows whichever the field kind calls
+    /// for, so "the input" is a question that can only be answered at runtime.
+    /// </remarks>
+    private Control? ActiveInput()
+    {
+        if (ValueInput.Visibility == Visibility.Visible)
+        {
+            return ValueInput;
+        }
+
+        if (SecretInput.Visibility == Visibility.Visible)
+        {
+            return SecretInput;
+        }
+
+        if (ChoiceInput.Visibility == Visibility.Visible)
+        {
+            return ChoiceInput;
+        }
+
+        return DateInput.Visibility == Visibility.Visible ? DateInput : null;
+    }
+
+    /// <summary>Moves keyboard focus into this cell. False if it has nothing to focus.</summary>
+    public bool TryFocus()
+    {
+        Control? target = ActiveInput();
+
+        return target is not null
+            && target.IsEnabled
+            && target.Focus(FocusState.Keyboard);
+    }
+
+    /// <summary>Whether <paramref name="element"/> is this cell's input.</summary>
+    public bool OwnsFocus(object? element)
+        => element is not null
+           && (ReferenceEquals(element, ValueInput)
+               || ReferenceEquals(element, SecretInput)
+               || ReferenceEquals(element, ChoiceInput)
+               || ReferenceEquals(element, DateInput));
+
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((FieldCell)d).Refresh();
 
