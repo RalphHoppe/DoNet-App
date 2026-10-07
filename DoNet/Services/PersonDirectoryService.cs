@@ -430,6 +430,8 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
 
             _gate.Dispose();
         }
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

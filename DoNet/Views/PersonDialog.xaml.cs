@@ -29,6 +29,18 @@ public sealed partial class PersonDialog : UserControl
         _host.PropertyChanged += OnHostPropertyChanged;
         ViewModel.PropertyChanged += OnDialogPropertyChanged;
 
+        // A deferred control can be created *because* it is already supposed to be
+        // showing, in which case the property change that opens it fired before this
+        // instance existed. Catch up once we are in the tree - Open touches the visual
+        // tree and starts a storyboard, so the constructor is too early.
+        Loaded += (_, _) =>
+        {
+            if (_host.IsDialogOpen && Root.Visibility != Visibility.Visible)
+            {
+                Open();
+            }
+        };
+
         // HomePage is rebuilt on every unlock, and the view model is a singleton, so
         // without this each lock/unlock cycle leaves another detached dialog listening
         // to it. They all react, all try to animate, and the ones no longer in the

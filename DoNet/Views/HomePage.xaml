@@ -184,8 +184,20 @@
             <!--
                 Modals, outside the padded shell and last in the tree so they sit above it.
                 Both are driven by the same PersonsViewModel singleton that backs the grid.
+
+                x:Load="False", not Visibility="Collapsed". A collapsed element is still
+                constructed; it is only skipped when drawing. Between them these two
+                expand to roughly 1,700 elements - the person dialog alone instantiates
+                eighteen FieldCells, each carrying a TextBox, a PasswordBox, a ComboBox,
+                a CalendarDatePicker and three buttons - and Microsoft's own guidance
+                budgets about a millisecond per element created. All of it was being
+                built while the user waited for the home screen, to show nothing.
+
+                HomePage realises them itself: on demand if something opens one, and
+                otherwise during idle time once the entrance animation has finished, so
+                the first click is not the one that pays.
             -->
-            <views:PersonDialog x:Name="PersonModal" />
-            <views:ConfirmDialog />
+            <views:PersonDialog x:Name="PersonModal" x:Load="False" />
+            <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
         </Grid>
     </Page>

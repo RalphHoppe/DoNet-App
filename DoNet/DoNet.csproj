@@ -105,6 +105,17 @@
       in .NET 8; set explicitly so it survives a future default change.
     -->
     <TieredPGO>true</TieredPGO>
+
+    <!--
+      Static analysis. On by default for .NET 5+, stated here so it is visible. The
+      rule selection lives in .editorconfig at the repo root - a curated set where a
+      hit means a defect, rather than AnalysisMode=All and a wall of style opinions.
+
+      Analyzer findings stay warnings even under -warnaserror. A quality gate that
+      blocks a build is a gate someone turns off.
+    -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
 
   <!-- Publish Properties -->

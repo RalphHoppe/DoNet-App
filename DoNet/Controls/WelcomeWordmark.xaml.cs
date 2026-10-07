@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Controls;
@@ -43,8 +44,8 @@ public sealed partial class WelcomeWordmark : UserControl
         var paths = WordCanvas.Children.OfType<Path>().ToList();
 
         _wordmark = new TracedWordmark(
-            paths.Where(p => p.Name.StartsWith("Trace")).ToList(),
-            paths.Where(p => p.Name.StartsWith("Fill")).ToList(),
+            paths.Where(p => p.Name.StartsWith("Trace", StringComparison.Ordinal)).ToList(),
+            paths.Where(p => p.Name.StartsWith("Fill", StringComparison.Ordinal)).ToList(),
             ring: null,
             timing: Timing);
 

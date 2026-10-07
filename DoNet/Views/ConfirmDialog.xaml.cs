@@ -23,6 +23,18 @@ public sealed partial class ConfirmDialog : UserControl
 
         _host.PropertyChanged += OnHostPropertyChanged;
 
+        // A deferred control can be created *because* it is already supposed to be
+        // showing, in which case the property change that opens it fired before this
+        // instance existed. Catch up once we are in the tree - Open touches the visual
+        // tree and starts a storyboard, so the constructor is too early.
+        Loaded += (_, _) =>
+        {
+            if (_host.IsConfirmingDelete && Root.Visibility != Visibility.Visible)
+            {
+                SyncToHost();
+            }
+        };
+
         // HomePage is rebuilt on every unlock, and the view model is a singleton, so
         // without this each lock/unlock cycle leaves another detached dialog listening
         // to it. They all react, all try to animate, and the ones no longer in the
@@ -32,11 +44,15 @@ public sealed partial class ConfirmDialog : UserControl
 
     private void OnHostPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (args.PropertyName != nameof(PersonsViewModel.IsConfirmingDelete))
+        if (args.PropertyName == nameof(PersonsViewModel.IsConfirmingDelete))
         {
-            return;
+            SyncToHost();
         }
+    }
 
+    /// <summary>Brings the control in line with whatever the view model currently says.</summary>
+    private void SyncToHost()
+    {
         if (_host.IsConfirmingDelete)
         {
             TitleText.Text = _host.ConfirmDeleteTitle;

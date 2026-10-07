@@ -1,3 +1,7 @@
+using System;
+using System.ComponentModel;
+using DoNet.Services;
+using Microsoft.UI.Dispatching;
 using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -13,6 +17,9 @@ namespace DoNet.Views;
 /// </summary>
 public sealed partial class HomePage : Page
 {
+    private readonly PersonsViewModel _persons;
+    private bool _warmUpScheduled;
+
     public HomePage()
     {
         // Before InitializeComponent, not after: x:Bind resolves its root object while
@@ -20,7 +27,13 @@ public sealed partial class HomePage : Page
         // binding on this page pointing at null.
         ViewModel = App.Current.Services.GetRequiredService<HomeViewModel>();
 
+        _persons = App.Current.Services.GetRequiredService<PersonsViewModel>();
+
         InitializeComponent();
+
+        // The modals are deferred, so nothing is listening for the request to open one
+        // until they exist. This page watches on their behalf and realises them.
+        _persons.PropertyChanged += OnPersonsPropertyChanged;
 
         Loaded += OnLoaded;
     }
@@ -31,7 +44,68 @@ public sealed partial class HomePage : Page
     {
         if (Resources["IntroStoryboard"] is Storyboard intro)
         {
+            // Build the modals once the entrance has played. Doing it before would put
+            // roughly 1,700 element constructions on the UI thread while an animation
+            // is running on it, which is exactly the stutter deferring them avoids.
+            if (!_warmUpScheduled)
+            {
+                _warmUpScheduled = true;
+                intro.Completed += (_, _) => QueueModalWarmUp();
+            }
+
             intro.Begin();
+        }
+        else
+        {
+            QueueModalWarmUp();
+        }
+    }
+
+    /// <summary>
+    /// Builds the deferred modals during idle time, so the first person a user opens
+    /// does not pay for it.
+    /// </summary>
+    /// <remarks>
+    /// Low priority: the queue drains this only when there is nothing else to do, so
+    /// typing, scrolling and animation all come first. It is a warm-up, not a
+    /// requirement - <see cref="OnPersonsPropertyChanged"/> realises either modal
+    /// immediately if one is needed before this runs.
+    /// </remarks>
+    private void QueueModalWarmUp()
+        => DispatcherQueue.TryEnqueue(
+            DispatcherQueuePriority.Low,
+            () =>
+            {
+                Realize("PersonModal");
+                Realize("ConfirmModal");
+            });
+
+    private void OnPersonsPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(PersonsViewModel.IsDialogOpen) && _persons.IsDialogOpen)
+        {
+            Realize("PersonModal");
+        }
+        else if (args.PropertyName == nameof(PersonsViewModel.IsConfirmingDelete)
+                 && _persons.IsConfirmingDelete)
+        {
+            Realize("ConfirmModal");
+        }
+    }
+
+    /// <summary>
+    /// Forces a deferred element into existence. FindName is the documented trigger for
+    /// x:Load; calling it again once the element exists simply returns it.
+    /// </summary>
+    private void Realize(string name)
+    {
+        try
+        {
+            _ = FindName(name);
+        }
+        catch (Exception error)
+        {
+            AppLog.Error($"Could not create the deferred element '{name}'", error);
         }
     }
 
@@ -60,8 +134,13 @@ public sealed partial class HomePage : Page
     {
         base.OnNavigatedFrom(args);
 
+        _persons.PropertyChanged -= OnPersonsPropertyChanged;
+
         DirectoryView.ReleaseBindings();
-        PersonModal.ReleaseBindings();
+
+        // Null when the user never opened a person and the idle warm-up had not run.
+        PersonModal?.ReleaseBindings();
+
         Bindings.StopTracking();
     }
 }

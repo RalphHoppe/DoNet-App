@@ -538,3 +538,66 @@ moving that trigger out to the host. That is a structural change with real regre
 risk, and this round was about stability. It wants a measurement first: the home intro
 animation is ~0.54s and may already cover the cost.
 
+### The biggest single cost: 1,700 elements nobody could see
+
+Microsoft's XAML guidance budgets roughly **a millisecond per element created** at
+startup, and is explicit that `Visibility="Collapsed"` does not prevent creation - a
+collapsed element is built in full and merely skipped when drawing.
+
+The two modals on the home screen were collapsed, not deferred:
+
+| | elements |
+| --- | --- |
+| `PersonDialog` markup | 136 |
+| 18 x `FieldCell` (TextBox, PasswordBox, ComboBox, CalendarDatePicker, 3 buttons each) | 1,566 |
+| **built on every home screen load, to show nothing** | **~1,700** |
+
+Both now use `x:Load="False"`. But deferring alone just moves the bill to the first
+click, so `HomePage` realises them on a `DispatcherQueuePriority.Low` callback once the
+entrance animation has finished - the home screen gets to be interactive first, the
+modals are built while nothing else wants the thread, and the first person you open is
+already paid for. If something asks to open a modal before that idle pass runs, the
+page realises it immediately instead; the warm-up is an optimisation, not a dependency.
+
+Deferred controls need one extra thing: a modal can be created *because* it is already
+supposed to be showing, so the property change that opens it fired before the instance
+existed. Both now reconcile with the view model on `Loaded`.
+
+### The compiler as reviewer
+
+`.editorconfig` at the repo root raises a curated set of analyzer rules to warning.
+Deliberately curated rather than `AnalysisMode=All`: a wall of style opinions buries
+the findings that matter. Every rule enabled is one where a hit means a defect -
+resource lifetime, dropped `CancellationToken`s, culture-sensitive string comparison,
+weak crypto, SQL built from strings. Nothing fails the build; a gate that blocks
+shipping is a gate that gets switched off.
+
+It immediately paid for itself. `WelcomeWordmark` matched element names with
+`StartsWith("Trace")` - no `StringComparison`, so culture-sensitive, and the Turkish
+dotless i makes that a real bug rather than a theoretical one. Also a missing
+`GC.SuppressFinalize` in `PersonDirectoryService.Dispose`.
+
+Two rules the codebase knowingly violates are left off rather than suppressed, with
+reasons recorded in the file: `CA1031` (the crash handlers catch `Exception` on
+purpose) and `CA1303` (the app is English-only).
+
+### Checked and already correct
+
+Worth recording so it is not re-investigated:
+
+- **Key material is zeroed.** `VaultService` runs `CryptographicOperations.ZeroMemory`
+  over the derived key, the data key and the password bytes in `finally` blocks. The
+  remaining exposure is the base64 data key held as a `string` while unlocked, which
+  cannot be wiped - a disclosed trade-off, not an oversight.
+- **`Catalogs` allocates once.** The gender and country lists are static
+  initialisers, not properties rebuilding an array per call.
+- **No `JsonSerializerOptions` churn** in the vault's read/write path.
+
+### Still worth doing
+
+A test project. The logic worth covering is pure .NET and does not need a UI:
+`PasswordGenerator` (character classes, distribution), `VaultService` (wrong password
+throws, parameters round-trip), and the search filter's escaping of `%` and `_`. It is
+not here because this environment has no .NET SDK, and shipping a test project that has
+never been compiled would be worse than not shipping one.
+
