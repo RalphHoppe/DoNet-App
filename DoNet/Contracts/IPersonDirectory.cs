@@ -27,6 +27,20 @@ public interface IPersonDirectory
     /// </summary>
     Task WarmUpAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Readies everything about the store that does not need the key: the native
+    /// library and the object model. Safe to call before the user has unlocked, and
+    /// safe to never call at all.
+    /// </summary>
+    /// <remarks>
+    /// Called from the splash screen. EF builds its model lazily on first use, by
+    /// reflecting over the entity types - and crucially it does not need a database
+    /// to do it, because the model describes entities, not tables. So the cost can be
+    /// paid during an animation that is already playing, instead of landing on the
+    /// first query after unlock alongside the key derivation.
+    /// </remarks>
+    Task PrepareAsync(CancellationToken cancellationToken = default);
+
     /// <summary>One page of records, newest first, optionally filtered.</summary>
     Task<IReadOnlyList<Person>> GetPageAsync(
         int skip, int take, string? search = null, CancellationToken cancellationToken = default);

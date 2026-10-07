@@ -563,6 +563,39 @@ Deferred controls need one extra thing: a modal can be created *because* it is a
 supposed to be showing, so the property change that opens it fired before the instance
 existed. Both now reconcile with the view model on `Loaded`.
 
+### Spending the time the user is already spending
+
+Four moments where the app is free and nobody is waiting on it. `Services/IdleWork.cs`
+schedules into them - `OnUiIdle` at the lowest dispatcher priority for work that must
+touch the visual tree, `InBackground` at below-normal thread priority for work that
+must not.
+
+| Window | What happens in it |
+| --- | --- |
+| Splash animation (~2.7s) | Load the SQLCipher native library; build EF's object model |
+| Lock screen (typing) | Load and JIT the Argon2id and AES-GCM paths |
+| Welcome animation (~2.6s) | Open and key the database |
+| After home settles | Build the deferred modals; prefetch the second page of records |
+
+EF builds its model lazily on first use by reflecting over the entity types - and does
+**not** need a database to do it, because the model describes entities, not tables. So
+it can be built on the splash screen, before the user has even typed a password, rather
+than landing on the first query alongside the key derivation.
+
+The lock screen warm-up runs Argon2id with deliberately tiny parameters. The expense of
+Argon2 is its memory-hardness and none of that is wanted here; the point is only to
+touch the same methods, so the assembly is loaded and the inner loop compiled before
+the real derivation needs them.
+
+Multicore JIT is on (`ProfileOptimization` in the `App` constructor). The runtime
+records which methods it compiled during startup and, on every launch after,
+recompiles them across spare cores while the main thread gets on with starting.
+Desktop apps have to opt in; ASP.NET gets it by default.
+
+Everything here is an optimisation and never a dependency: each caller is correct if
+the work never runs. A warm-up that becomes required is just initialisation with extra
+steps and a race condition.
+
 ### The four directory states
 
 `Controls/StateArt.xaml` draws the loading, empty, no-match and error illustrations.

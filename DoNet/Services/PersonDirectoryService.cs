@@ -98,6 +98,37 @@ public sealed class PersonDirectoryService : IPersonDirectory, IDisposable
         }
     }
 
+    public async Task PrepareAsync(CancellationToken cancellationToken = default)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        long startedAt = Stopwatch.GetTimestamp();
+
+        await Task.Run(
+            () =>
+            {
+                // Loads the SQLCipher native library.
+                _ = NativeProvider.Value;
+
+                // An in-memory source that is never opened. Building the model touches
+                // no file and needs no key - EF only reflects over the entity types -
+                // so this is safe to run before the user has even seen the lock screen,
+                // and the model it caches is the one the real contexts will use.
+                using SqliteConnection probe = new("Data Source=:memory:");
+                using DoNetDbContext model = new(probe);
+
+                _ = model.Model;
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        AppLog.Info(
+            "Data layer prepared in "
+            + $"{Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds:F0} ms");
+    }
+
     /// <summary>
     /// Opens and keys the connection if it is not already open.
     /// </summary>

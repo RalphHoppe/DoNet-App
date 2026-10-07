@@ -21,6 +21,7 @@ public partial class ForgotPasswordViewModel : ObservableObject
 {
     private readonly IVaultService _vault;
     private readonly INavigationService _navigation;
+    private readonly IPersonDirectory _directory;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ResetCommand))]
@@ -31,10 +32,12 @@ public partial class ForgotPasswordViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasError))]
     private string? _errorMessage;
 
-    public ForgotPasswordViewModel(IVaultService vault, INavigationService navigation)
+    public ForgotPasswordViewModel(
+        IVaultService vault, INavigationService navigation, IPersonDirectory directory)
     {
         _vault = vault;
         _navigation = navigation;
+        _directory = directory;
     }
 
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
@@ -57,7 +60,13 @@ public partial class ForgotPasswordViewModel : ObservableObject
 
         try
         {
+            // Close first. Windows will not delete a file that something still has
+            // open, and the reset has to remove the database - so a live connection
+            // would turn this into a half-finished reset.
+            await _directory.CloseAsync();
+
             await _vault.ResetAsync();
+
             _navigation.NavigateTo(typeof(CreatePasswordPage), clearBackStack: true);
         }
         catch (Exception ex)

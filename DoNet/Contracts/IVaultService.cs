@@ -52,4 +52,17 @@ public interface IVaultService
     /// clears the way for a new password.
     /// </remarks>
     Task ResetAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Runs the key-derivation and encryption code once with throwaway parameters, so
+    /// the assemblies are loaded and the hot paths compiled before a real unlock needs
+    /// them.
+    /// </summary>
+    /// <remarks>
+    /// Called from the lock screen, which is pure thinking time - the user is reading
+    /// the prompt and typing. The work itself is negligible; what it buys is that the
+    /// first real Argon2id run is not also paying to load Konscious and just-in-time
+    /// compile its inner loop.
+    /// </remarks>
+    Task WarmUpAsync(CancellationToken cancellationToken = default);
 }

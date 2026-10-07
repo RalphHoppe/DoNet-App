@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Runtime;
 using DoNet.Contracts;
 using DoNet.Services;
 using DoNet.ViewModels;
@@ -16,8 +18,16 @@ public partial class App : Application
 
     public App()
     {
-        // First statement in the process that we control. Anything that throws before
-        // this is invisible, so nothing goes above it.
+        // Multicore JIT, before anything else runs so it records as much as possible.
+        //
+        // The runtime writes down which methods it just-in-time compiled during
+        // startup, and on every launch after this one it recompiles them in the
+        // background across spare cores while the main thread gets on with starting.
+        // Desktop apps have to opt in; ASP.NET gets it by default. It needs more than
+        // one core and is silently ignored otherwise, and the profile is around 30 KB.
+        StartMulticoreJit();
+
+        // Anything that throws before this is invisible, so nothing else goes above it.
         CrashHandler.Install(this);
 
         InitializeComponent();
@@ -63,6 +73,26 @@ public partial class App : Application
         {
             // Shutdown is not a place to throw; the window is already going.
             AppLog.Error("Shutdown failed", error);
+        }
+    }
+
+    /// <summary>
+    /// Turns on profile-guided background JIT. Best effort: a failure here costs some
+    /// startup time and nothing else, so it must never stop the app launching.
+    /// </summary>
+    private static void StartMulticoreJit()
+    {
+        try
+        {
+            string root = Path.Combine(AppPaths.DataFolder, "jit");
+            Directory.CreateDirectory(root);
+
+            ProfileOptimization.SetProfileRoot(root);
+            ProfileOptimization.StartProfile("startup.profile");
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Could not start profile-guided JIT", error);
         }
     }
 

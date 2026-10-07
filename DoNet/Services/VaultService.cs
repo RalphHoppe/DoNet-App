@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -198,25 +199,137 @@ public sealed class VaultService : IVaultService
         }
     }
 
+    /// <summary>
+    /// Exercises the crypto path with throwaway inputs so a real unlock does not also
+    /// pay to load and compile it.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately tiny parameters. The expense of Argon2id is memory-hardness, and
+    /// none of that is wanted here - the only goal is to touch the same methods the
+    /// real derivation will, so the assembly is loaded and the inner loop is already
+    /// compiled. Running the real parameters would burn 64 MiB and three passes to
+    /// save the same few tens of milliseconds.
+    ///
+    /// Nothing derived here is kept, and everything is wiped on the way out, same as
+    /// the real path.
+    /// </remarks>
+    public Task WarmUpAsync(CancellationToken cancellationToken = default)
+        => Task.Run(
+            () =>
+            {
+                var probe = Encoding.UTF8.GetBytes("warm-up");
+
+                try
+                {
+                    using var argon2 = new Argon2id(probe)
+                    {
+                        Salt = new byte[SaltBytes],
+                        MemorySize = 1024,
+                        Iterations = 1,
+                        DegreeOfParallelism = 1,
+                    };
+
+                    var derived = argon2.GetBytes(KeyBytes);
+                    CryptographicOperations.ZeroMemory(derived);
+
+                    // The unwrap path too: AES-GCM runs on every unlock right after
+                    // the derivation, and shares none of its code.
+                    var key = new byte[KeyBytes];
+                    var nonce = new byte[NonceBytes];
+                    var tag = new byte[TagBytes];
+                    var plain = new byte[KeyBytes];
+                    var cipher = new byte[KeyBytes];
+
+                    using var aes = new AesGcm(key, TagBytes);
+                    aes.Encrypt(nonce, plain, cipher, tag);
+
+                    CryptographicOperations.ZeroMemory(key);
+                    CryptographicOperations.ZeroMemory(plain);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(probe);
+                }
+            },
+            cancellationToken);
+
+    /// <summary>
+    /// Erases the vault and the database, returning the app to a first run.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The database has to go with the vault, and this is not housekeeping - it is the
+    /// difference between the reset working and the app being permanently broken.
+    /// <see cref="CreateAsync"/> generates a brand new random data key, so a database
+    /// left behind from the previous password is encrypted with a key that no longer
+    /// exists anywhere. SQLCipher cannot open it, and never will be able to, so every
+    /// launch from then on lands on "The directory could not be opened".
+    /// </para>
+    /// <para>
+    /// Nothing is lost that was not already lost. The master password is the only way
+    /// to unwrap the data key and it is never stored, so by the time someone reaches
+    /// this screen the records are unreadable by us as much as by anyone else. The
+    /// screen says exactly that before offering the button.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="IOException">
+    /// A file could not be removed - usually because a connection to the database is
+    /// still open. Thrown rather than swallowed: a reset that half-succeeds leaves the
+    /// user in the broken state this method exists to prevent, and they need to know
+    /// now rather than at the next launch.
+    /// </exception>
     public Task ResetAsync(CancellationToken cancellationToken = default)
     {
         // The old key cannot open anything after the vault is gone.
         _databaseKey = null;
 
-        var path = _vaultPath.Value;
+        var vault = _vaultPath.Value;
+        var folder = Path.GetDirectoryName(vault);
 
-        if (Directory.Exists(Path.GetDirectoryName(path)))
+        if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
         {
-            // Deleting a file that is not there is not an error; deleting one in a
-            // directory that is not there is, hence the guard above.
-            File.Delete(path);
-            File.Delete(path + ".tmp");
+            // Nothing was ever written, so there is nothing to erase.
+            return Task.CompletedTask;
         }
 
-        // The encrypted database is deleted here too once it exists. It is unreadable
-        // without the data key either way, but leaving it behind would waste the space
-        // and confuse the next setup.
+        var failures = new List<string>();
+
+        // Deleting a file that is not there is not an error, so no existence checks -
+        // only the directory had to be confirmed, above.
+        foreach (var path in Targets(vault))
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                AppLog.Error($"Could not delete '{Path.GetFileName(path)}' during reset", error);
+                failures.Add(Path.GetFileName(path));
+            }
+        }
+
+        if (failures.Count > 0)
+        {
+            throw new IOException(
+                "Some files could not be removed: "
+                + string.Join(", ", failures)
+                + ". Close the app and try again.");
+        }
+
         return Task.CompletedTask;
+    }
+
+    /// <summary>Everything a reset has to remove, in one place so none is forgotten.</summary>
+    private static IEnumerable<string> Targets(string vault)
+    {
+        yield return vault;
+        yield return vault + ".tmp";
+
+        foreach (var database in AppPaths.DatabaseFiles)
+        {
+            yield return database;
+        }
     }
 
     /// <summary>

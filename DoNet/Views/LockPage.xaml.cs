@@ -1,4 +1,6 @@
 using System;
+using DoNet.Contracts;
+using DoNet.Services;
 using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -22,6 +24,13 @@ public sealed partial class LockPage : Page
         InitializeComponent();
 
         Loaded += OnLoaded;
+
+        // Reading the prompt and typing a password is pure thinking time. Use it to
+        // load and compile the Argon2id and AES-GCM paths, so the unlock itself only
+        // pays for the work that actually protects the data.
+        IdleWork.InBackground(
+            "Warming the key-derivation path",
+            () => App.Current.Services.GetRequiredService<IVaultService>().WarmUpAsync());
     }
 
     public LockViewModel ViewModel { get; }

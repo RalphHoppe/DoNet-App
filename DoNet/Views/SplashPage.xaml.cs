@@ -48,6 +48,14 @@ public sealed partial class SplashPage : Page
 
         _started = true;
 
+        // The splash is two and a half seconds of animation during which the app has
+        // nothing else to do. Spend it loading the SQLCipher native library and
+        // building EF's object model - neither needs the key, neither touches the
+        // database file, and both otherwise land on the first query after unlock.
+        IdleWork.InBackground(
+            "Preparing the data layer",
+            () => App.Current.Services.GetRequiredService<IPersonDirectory>().PrepareAsync());
+
         try
         {
             await Task.WhenAny(PlaySequenceAsync(), Task.Delay(WatchdogMs));

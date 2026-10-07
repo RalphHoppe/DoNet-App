@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using DoNet.Contracts;
 using DoNet.Models;
 using DoNet.Services;
+using Microsoft.UI.Dispatching;
 
 namespace DoNet.ViewModels;
 
@@ -45,6 +46,15 @@ public sealed partial class PersonsViewModel : ObservableObject
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _searchCts;
 
+    /// <summary>
+    /// Bumped by every fresh load. Paging reads it before it asks for a page and
+    /// again before it appends one; if the number moved in between, a newer load owns
+    /// the list and the page in hand belongs to a query nobody is looking at.
+    /// </summary>
+    private int _loadGeneration;
+
+    private readonly DispatcherQueue? _dispatcher;
+
     /// <summary>Guards against two overlapping "load the next page" requests.</summary>
     private bool _loadingMore;
 
@@ -52,6 +62,10 @@ public sealed partial class PersonsViewModel : ObservableObject
     {
         _directory = directory;
         Dialog = new PersonDialogViewModel();
+
+        // Captured here because this is constructed on the UI thread; null if that
+        // ever stops being true, which IdleWork treats as "do not schedule".
+        _dispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
     /// <summary>The records currently realised on screen.</summary>
@@ -165,6 +179,8 @@ public sealed partial class PersonsViewModel : ObservableObject
         _loadCts = new CancellationTokenSource();
         CancellationToken token = _loadCts.Token;
 
+        int generation = unchecked(++_loadGeneration);
+
         if (showLoading)
         {
             State = DirectoryState.Loading;
@@ -178,7 +194,7 @@ public sealed partial class PersonsViewModel : ObservableObject
                 await _directory.GetPageWithTotalAsync(0, PageSize, SearchText, token)
                     .ConfigureAwait(true);
 
-            if (token.IsCancellationRequested)
+            if (token.IsCancellationRequested || generation != _loadGeneration)
             {
                 return;
             }
@@ -195,6 +211,19 @@ public sealed partial class PersonsViewModel : ObservableObject
             // an empty result is a filtering outcome, not an empty directory.
             bool searching = !string.IsNullOrWhiteSpace(SearchText);
             State = total == 0 && !searching ? DirectoryState.Empty : DirectoryState.Ready;
+
+            // While the user reads the first screenful, fetch the next one. The grid
+            // already pages when the scroll comes within three quarters of a viewport
+            // of the end, but that still makes the first flick wait on a query; this
+            // way the records are usually there before the scrollbar moves. Low
+            // priority, so it never competes with the rendering of what just arrived.
+            if (HasMore)
+            {
+                IdleWork.OnUiIdle(
+                    _dispatcher,
+                    "Prefetching the next page of records",
+                    () => LoadMoreAsync().Observe("Prefetching the next page of records"));
+            }
         }
         catch (OperationCanceledException)
         {
@@ -219,11 +248,24 @@ public sealed partial class PersonsViewModel : ObservableObject
         }
 
         _loadingMore = true;
+
+        // Captured before the await. If a search replaces the list while this page is
+        // in flight, appending it would drop records from the previous query
+        // underneath the results of the new one - rows that match nothing the user
+        // typed, in a list they did not ask for.
+        int generation = _loadGeneration;
+        CancellationToken token = _loadCts?.Token ?? CancellationToken.None;
+
         try
         {
             (IReadOnlyList<Person> page, int total) = await _directory
-                .GetPageWithTotalAsync(People.Count, PageSize, SearchText)
+                .GetPageWithTotalAsync(People.Count, PageSize, SearchText, token)
                 .ConfigureAwait(true);
+
+            if (generation != _loadGeneration || token.IsCancellationRequested)
+            {
+                return;
+            }
 
             foreach (Person person in page)
             {
@@ -231,6 +273,10 @@ public sealed partial class PersonsViewModel : ObservableObject
             }
 
             HasMore = People.Count < total;
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer load, which owns the list now.
         }
         catch (Exception)
         {
