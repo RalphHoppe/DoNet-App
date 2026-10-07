@@ -200,30 +200,38 @@
                     two actions are the two most recognisable icons there are.
                 -->
                 <!--
-                    Fixed at the closed size and centred on the avatar. The two action
-                    buttons below the dots keep their layout space even at zero opacity,
-                    so letting this host size to its content made the identity row as
-                    tall as the whole open drawer - which is the gap above the dots - and
-                    made the card resize as the drawer grew. Pinning the host to 36x36
-                    lets both the surface and the buttons overflow downward without
-                    touching layout.
+                    A Canvas, fixed at the closed size and centred on the avatar, and
+                    the choice of panel is the whole trick.
+
+                    The host must stay 36x36 so the identity row stays as tall as the
+                    avatar and the card does not resize as the drawer grows - the two
+                    action buttons hold their layout space even at zero opacity, so a
+                    self-sizing host made the row as tall as the fully open drawer.
+
+                    A Grid of that size would clip the drawer, though. WinUI applies a
+                    layout clip whenever a child is arranged smaller than it asked to
+                    be, and a Grid arranges children inside its own 36px box - so the
+                    surface animating to 106 was cut back to 36, and the buttons below
+                    the dots vanished with it. A Canvas arranges each child at its own
+                    desired size, so nothing is clipped and the drawer overflows
+                    downward over the fields. The identity row carries Canvas.ZIndex so
+                    it does so in front of them.
                 -->
-                <Grid Grid.Column="2"
-                      Width="36"
-                      Height="36"
-                      VerticalAlignment="Center">
+                <Canvas Grid.Column="2"
+                        Width="36"
+                        Height="36"
+                        VerticalAlignment="Center">
 
                     <Border x:Name="MenuSurface"
                             Width="36"
                             Height="36"
                             CornerRadius="18"
-                            VerticalAlignment="Top"
                             Opacity="0"
                             Background="{StaticResource CardBackgroundBrush}"
                             BorderBrush="{StaticResource SearchBorderBrush}"
                             BorderThickness="1" />
 
-                    <StackPanel VerticalAlignment="Top">
+                    <StackPanel>
 
                         <Button x:Name="MenuButton"
                                 Width="36"
@@ -302,7 +310,7 @@
                             </Grid>
                         </Button>
                     </StackPanel>
-                </Grid>
+                </Canvas>
             </Grid>
 
             <!-- Nine of the eighteen columns, in the design's three by three. -->

@@ -563,6 +563,27 @@ Deferred controls need one extra thing: a modal can be created *because* it is a
 supposed to be showing, so the property change that opens it fired before the instance
 existed. Both now reconcile with the view model on `Loaded`.
 
+### The card drawer, and a layout clip that ate it
+
+The three-dot menu grows out of the dots into a vertical bar. Its host has to stay
+36x36 or the identity row becomes as tall as the fully open drawer - the two action
+buttons hold their layout space even at zero opacity - and the card visibly resizes
+every time the menu opens.
+
+Pinning the host to 36x36 with a `Grid` fixed that and broke the drawer, because
+**WinUI applies a layout clip whenever a child is arranged smaller than it asked to
+be**. A Grid arranges children inside its own box, so a surface animating to 106px was
+cut back to 36 and the buttons below the dots disappeared. What survived was the
+opacity fade and the dot rotation: the menu looked like a small empty outline.
+
+A `Canvas` arranges each child at its own desired size, so no clip is ever applied and
+children render freely outside its bounds. Same 36x36 footprint, no clipping. The
+identity row carries `Canvas.ZIndex` so the drawer overflows in front of the fields
+rather than behind them.
+
+The general rule worth remembering: if an element must overflow its parent, the parent
+has to be a Canvas. Fixing a size on any other panel is also asking for a clip.
+
 ### Tab order, and why TabIndex could not do it
 
 `TabIndex` is only compared **within a container**: `FrameworkElement.TabFocusNavigation`
