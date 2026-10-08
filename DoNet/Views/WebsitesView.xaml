@@ -272,7 +272,8 @@
                               HorizontalScrollMode="Disabled"
                               ViewChanged="OnCardScrollChanged"
                               Padding="0,0,4,0">
-                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.Websites}"
+                    <ItemsRepeater x:Name="CardRepeater"
+                                   ItemsSource="{x:Bind ViewModel.Websites}"
                                    ItemTemplate="{StaticResource WebsiteCardTemplate}">
                         <ItemsRepeater.Layout>
                             <!--

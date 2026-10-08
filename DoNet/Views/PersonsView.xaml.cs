@@ -25,10 +25,22 @@ public sealed partial class PersonsView : UserControl
     public PersonsViewModel ViewModel { get; }
 
     /// <summary>
-    /// Releases this control's compiled bindings. Called when the host page is leaving
-    /// for good; see <see cref="HomePage.OnNavigatedFrom"/> for why it is not automatic.
+    /// Releases this control's hold on the view model. Called when the host page is
+    /// leaving for good; see <see cref="HomePage.OnNavigatedFrom"/> for why it is not
+    /// automatic.
     /// </summary>
-    public void ReleaseBindings() => Bindings.StopTracking();
+    /// <remarks>
+    /// Stopping the compiled bindings is not enough on its own. An ItemsRepeater
+    /// subscribes to its source collection through its own ItemsSourceView, and that
+    /// subscription is invisible to x:Bind - so a detached view would keep receiving
+    /// collection changes from the singleton view model, forever, while no longer
+    /// being in a visual tree. Dropping the source is what actually unhooks it.
+    /// </remarks>
+    public void ReleaseBindings()
+    {
+        Bindings.StopTracking();
+        CardRepeater.ItemsSource = null;
+    }
 
 
     private async void OnLoaded(object sender, RoutedEventArgs args)

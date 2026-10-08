@@ -256,9 +256,12 @@
                                 <controls:FieldLabel Text="AVAILABLE PAYMENT METHODS" IconKind="CreditCard" />
 
                                 <!-- Editing: every option, three across. -->
+                                <!--
+                                    ItemsSource is attached from code-behind, not bound.
+                                    See WebsiteDialog.SyncMethodOptionsSource.
+                                -->
                                 <ItemsRepeater x:Name="MethodOptions"
-                                               Visibility="{x:Bind ViewModel.IsEditing, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
-                                               ItemsSource="{x:Bind ViewModel.Choices, Mode=OneWay}">
+                                               Visibility="{x:Bind ViewModel.IsEditing, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                                     <ItemsRepeater.Layout>
                                         <UniformGridLayout MinItemWidth="210"
                                                            MinItemHeight="34"

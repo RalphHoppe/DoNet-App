@@ -272,7 +272,8 @@
                               HorizontalScrollMode="Disabled"
                               ViewChanged="OnCardScrollChanged"
                               Padding="0,0,4,0">
-                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.People}"
+                    <ItemsRepeater x:Name="CardRepeater"
+                                   ItemsSource="{x:Bind ViewModel.People}"
                                    ItemTemplate="{StaticResource PersonCardTemplate}">
                         <ItemsRepeater.Layout>
                             <!--

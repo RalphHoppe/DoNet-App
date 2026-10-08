@@ -732,6 +732,42 @@ swallowed exception with no record of it does not make the app more robust, it m
 the next bug undiagnosable - and this one cost a full round of guessing that a single
 `AppLog.Error` would have answered immediately.
 
+### The same fault twice more: detached views that keep listening
+
+The fix above stopped the crash but not the error state, because the collapsed-repeater
+trap had two more instances - and a second, independent bug was feeding it.
+
+**A singleton view model outliving the view bound to it.** `PersonsViewModel` and
+`WebsitesViewModel` are singletons so a directory keeps its place across a lock, but
+`HomePage` is rebuilt on every unlock. `WebsiteDialog` already guarded against this for
+its `PropertyChanged` handlers, with a comment explaining it exactly - and still leaked,
+three ways the guard did not cover:
+
+- `ViewModel.Selected.CollectionChanged += (_, _) => RebuildChips();` - subscribed in
+  the constructor, never unsubscribed, and an **anonymous lambda cannot be**. It is a
+  named method now.
+- All three `ItemsRepeater`s. `Bindings.StopTracking()` does not help here:
+  an ItemsRepeater subscribes to its source through its own `ItemsSourceView`, which
+  x:Bind knows nothing about. The subscription is a strong reference *from* the
+  singleton *to* the dead page, so it is never collected and keeps being notified.
+
+Every lock/unlock cycle therefore added another detached directory listening to the
+live collection. The next `Clear()` or `Add()` was delivered to all of them, and the
+ones with no visual tree threw. Two orphans, two `COMException`s.
+
+**The dialog's payment options were collapsed twice over.** `MethodOptions` is hidden
+while the dialog is closed *and* hidden again in preview mode - but `ShowAdd`,
+`ShowEdit` and `ShowPreview` all rebuild `Choices` **before** `IsDialogOpen` turns true.
+Reordering that does not fix it, because setting `Visibility` does not measure anything
+synchronously; the repeater is still viewport-less on the next line. So the source is
+attached from code only while the repeater is genuinely on screen, and dropped the rest
+of the time - the rebuilds then reach nobody.
+
+The general rule, which is what to remember: **a collection that outlives the view bound
+to it must be detached explicitly, and `StopTracking` is not that.** Anything holding an
+`ItemsSource` needs it nulled, and any handler meant to be removable must be a named
+method.
+
 ### A layout clip that ate the old drawer
 
 Worth keeping even though the drawer is gone, because the rule is general.

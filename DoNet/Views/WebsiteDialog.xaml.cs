@@ -37,7 +37,9 @@ public sealed partial class WebsiteDialog : UserControl
 
         // The chips mirror the selection, and the dismiss crosses only exist while
         // editing - so both the collection and the mode have to redraw them.
-        ViewModel.Selected.CollectionChanged += (_, _) => RebuildChips();
+        // A named handler rather than a lambda, because this one has to be
+        // detachable for exactly the reason the two above it are.
+        ViewModel.Selected.CollectionChanged += OnSelectedChanged;
 
         // A deferred control can be created *because* it is already supposed to be
         // showing, in which case the property change that opens it fired before this
@@ -55,14 +57,30 @@ public sealed partial class WebsiteDialog : UserControl
         // without this each lock/unlock cycle leaves another detached dialog listening
         // to it. They all react, all try to animate, and the ones no longer in the
         // visual tree throw while doing it.
-        Unloaded += (_, _) =>
-        {
-            _host.PropertyChanged -= OnHostPropertyChanged;
-            ViewModel.PropertyChanged -= OnDialogPropertyChanged;
-        };
+        Unloaded += (_, _) => Detach();
     }
 
     public WebsiteDialogViewModel ViewModel { get; }
+
+    private void OnSelectedChanged(object? sender, NotifyCollectionChangedEventArgs args) =>
+        RebuildChips();
+
+    /// <summary>
+    /// Drops every hold this instance has on the singleton view model.
+    /// </summary>
+    /// <remarks>
+    /// Nulling the repeater's source matters as much as the three event handlers.
+    /// An ItemsRepeater subscribes to its collection through its own ItemsSourceView,
+    /// which x:Bind knows nothing about, so stopping the bindings would leave a
+    /// detached dialog still being told about every change to the payment catalog.
+    /// </remarks>
+    private void Detach()
+    {
+        _host.PropertyChanged -= OnHostPropertyChanged;
+        ViewModel.PropertyChanged -= OnDialogPropertyChanged;
+        ViewModel.Selected.CollectionChanged -= OnSelectedChanged;
+        MethodOptions.ItemsSource = null;
+    }
 
 
 
@@ -74,6 +92,9 @@ public sealed partial class WebsiteDialog : UserControl
         if (args.PropertyName == nameof(WebsiteDialogViewModel.Mode))
         {
             RebuildChips();
+
+            // Preview hides the options, editing shows them again.
+            SyncMethodOptionsSource();
         }
 
         if (args.PropertyName == nameof(WebsiteDialogViewModel.Mode)
@@ -99,9 +120,29 @@ public sealed partial class WebsiteDialog : UserControl
         }
     }
 
+    /// <summary>
+    /// Attaches the payment options to the repeater only while it is genuinely on
+    /// screen, and detaches them the rest of the time.
+    /// </summary>
+    /// <remarks>
+    /// This repeater is collapsed twice over: the whole dialog is hidden while closed,
+    /// and the options are hidden again in preview mode. A collapsed ItemsRepeater has
+    /// no measured viewport, so a collection change arriving at one comes back as
+    /// COMException: Unspecified error - and ShowAdd, ShowEdit and ShowPreview all
+    /// rebuild Choices *before* the dialog is made visible. Reordering that would not
+    /// help, because setting Visibility does not measure anything synchronously.
+    /// Holding the source only while the repeater can service it is what does.
+    /// </remarks>
+    private void SyncMethodOptionsSource()
+    {
+        bool live = Root.Visibility == Visibility.Visible && ViewModel.IsEditing;
+        MethodOptions.ItemsSource = live ? ViewModel.Choices : null;
+    }
+
     private void Open()
     {
         Root.Visibility = Visibility.Visible;
+        SyncMethodOptionsSource();
 
         if (Resources["OpenStoryboard"] is Storyboard open)
         {
@@ -123,12 +164,14 @@ public sealed partial class WebsiteDialog : UserControl
         else
         {
             Root.Visibility = Visibility.Collapsed;
+            SyncMethodOptionsSource();
         }
     }
 
     private void OnCloseCompleted(object? sender, object args)
     {
         Root.Visibility = Visibility.Collapsed;
+        SyncMethodOptionsSource();
 
         // Reset the transform the exit left behind, or the next open starts displaced.
         CardOffset.Y = 0;
@@ -161,10 +204,15 @@ public sealed partial class WebsiteDialog : UserControl
     }
 
     /// <summary>
-    /// Releases this control's compiled bindings. Called when the host page is leaving
-    /// for good; see <see cref="HomePage.OnNavigatedFrom"/> for why it is not automatic.
+    /// Releases this control's hold on the view model. Called when the host page is
+    /// leaving for good; see <see cref="HomePage.OnNavigatedFrom"/> for why it is not
+    /// automatic. Safe to call more than once - Unloaded does the same work.
     /// </summary>
-    public void ReleaseBindings() => Bindings.StopTracking();
+    public void ReleaseBindings()
+    {
+        Bindings.StopTracking();
+        Detach();
+    }
 
 
     /// <summary>
