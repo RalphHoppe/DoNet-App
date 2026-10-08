@@ -686,6 +686,61 @@ the buttons also appear when either takes keyboard focus - with the decision que
 the dispatcher, because tabbing between them raises `LostFocus` before the other's
 `GotFocus` and deciding immediately would hide the buttons out from under the caret.
 
+### Arriving with the data already there
+
+The home screen used to appear empty for a beat after every unlock, then fill in. The
+cause was two things that each looked right on their own.
+
+`PreloadAsync` was called from the welcome screen and documented as leaving "the first
+page ready" - but all it actually did was `_store.WarmUpAsync()`. It opened and keyed
+the database and stopped there. Then `PersonsView.OnLoaded` called `LoadAsync()`
+**unconditionally**, which drops to the loading state and re-queries. So the warm-up
+saved the expensive part and the view threw away the cheap part, visibly.
+
+Both halves are fixed. The preload now fetches the page as well as opening the store,
+and the view calls `EnsureLoadedAsync()`, which returns the in-flight task instead of
+starting a second load:
+
+```csharp
+public Task PreloadAsync()      => _firstLoad ??= PreloadCoreAsync();
+public Task EnsureLoadedAsync() => _firstLoad ??= LoadAsync();
+public Task LoadAsync()         => _firstLoad  = LoadCoreAsync(showLoading: true);
+```
+
+A view that opens mid-preload waits for it rather than racing it; one that opens after
+it finishes finds `State == Ready` and the records already in the collection, and
+renders them on its first frame. `Reset` clears the latch, so the next unlock fetches
+again rather than joining a stale task.
+
+`PreloadCoreAsync` swallows a warm-up failure on purpose. It is an optimisation, and
+`LoadCoreAsync` opens the store itself if it has to - letting it escape would leave the
+task the view awaits in a faulted state with nothing having moved the directory off
+`Loading`, which is the same stuck spinner as before wearing a different hat.
+
+The Websites directory gets the same treatment from the home screen's idle window, so
+the rail's first trip to Sites also arrives populated.
+
+### Cancelling without disposing
+
+`LoadCoreAsync` used to do this on every call:
+
+```csharp
+_loadCts?.Cancel();
+_loadCts?.Dispose();          // <- the superseded query still holds this token
+_loadCts = new CancellationTokenSource();
+```
+
+Cancelling a superseded load is right. Disposing its source is not, because the load
+being cancelled is still inside an `await` that holds its token, and
+`CancellationToken.Register` - which the SQLite provider calls to wire up statement
+interrupt - throws `ObjectDisposedException` once the source behind the token is gone.
+The result is an intermittent failure on exactly the paths that cancel most: typing in
+the search box, and scrolling while a page is in flight.
+
+The `Dispose` calls are gone. These sources never touch `WaitHandle` and hold no
+unmanaged resource, so letting the collector take them costs nothing, and it removes
+the race outright rather than trying to time it.
+
 ### Clearing a list that an ItemsRepeater cannot see
 
 Two separate symptoms, one cause. Locking the app threw

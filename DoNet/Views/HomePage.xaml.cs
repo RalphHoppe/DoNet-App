@@ -83,6 +83,12 @@ public sealed partial class HomePage : Page
                 Realize("PersonModal");
                 Realize("WebsiteModal");
                 Realize("ConfirmModal");
+
+                // The Persons page was preloaded on the welcome screen; this is the
+                // matching window for the other directory, so the rail's first trip
+                // to Sites finds its records already there. Cheap when it is not
+                // needed - the store is open by now, so it is one query.
+                _websites.PreloadAsync().Observe("Preloading the websites directory");
             });
 
     /// <summary>Builds the Websites grid the first time the rail switches to it.</summary>

@@ -194,7 +194,7 @@ public sealed partial class WebsiteDialogViewModel : ObservableObject
 
         IReadOnlyList<string> chosen = website.PaymentMethods;
 
-        Choices.Clear();
+        Choices.ClearSafely();
 
         // The record's own methods are merged in too: a method deleted from the
         // catalog must still show on a record that uses it, or editing would silently
@@ -215,7 +215,7 @@ public sealed partial class WebsiteDialogViewModel : ObservableObject
     /// <summary>Rebuilds the chip list from the ticked boxes.</summary>
     private void Sync()
     {
-        Selected.Clear();
+        Selected.ClearSafely();
 
         foreach (PaymentMethodChoice choice in Choices.Where(c => c.IsSelected))
         {

@@ -47,9 +47,10 @@ public sealed partial class PersonsView : UserControl
     {
         try
         {
-            // The store was already opened while the welcome screen was animating, so
-            // this is usually just the first page arriving rather than a cold open.
-            await ViewModel.LoadAsync();
+            // Usually a no-op: the records were fetched while an earlier screen was
+            // animating. Joining that load rather than starting a fresh one is what
+            // keeps the directory from flashing empty on the way in.
+            await ViewModel.EnsureLoadedAsync();
         }
         catch (Exception error)
         {

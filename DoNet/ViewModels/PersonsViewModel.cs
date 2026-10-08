@@ -44,6 +44,12 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
     private readonly IPersonDirectory _directory;
     private readonly IEncryptedStore _store;
 
+    /// <summary>
+    /// The first-page load, whoever started it. Held so the view can join a preload
+    /// that is already running instead of starting a second one.
+    /// </summary>
+    private Task? _firstLoad;
+
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _searchCts;
 
@@ -117,11 +123,35 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
               + "This cannot be undone.";
 
     /// <summary>
-    /// Opens the store before the directory is on screen. Called while the welcome
-    /// screen is animating, so the open happens during something the user is already
-    /// watching instead of showing as a delay here.
+    /// Opens the store and fetches the first page before the directory is on screen.
     /// </summary>
-    public Task PreloadAsync() => _store.WarmUpAsync();
+    /// <remarks>
+    /// Called while the welcome screen is animating, so roughly 2.6 seconds the user
+    /// is already watching covers both the encrypted open and the first query. It
+    /// fetches the page as well as opening the store - warming the connection alone
+    /// still left the directory to query on arrival, which is the empty moment the
+    /// home screen used to show after every unlock.
+    /// </remarks>
+    public Task PreloadAsync() => _firstLoad ??= PreloadCoreAsync();
+
+    private async Task PreloadCoreAsync()
+    {
+        try
+        {
+            await _store.WarmUpAsync().ConfigureAwait(true);
+        }
+        catch (Exception error)
+        {
+            // Logged, then carried on with deliberately. The warm-up is an
+            // optimisation; LoadCoreAsync opens the store itself if it has to, and it
+            // reports a genuine failure through the directory's error state. Letting
+            // this escape would instead leave the task that the view awaits faulted,
+            // with nothing having moved the directory off its loading state.
+            AppLog.Error("Warming the store before the first page failed", error);
+        }
+
+        await LoadCoreAsync(showLoading: true).ConfigureAwait(true);
+    }
 
     /// <summary>
     /// How long the search box waits for typing to settle before it queries.
@@ -142,6 +172,9 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
         _loadCts?.Cancel();
         _searchCts?.Cancel();
 
+        // The next unlock has to fetch again rather than join this one.
+        _firstLoad = null;
+
         People.ClearSafely();
         SetProperty(ref _searchText, string.Empty, nameof(SearchText));
         HasMore = false;
@@ -160,7 +193,20 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
 
     /// <summary>Loads the first page. Safe to call again; a second call cancels the first.</summary>
     [RelayCommand]
-    public Task LoadAsync() => LoadCoreAsync(showLoading: true);
+    public Task LoadAsync() => _firstLoad = LoadCoreAsync(showLoading: true);
+
+    /// <summary>
+    /// Loads the first page unless it is already loading or loaded.
+    /// </summary>
+    /// <remarks>
+    /// What the view calls when it appears. The records are usually already here,
+    /// fetched while an earlier screen was animating, and calling <see cref="LoadAsync"/>
+    /// unconditionally would throw them away and re-query - which is what made the
+    /// directory appear empty for a moment after every unlock before snapping to its
+    /// contents. Returning the in-flight task rather than starting a second one also
+    /// means a view that opens mid-preload simply waits for it.
+    /// </remarks>
+    public Task EnsureLoadedAsync() => _firstLoad ??= LoadAsync();
 
     /// <summary>
     /// Loads the first page.
@@ -172,8 +218,13 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
     /// </param>
     private async Task LoadCoreAsync(bool showLoading)
     {
+        // Cancelled but deliberately not disposed. The superseded load is still
+        // awaiting a query that holds its token, and CancellationToken.Register -
+        // which the SQLite provider calls to wire up interrupt - throws
+        // ObjectDisposedException once the source behind the token is gone. These
+        // sources never touch WaitHandle and own no unmanaged resource, so letting
+        // the collector take them costs nothing and removes the race outright.
         _loadCts?.Cancel();
-        _loadCts?.Dispose();
         _loadCts = new CancellationTokenSource();
         CancellationToken token = _loadCts.Token;
 
@@ -415,8 +466,8 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
     {
         _ = value;
 
+        // Not disposed, for the same reason as the load source above.
         _searchCts?.Cancel();
-        _searchCts?.Dispose();
         _searchCts = new CancellationTokenSource();
 
         _ = SearchAfterPauseAsync(_searchCts.Token);
