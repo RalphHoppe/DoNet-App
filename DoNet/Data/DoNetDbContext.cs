@@ -35,6 +35,11 @@ public sealed class DoNetDbContext : DbContext
 
     public DbSet<Person> People => Set<Person>();
 
+    public DbSet<Website> Websites => Set<Website>();
+
+    /// <summary>Payment methods the user added themselves. The six built-ins are in code.</summary>
+    public DbSet<PaymentMethodOption> PaymentMethodOptions => Set<PaymentMethodOption>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         options.UseSqlite(_connection);
@@ -53,6 +58,29 @@ public sealed class DoNetDbContext : DbContext
             // would create a second B-tree holding the same keys and charge every insert
             // and delete to maintain it. The directory's only other access pattern is a
             // LIKE '%term%' search, which no index can serve.
+        });
+
+        model.Entity<Website>(entity =>
+        {
+            entity.ToTable("Websites");
+            entity.HasKey(w => w.Id);
+            entity.Property(w => w.Id).ValueGeneratedOnAdd();
+
+            // The selected methods are one delimited column; see Website for why a
+            // join table would be the wrong trade here.
+            entity.Property(w => w.PaymentMethodsRaw);
+        });
+
+        model.Entity<PaymentMethodOption>(entity =>
+        {
+            entity.ToTable("PaymentMethodOptions");
+            entity.HasKey(o => o.Id);
+            entity.Property(o => o.Id).ValueGeneratedOnAdd();
+            entity.Property(o => o.Name).IsRequired();
+
+            // Unlike the record tables, this one is looked up by name on every save,
+            // so the index earns its keep.
+            entity.HasIndex(o => o.Name);
         });
     }
 }

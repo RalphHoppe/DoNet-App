@@ -103,10 +103,16 @@ public partial class App : Application
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<IVaultService, VaultService>();
 
+        // One connection to the encrypted file, shared by every directory. A second
+        // would pay the 256,000-round key derivation again on each unlock and put a
+        // second writer on the same write-ahead log.
+        services.AddSingleton<IEncryptedStore, EncryptedStore>();
+
         // The person store. Real add, edit and delete; what it does not yet do is
         // survive a restart. Swapping this one registration for EF Core over SQLCipher
         // is the whole of that change - nothing above this line needs to move.
         services.AddSingleton<IPersonDirectory, PersonDirectoryService>();
+        services.AddSingleton<IWebsiteDirectory, WebsiteDirectoryService>();
 
         services.AddTransient<CreatePasswordViewModel>();
         services.AddTransient<LockViewModel>();

@@ -42,6 +42,7 @@ public sealed partial class PersonsViewModel : ObservableObject
     public const int PageSize = 12;
 
     private readonly IPersonDirectory _directory;
+    private readonly IEncryptedStore _store;
 
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _searchCts;
@@ -58,9 +59,10 @@ public sealed partial class PersonsViewModel : ObservableObject
     /// <summary>Guards against two overlapping "load the next page" requests.</summary>
     private bool _loadingMore;
 
-    public PersonsViewModel(IPersonDirectory directory)
+    public PersonsViewModel(IPersonDirectory directory, IEncryptedStore store)
     {
         _directory = directory;
+        _store = store;
         Dialog = new PersonDialogViewModel();
 
         // Captured here because this is constructed on the UI thread; null if that
@@ -122,7 +124,7 @@ public sealed partial class PersonsViewModel : ObservableObject
     /// screen is animating, so the open happens during something the user is already
     /// watching instead of showing as a delay here.
     /// </summary>
-    public Task PreloadAsync() => _directory.WarmUpAsync();
+    public Task PreloadAsync() => _store.WarmUpAsync();
 
     /// <summary>
     /// How long the search box waits for typing to settle before it queries.
@@ -154,7 +156,7 @@ public sealed partial class PersonsViewModel : ObservableObject
         // Not awaited: locking must feel instant, and the vault has already dropped the
         // key by the time this runs. Observed so a failure to close is still recorded
         // rather than surfacing later as an unobserved task exception.
-        _directory.CloseAsync().Observe("Closing the directory on lock");
+        _store.CloseAsync().Observe("Closing the store on lock");
 
         OnPropertyChanged(nameof(HasCards));
         OnPropertyChanged(nameof(HasNoMatches));

@@ -54,7 +54,7 @@ public sealed partial class SplashPage : Page
         // database file, and both otherwise land on the first query after unlock.
         IdleWork.InBackground(
             "Preparing the data layer",
-            () => App.Current.Services.GetRequiredService<IPersonDirectory>().PrepareAsync());
+            () => App.Current.Services.GetRequiredService<IEncryptedStore>().PrepareAsync());
 
         try
         {

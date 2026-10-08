@@ -15,31 +15,15 @@ namespace DoNet.Contracts;
 /// failure the user has to be told about rather than shown an empty page.
 ///
 /// Reads are paged rather than "fetch everything", because the screen loads only what
-/// is on display and asks for more as the user scrolls. An implementation over SQL
-/// turns <see cref="GetPageAsync"/> into OFFSET/FETCH and keeps that property.
+/// is on display and asks for more as the user scrolls.
+///
+/// Opening, warming and closing are not here. The connection is shared with every
+/// other directory and belongs to <see cref="IEncryptedStore"/>; this interface is
+/// only the person queries.
 /// </remarks>
 public interface IPersonDirectory
 {
-    /// <summary>
-    /// Opens the store ahead of time. Called while the welcome screen is showing, so
-    /// the cost is paid during an animation the user is already watching instead of
-    /// appearing as a delay on the directory.
-    /// </summary>
-    Task WarmUpAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Readies everything about the store that does not need the key: the native
-    /// library and the object model. Safe to call before the user has unlocked, and
-    /// safe to never call at all.
-    /// </summary>
-    /// <remarks>
-    /// Called from the splash screen. EF builds its model lazily on first use, by
-    /// reflecting over the entity types - and crucially it does not need a database
-    /// to do it, because the model describes entities, not tables. So the cost can be
-    /// paid during an animation that is already playing, instead of landing on the
-    /// first query after unlock alongside the key derivation.
-    /// </remarks>
-    Task PrepareAsync(CancellationToken cancellationToken = default);
 
     /// <summary>One page of records, newest first, optionally filtered.</summary>
     Task<IReadOnlyList<Person>> GetPageAsync(
@@ -66,9 +50,4 @@ public interface IPersonDirectory
 
     Task DeleteAsync(int id, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Closes the store and discards the key material held by the open connection.
-    /// Called when the app locks.
-    /// </summary>
-    Task CloseAsync();
 }
