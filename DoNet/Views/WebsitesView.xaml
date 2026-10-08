@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    x:Class="DoNet.Views.PersonsView"
+    x:Class="DoNet.Views.WebsitesView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -66,8 +66,8 @@
             The card is its own control: a menu that animates needs named elements, and
             names inside a DataTemplate cannot be reached from code.
         -->
-        <DataTemplate x:Key="PersonCardTemplate" x:DataType="models:Person">
-            <controls:PersonCard Person="{x:Bind}"
+        <DataTemplate x:Key="WebsiteCardTemplate" x:DataType="models:Website">
+            <controls:WebsiteCard Website="{x:Bind}"
                                  OpenRequested="OnCardOpen"
                                  EditRequested="OnCardEdit"
                                  DeleteRequested="OnCardDelete" />
@@ -93,7 +93,7 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
-                <TextBlock Text="PERSONS"
+                <TextBlock Text="WEBSITES"
                            FontFamily="{StaticResource BaumansFont}"
                            FontSize="{StaticResource SectionTitleFontSize}"
                            Foreground="{StaticResource BrandPrimaryBrush}"
@@ -186,10 +186,10 @@
                     ADD PERSON. The icon is the supplied 18x18 artwork reproduced exactly:
                     a teal rounded square with a white round-capped cross.
                 -->
-                <Button x:Name="AddPersonButton"
+                <Button x:Name="AddWebsiteButton"
                         Grid.Column="1"
                         Style="{StaticResource BareButtonStyle}"
-                        Command="{x:Bind ViewModel.AddPersonCommand}">
+                        Command="{x:Bind ViewModel.AddWebsiteCommand}">
                     <Border CornerRadius="10"
                             Padding="14,0,18,0"
                             Height="42"
@@ -215,7 +215,7 @@
                                     </Canvas>
                                 </Viewbox>
                             </Grid>
-                            <TextBlock Text="ADD PERSON"
+                            <TextBlock Text="ADD WEBSITE"
                                        VerticalAlignment="Center"
                                        FontFamily="{StaticResource JerseyFont}"
                                        FontSize="{StaticResource ButtonFontSize}"
@@ -249,8 +249,8 @@
                               HorizontalScrollMode="Disabled"
                               ViewChanged="OnCardScrollChanged"
                               Padding="0,0,4,0">
-                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.People}"
-                                   ItemTemplate="{StaticResource PersonCardTemplate}">
+                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.Websites}"
+                                   ItemTemplate="{StaticResource WebsiteCardTemplate}">
                         <ItemsRepeater.Layout>
                             <!--
                                 MinItemWidth is what makes the grid responsive: two
@@ -285,7 +285,7 @@
                     <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
                                        Kind="Empty"
                                        IsActive="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
-                    <TextBlock Text="No persons yet"
+                    <TextBlock Text="No websites yet"
                                Style="{StaticResource StateTitleStyle}"
                                Margin="0,16,0,0" />
                     <TextBlock Text="Records you add will appear here."

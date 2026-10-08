@@ -121,6 +121,7 @@ public partial class App : Application
         // Singleton: the directory grid and the two modals hosted at the HomePage root
         // are three views onto one screen and must share its state.
         services.AddSingleton<PersonsViewModel>();
+        services.AddSingleton<WebsitesViewModel>();
 
         return services.BuildServiceProvider();
     }

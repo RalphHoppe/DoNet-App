@@ -178,6 +178,16 @@
                 <views:PersonsView
                     x:Name="DirectoryView"
                     Visibility="{x:Bind ViewModel.IsPersonsSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                <!--
+                    Deferred: the home screen opens on Persons, so the Websites grid is
+                    built the first time the rail switches to it rather than behind the
+                    screen nobody asked for.
+                -->
+                <views:WebsitesView
+                    x:Name="SitesView"
+                    x:Load="False"
+                    Visibility="{x:Bind ViewModel.IsSitesSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
             </Grid>
             </Grid>
 
@@ -198,6 +208,7 @@
                 the first click is not the one that pays.
             -->
             <views:PersonDialog x:Name="PersonModal" x:Load="False" />
+            <views:WebsiteDialog x:Name="WebsiteModal" x:Load="False" />
             <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
         </Grid>
     </Page>

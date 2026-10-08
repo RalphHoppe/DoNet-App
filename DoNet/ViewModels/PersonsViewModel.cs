@@ -33,7 +33,7 @@ public enum DirectoryState
 /// independent booleans. Independent booleans drift until two are true at once and the
 /// screen renders a spinner on top of an error.
 /// </remarks>
-public sealed partial class PersonsViewModel : ObservableObject
+public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmHost
 {
     /// <summary>
     /// Records fetched per request. Enough to fill the grid at the design size with a

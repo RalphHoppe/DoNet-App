@@ -18,6 +18,7 @@ namespace DoNet.Views;
 public sealed partial class HomePage : Page
 {
     private readonly PersonsViewModel _persons;
+    private readonly WebsitesViewModel _websites;
     private bool _warmUpScheduled;
 
     public HomePage()
@@ -28,12 +29,15 @@ public sealed partial class HomePage : Page
         ViewModel = App.Current.Services.GetRequiredService<HomeViewModel>();
 
         _persons = App.Current.Services.GetRequiredService<PersonsViewModel>();
+        _websites = App.Current.Services.GetRequiredService<WebsitesViewModel>();
 
         InitializeComponent();
 
         // The modals are deferred, so nothing is listening for the request to open one
         // until they exist. This page watches on their behalf and realises them.
         _persons.PropertyChanged += OnPersonsPropertyChanged;
+        _websites.PropertyChanged += OnWebsitesPropertyChanged;
+        ViewModel.PropertyChanged += OnSectionChanged;
 
         Loaded += OnLoaded;
     }
@@ -77,8 +81,31 @@ public sealed partial class HomePage : Page
             () =>
             {
                 Realize("PersonModal");
+                Realize("WebsiteModal");
                 Realize("ConfirmModal");
             });
+
+    /// <summary>Builds the Websites grid the first time the rail switches to it.</summary>
+    private void OnSectionChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(HomeViewModel.SelectedSection) && ViewModel.IsSitesSelected)
+        {
+            Realize("SitesView");
+        }
+    }
+
+    private void OnWebsitesPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(WebsitesViewModel.IsDialogOpen) && _websites.IsDialogOpen)
+        {
+            Realize("WebsiteModal");
+        }
+        else if (args.PropertyName == nameof(WebsitesViewModel.IsConfirmingDelete)
+                 && _websites.IsConfirmingDelete)
+        {
+            Realize("ConfirmModal");
+        }
+    }
 
     private void OnPersonsPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
@@ -135,8 +162,14 @@ public sealed partial class HomePage : Page
         base.OnNavigatedFrom(args);
 
         _persons.PropertyChanged -= OnPersonsPropertyChanged;
+        _websites.PropertyChanged -= OnWebsitesPropertyChanged;
+        ViewModel.PropertyChanged -= OnSectionChanged;
 
         DirectoryView.ReleaseBindings();
+
+        // Null when the rail never reached Websites and the idle warm-up had not run.
+        SitesView?.ReleaseBindings();
+        WebsiteModal?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();

@@ -27,6 +27,7 @@ public partial class HomeViewModel : ObservableObject
     private readonly INavigationService _navigation;
     private readonly IVaultService _vault;
     private readonly PersonsViewModel _persons;
+    private readonly WebsitesViewModel _websites;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsServicesSelected))]
@@ -38,11 +39,12 @@ public partial class HomeViewModel : ObservableObject
     private HomeSection _selectedSection = HomeSection.Persons;
 
     public HomeViewModel(
-        INavigationService navigation, IVaultService vault, PersonsViewModel persons)
+        INavigationService navigation, IVaultService vault, PersonsViewModel persons, WebsitesViewModel websites)
     {
         _navigation = navigation;
         _vault = vault;
         _persons = persons;
+        _websites = websites;
     }
 
     public bool IsServicesSelected => SelectedSection == HomeSection.Services;
@@ -72,6 +74,7 @@ public partial class HomeViewModel : ObservableObject
         // decrypted copies that were sitting in the grid. Navigating alone would leave
         // every record on screen behind the lock screen, in memory and one Back away.
         _persons.Reset();
+        _websites.Reset();
         _vault.Lock();
 
         _navigation.NavigateTo(typeof(LockPage), clearBackStack: true);

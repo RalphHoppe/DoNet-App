@@ -466,6 +466,46 @@ The search box debounces 250ms and cancels the query in flight, so a typed word 
 round trip rather than one per character, and a page plus its total is fetched in a
 single trip instead of two.
 
+## The Websites directory
+
+Seven columns - `#`, Name, Domain, Description, Available Payment Methods, Note,
+Created At - over the same encrypted store, with the same card, search, paging and
+three-mode dialog as Persons. Divergence between the two screens would be a bug, so
+the view models are deliberately the same shape.
+
+### Payment methods are two things
+
+Six ship with the app and are always offered, each with its brand mark drawn as
+vectors. Anything else the user types is saved to `PaymentMethodOptions` and merged on
+top, so a method added once is a tick box from then on. Deriving the list from existing
+records instead was the alternative, and it loses a method the moment the last record
+using it is edited. Matching is case-insensitive throughout, so a hand-typed "paypal"
+does not become a seventh option beside PayPal.
+
+A record's own selection is one delimited column rather than a join table: the
+directory reads whole pages and never queries by method, so a relationship would add an
+`Include` to every read to serve a query nobody makes. The separator is ASCII Unit
+Separator, because methods are free text and "Visa, Mastercard" typed as one entry must
+not silently split in two.
+
+### Two controls worth knowing about
+
+`PaymentMethodIcon` holds all six marks plus a neutral card outline for user-added
+methods, each `x:Load="False"` and realised by name - these appear in quantity, so
+building all seven in every instance would be most of a thousand elements for a handful
+of small logos.
+
+`WrapPanel` exists because WinUI ships no wrapping panel and `UniformGridLayout` would
+pad "USDT" out to the width of the longest chip. Fifty lines of `MeasureOverride` was
+cheaper than the workarounds.
+
+### One confirmation dialog, two directories
+
+`ConfirmDialog` takes every `IDeleteConfirmHost`, shows for whichever is asking and
+sends the answer back to that one. The alternative was a second copy with "person"
+swapped for "website", which is how two dialogs that are meant to look identical start
+to drift.
+
 ## Stability and performance
 
 ### Nothing fails silently
