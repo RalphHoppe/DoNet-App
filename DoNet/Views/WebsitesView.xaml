@@ -10,7 +10,7 @@
     mc:Ignorable="d">
 
     <!--
-        The Persons directory, hosted inside the home screen's content surface.
+        The Websites directory, hosted inside the home screen's content surface.
 
         Two surfaces are in play and they are easy to confuse: the grey #F5F5F5 plate
         belongs to HomePage and is already behind this control, so the header sits

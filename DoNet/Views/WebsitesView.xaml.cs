@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 namespace DoNet.Views;
 
 /// <summary>
-/// The Persons directory, hosted inside the home screen's content surface.
+/// The Websites directory, hosted inside the home screen's content surface.
 /// </summary>
 public sealed partial class WebsitesView : UserControl
 {

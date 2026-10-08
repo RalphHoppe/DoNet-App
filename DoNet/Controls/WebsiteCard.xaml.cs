@@ -24,9 +24,10 @@ public sealed partial class WebsiteCard : UserControl
 
     public static readonly DependencyProperty WebsiteProperty = DependencyProperty.Register(
         nameof(Website), typeof(Website), typeof(WebsiteCard),
-        new PropertyMetadata(null, OnPersonChanged));
+        new PropertyMetadata(null, OnWebsiteChanged));
 
-    public Website? Person
+    /// <summary>The record this card shows.</summary>
+    public Website? Website
     {
         get => (Website?)GetValue(WebsiteProperty);
         set => SetValue(WebsiteProperty, value);
@@ -39,7 +40,7 @@ public sealed partial class WebsiteCard : UserControl
 
     public event EventHandler<Website>? DeleteRequested;
 
-    private static void OnPersonChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private static void OnWebsiteChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((WebsiteCard)d).Apply();
 
     /// <summary>
