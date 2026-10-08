@@ -92,31 +92,64 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal">
-                        <Border Width="40"
-                                Height="40"
-                                CornerRadius="20"
-                                Margin="0,0,14,0"
-                                VerticalAlignment="Center"
-                                Background="{StaticResource CardAvatarBrush}"
-                                BorderBrush="{StaticResource SearchBorderBrush}"
-                                BorderThickness="1">
-                            <controls:LineIcon Kind="Globe"
-                                               Width="19"
-                                               Height="19"
-                                               Foreground="{StaticResource BrandPrimaryBrush}" />
-                        </Border>
-                        <TextBlock Text="WEBSITES"
-                                   FontFamily="{StaticResource BaumansFont}"
-                                   FontSize="{StaticResource SectionTitleFontSize}"
-                                   Foreground="{StaticResource BrandPrimaryBrush}"
-                                   CharacterSpacing="20"
-                                   VerticalAlignment="Center"
-                                   LineStackingStrategy="BlockLineHeight"
-                                   LineHeight="40" />
-                    </StackPanel>
-            </StackPanel>
+            <!--
+                The disc sits beside a two-line block rather than beside the title
+                alone, so the heading and its subtitle read as one unit - the same
+                arrangement the record cards use for an avatar next to a name and
+                its caption.
+            -->
+            <Grid Grid.Row="0"
+                  Grid.Column="0"
+                  VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <!--
+                        Star, not Auto. A horizontal StackPanel measures its children
+                        with unbounded width, so the text would never trim - it would
+                        simply run under the search box and be clipped. A constrained
+                        column is what makes TextTrimming do anything at all.
+                    -->
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Width="40"
+                        Height="40"
+                        CornerRadius="20"
+                        Margin="0,0,14,0"
+                        VerticalAlignment="Center"
+                        Background="{StaticResource CardAvatarBrush}"
+                        BorderBrush="{StaticResource SearchBorderBrush}"
+                        BorderThickness="1">
+                    <controls:LineIcon Kind="Globe"
+                                       Width="22"
+                                       Height="22"
+                                       Foreground="{StaticResource BrandPrimaryBrush}" />
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <!--
+                        Baumans is set in caps here, so a line box tighter than the
+                        font's natural leading clips nothing and keeps the subtitle
+                        attached to the title instead of floating under it.
+                    -->
+                    <TextBlock Text="WEBSITES"
+                               FontFamily="{StaticResource BaumansFont}"
+                               FontSize="{StaticResource SectionTitleFontSize}"
+                               Foreground="{StaticResource BrandPrimaryBrush}"
+                               CharacterSpacing="20"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="36" />
+                    <TextBlock Text="Every website saved in your vault"
+                               FontFamily="{StaticResource BalooFont}"
+                               FontSize="{StaticResource SectionSubtitleFontSize}"
+                               Foreground="{StaticResource SectionSubtitleBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="20" />
+                </StackPanel>
+            </Grid>
 
             <!--
                 Search and the add action. The whole row moves to its own line on narrow
