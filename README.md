@@ -659,26 +659,44 @@ Deferred controls need one extra thing: a modal can be created *because* it is a
 supposed to be showing, so the property change that opens it fired before the instance
 existed. Both now reconcile with the view model on `Loaded`.
 
-### The card drawer, and a layout clip that ate it
+### Card actions on hover
 
-The three-dot menu grows out of the dots into a vertical bar. Its host has to stay
-36x36 or the identity row becomes as tall as the fully open drawer - the two action
-buttons hold their layout space even at zero opacity - and the card visibly resizes
-every time the menu opens.
+Edit and delete used to live in a drawer that grew out of a three-dot button. They are
+now two circular buttons that fade in from the right while the pointer is over the
+card, and fade out when it leaves.
 
-Pinning the host to 36x36 with a `Grid` fixed that and broke the drawer, because
-**WinUI applies a layout clip whenever a child is arranged smaller than it asked to
-be**. A Grid arranges children inside its own box, so a surface animating to 106px was
-cut back to 36 and the buttons below the dots disappeared. What survived was the
-opacity fade and the dot rotation: the menu looked like a small empty outline.
+The pair shares the content grid's cell with `Grid.RowSpan` rather than taking a column
+of its own. A reserved column would indent every record permanently for the sake of
+something on screen a fraction of the time.
 
-A `Canvas` arranges each child at its own desired size, so no clip is ever applied and
-children render freely outside its bounds. Same 36x36 footprint, no clipping. The
-identity row carries `Canvas.ZIndex` so the drawer overflows in front of the fields
-rather than behind them.
+Only opacity and a translate are animated, and both are independent animations, so they
+run on the compositor thread and stay smooth while the directory scrolls behind them.
+That is the real gain over the drawer, which had to animate `Height` with
+`EnableDependentAnimation` and therefore ran on the UI thread. Out is faster than in -
+0.14s against 0.18s - because arriving should feel unhurried and leaving should be done
+before the pointer reaches the next card.
 
-The general rule worth remembering: if an element must overflow its parent, the parent
-has to be a Canvas. Fixing a size on any other panel is also asking for a clip.
+Two details that are easy to miss. `PointerExited` **bubbles**, so moving off one of the
+buttons and back onto the card raises it on the card too; without a bounds check the
+actions blink out every time the pointer crosses one of them, which is every time
+somebody reaches for them. And a hover-only affordance is a mouse-only affordance, so
+the buttons also appear when either takes keyboard focus - with the decision queued on
+the dispatcher, because tabbing between them raises `LostFocus` before the other's
+`GotFocus` and deciding immediately would hide the buttons out from under the caret.
+
+### A layout clip that ate the old drawer
+
+Worth keeping even though the drawer is gone, because the rule is general.
+
+Pinning the drawer's host to 36x36 with a `Grid` broke it, because **WinUI applies a
+layout clip whenever a child is arranged smaller than it asked to be**. A Grid arranges
+children inside its own box, so a surface animating to 106px was cut back to 36 and the
+buttons below the dots disappeared. What survived was the opacity fade and the dot
+rotation, so the menu looked like a small empty outline.
+
+A `Canvas` arranges each child at its own desired size, so no clip is ever applied.
+The rule: if an element must overflow its parent, the parent has to be a Canvas. Fixing
+a size on any other panel is asking for a clip.
 
 ### Tab order, and why TabIndex could not do it
 

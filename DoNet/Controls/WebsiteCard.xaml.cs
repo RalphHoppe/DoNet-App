@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
+using Windows.Foundation;
 
 namespace DoNet.Controls;
 
@@ -158,46 +159,111 @@ public sealed partial class WebsiteCard : UserControl
         };
     }
 
-    private bool _menuOpen;
+    private bool _pointerOver;
+    private bool _focusWithin;
+    private bool _actionsShown;
 
     /// <summary>
-    /// Opens or closes the drawer.
+    /// Shows or hides the card's two actions.
     /// </summary>
     /// <remarks>
-    /// The items are hit-test invisible while closed. They are still in the tree with
-    /// zero opacity, and without this an invisible Delete would sit over the card's
-    /// first field, catching clicks aimed at the record.
+    /// They are hit-test invisible while hidden. They stay in the tree at zero
+    /// opacity, and without this an invisible Delete would sit over the record
+    /// catching clicks meant for the card.
     /// </remarks>
-    private void SetMenu(bool open)
+    private void SetActions(bool shown)
     {
-        if (_menuOpen == open)
+        if (_actionsShown == shown)
         {
             return;
         }
 
-        _menuOpen = open;
+        _actionsShown = shown;
+        ActionLayer.IsHitTestVisible = shown;
 
-        EditItem.IsHitTestVisible = open;
-        DeleteItem.IsHitTestVisible = open;
-
-        if (Resources[open ? "MenuOpen" : "MenuClose"] is Storyboard board)
+        if (Resources[shown ? "ActionsShow" : "ActionsHide"] is Storyboard board)
         {
             board.Begin();
         }
     }
 
-    private void OnMenuToggle(object sender, RoutedEventArgs args) => SetMenu(!_menuOpen);
+    private void ApplyActionState() => SetActions(_pointerOver || _focusWithin);
+
+    private void HideActions()
+    {
+        _pointerOver = false;
+        _focusWithin = false;
+        ApplyActionState();
+    }
+
+    private void OnCardPointerEntered(object sender, PointerRoutedEventArgs args)
+    {
+        _pointerOver = true;
+        ApplyActionState();
+    }
 
     /// <summary>
-    /// Light dismiss. A drawer attached to the card closes when the pointer leaves the
-    /// card, which is the gesture people already make when they change their mind.
+    /// Hides the actions, but only once the pointer has really left the card.
     /// </summary>
+    /// <remarks>
+    /// PointerExited bubbles. Moving off one of the action buttons and back onto the
+    /// card raises it on the card as well, so without the bounds check the actions
+    /// would blink out every time the pointer crossed one of them - which is every
+    /// time somebody reaches for them.
+    /// </remarks>
     private void OnCardPointerExited(object sender, PointerRoutedEventArgs args)
-        => SetMenu(false);
+    {
+        Point point = args.GetCurrentPoint(Shell).Position;
+
+        if (point.X >= 0 && point.Y >= 0 &&
+            point.X <= Shell.ActualWidth && point.Y <= Shell.ActualHeight)
+        {
+            return;
+        }
+
+        _pointerOver = false;
+        ApplyActionState();
+    }
+
+    private void OnActionGotFocus(object sender, RoutedEventArgs args)
+    {
+        _focusWithin = true;
+        ApplyActionState();
+    }
+
+    /// <summary>
+    /// Keeps the actions up while focus moves between them.
+    /// </summary>
+    /// <remarks>
+    /// Tabbing from Edit to Delete raises LostFocus before the other's GotFocus, so
+    /// deciding immediately would hide the buttons underneath the caret. Queuing the
+    /// decision lets both events land first.
+    /// </remarks>
+    private void OnActionLostFocus(object sender, RoutedEventArgs args)
+    {
+        _focusWithin = false;
+        DispatcherQueue.TryEnqueue(ApplyActionState);
+    }
+
+    private void OnActionPointerEntered(object sender, PointerRoutedEventArgs args)
+    {
+        if (sender is Button button)
+        {
+            button.Opacity = 0.86;
+        }
+    }
+
+    private void OnActionPointerExited(object sender, PointerRoutedEventArgs args)
+    {
+        if (sender is Button button)
+        {
+            button.Opacity = 1;
+        }
+    }
 
     private void OnDoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
     {
-        SetMenu(false);
+        HideActions();
 
         if (Website is { } website)
         {
@@ -207,7 +273,7 @@ public sealed partial class WebsiteCard : UserControl
 
     private void OnEditClick(object sender, RoutedEventArgs args)
     {
-        SetMenu(false);
+        HideActions();
 
         if (Website is { } website)
         {
@@ -217,7 +283,7 @@ public sealed partial class WebsiteCard : UserControl
 
     private void OnDeleteClick(object sender, RoutedEventArgs args)
     {
-        SetMenu(false);
+        HideActions();
 
         if (Website is { } website)
         {

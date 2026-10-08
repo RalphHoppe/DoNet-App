@@ -32,8 +32,8 @@ public sealed partial class LineIcon : UserControl
         // touching this instance - a parent setting it, or a theme change. Watching
         // the property catches all of those; reading it once in the constructor
         // would only catch the first.
-        RegisterPropertyChangedCallback(ForegroundProperty, (_, _) => Shape.Stroke = Foreground);
-        Shape.Stroke = Foreground;
+        RegisterPropertyChangedCallback(ForegroundProperty, (_, _) => ApplyBrush());
+        ApplyBrush();
     }
 
     /// <summary>
@@ -67,6 +67,7 @@ public sealed partial class LineIcon : UserControl
         try
         {
             Shape.Data = (Geometry)XamlBindingHelper.ConvertValue(typeof(Geometry), markup);
+            ApplyBrush();
         }
         catch (Exception error)
         {
@@ -75,5 +76,26 @@ public sealed partial class LineIcon : UserControl
             AppLog.Error($"The '{kind}' icon could not be parsed", error);
             Shape.Data = null;
         }
+    }
+
+    /// <summary>
+    /// Paints the shape, as an outline or a solid depending on how it was drawn.
+    /// </summary>
+    /// <remarks>
+    /// The two are mutually exclusive rather than additive: leaving a stroke on a
+    /// filled mark thickens it by a unit all round, which at 18 px is the difference
+    /// between a clean glyph and a smudge.
+    /// </remarks>
+    private void ApplyBrush()
+    {
+        if (LineIconData.IsFilled(Kind))
+        {
+            Shape.Fill = Foreground;
+            Shape.Stroke = null;
+            return;
+        }
+
+        Shape.Stroke = Foreground;
+        Shape.Fill = null;
     }
 }
