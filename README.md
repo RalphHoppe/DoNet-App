@@ -662,12 +662,14 @@ existed. Both now reconcile with the view model on `Loaded`.
 ### Card actions on hover
 
 Edit and delete used to live in a drawer that grew out of a three-dot button. They are
-now two circular buttons that fade in from the right while the pointer is over the
-card, and fade out when it leaves.
+now two 46px circular buttons in the bottom-right corner of the card, fading in from
+the right while the pointer is over the card and fading out when it leaves.
 
 The pair shares the content grid's cell with `Grid.RowSpan` rather than taking a column
 of its own. A reserved column would indent every record permanently for the sake of
-something on screen a fraction of the time.
+something on screen a fraction of the time. The corner is the right home for them: it
+is the one region of a record card that is predictably quiet, and anchoring there means
+the buttons land in the same place on every card regardless of how tall its fields run.
 
 Only opacity and a translate are animated, and both are independent animations, so they
 run on the compositor thread and stay smooth while the directory scrolls behind them.
@@ -683,6 +685,52 @@ somebody reaches for them. And a hover-only affordance is a mouse-only affordanc
 the buttons also appear when either takes keyboard focus - with the decision queued on
 the dispatcher, because tabbing between them raises `LostFocus` before the other's
 `GotFocus` and deciding immediately would hide the buttons out from under the caret.
+
+### Clearing a list that an ItemsRepeater cannot see
+
+Two separate symptoms, one cause. Locking the app threw
+`COMException: Unspecified error` out of `People.Clear()`, and the Websites directory
+hung on "Opening the directory" forever.
+
+The card host was written the obvious way:
+
+```xml
+<ScrollViewer x:Name="CardScroller" Visibility="{x:Bind ViewModel.HasCards}">
+    <ItemsRepeater ItemsSource="{x:Bind ViewModel.People}" ... />
+```
+
+`HasCards` was `State == Ready && Count > 0`, so any time the list was empty the
+repeater sat inside a **collapsed** subtree. A collapsed `ScrollViewer` is never
+measured, so the repeater's viewport manager has no viewport to work against, and a
+collection change arriving in that state comes back as `E_FAIL`.
+
+What made it hard to see is that the crash happened on an **empty** collection - the
+debugger showed `Count = 0` at the throw, which looks impossible for a method whose job
+is to remove things. `ObservableCollection<T>.Clear()` raises a Reset unconditionally,
+whether or not it removed anything, so clearing an already-empty list still sent the
+one notification the repeater could not service.
+
+The hang was the same fault wearing a disguise. `LoadCoreAsync` set `State = Loading`
+- collapsing the host - then cleared the collection, which threw. Its handler caught
+the exception and, as its first act, **cleared the same collection again**. That threw
+a second time and escaped the method, so the state was never moved off `Loading`. An
+error had turned into a spinner that ran until the app was killed.
+
+Three changes, each sufficient on its own:
+
+- **The scroller is never collapsed.** With nothing in the collection it draws nothing
+  anyway, so there was never anything to gain by hiding it. The four state panels are
+  now opaque and stack above it.
+- **`ClearSafely()` returns early when the collection is already empty**, so the
+  pointless Reset is never raised.
+- **A handler never touches the thing that just threw before reaching safety.** The
+  terminal state is set first, and the clear comes last.
+
+The fourth change is the one that matters most next time: **all eight `catch (Exception)`
+blocks in the two directory view-models were silent**. No log line, no breadcrumb. A
+swallowed exception with no record of it does not make the app more robust, it makes
+the next bug undiagnosable - and this one cost a full round of guessing that a single
+`AppLog.Error` would have answered immediately.
 
 ### A layout clip that ate the old drawer
 

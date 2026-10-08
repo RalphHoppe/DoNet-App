@@ -253,14 +253,21 @@
             <Grid>
 
                 <!--
-                    The five branches below are mutually exclusive by construction: each
-                    binds to a flag computed from a single state field, so no combination
-                    of them can put a spinner on top of an error.
+                    The four state panels below are mutually exclusive by construction:
+                    each binds to a flag computed from a single state field, so no
+                    combination of them can put a spinner on top of an error. They are
+                    opaque and stack above the card scroller, which stays visible.
                 -->
 
                 <!-- Loaded -->
+                <!--
+                    Deliberately always visible. An ItemsRepeater inside a collapsed
+                    ScrollViewer has no measured viewport, and a collection change
+                    reaching it in that state fails with COMException: Unspecified
+                    error. With nothing in Websites it draws nothing anyway, and the
+                    state panels below paint over it.
+                -->
                 <ScrollViewer x:Name="CardScroller"
-                              Visibility="{x:Bind ViewModel.HasCards, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollMode="Disabled"
                               ViewChanged="OnCardScrollChanged"
@@ -282,75 +289,83 @@
                 </ScrollViewer>
 
                 <!-- Loading -->
-                <StackPanel VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
-                                       Kind="Loading"
-                                       IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
-                    <TextBlock Text="Opening the directory"
-                               Style="{StaticResource StateTitleStyle}"
-                               Margin="0,16,0,0" />
-                    <TextBlock Text="Just a moment." Style="{StaticResource StateBodyStyle}" />
-                </StackPanel>
+                <Border Background="{StaticResource CardBackgroundBrush}"
+                        Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                           Kind="Loading"
+                                           IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+                        <TextBlock Text="Opening the directory"
+                                   Style="{StaticResource StateTitleStyle}"
+                                   Margin="0,16,0,0" />
+                        <TextBlock Text="Just a moment." Style="{StaticResource StateBodyStyle}" />
+                    </StackPanel>
+                </Border>
 
                 <!-- Empty: no records at all -->
-                <StackPanel VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
-                                       Kind="Empty"
-                                       IsActive="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
-                    <TextBlock Text="No websites yet"
-                               Style="{StaticResource StateTitleStyle}"
-                               Margin="0,16,0,0" />
-                    <TextBlock Text="Records you add will appear here."
-                               Style="{StaticResource StateBodyStyle}" />
-                </StackPanel>
+                <Border Background="{StaticResource CardBackgroundBrush}"
+                        Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                           Kind="Empty"
+                                           IsActive="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
+                        <TextBlock Text="No websites yet"
+                                   Style="{StaticResource StateTitleStyle}"
+                                   Margin="0,16,0,0" />
+                        <TextBlock Text="Records you add will appear here."
+                                   Style="{StaticResource StateBodyStyle}" />
+                    </StackPanel>
+                </Border>
 
                 <!-- Empty: records exist, the search excluded them -->
-                <StackPanel VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Visibility="{x:Bind ViewModel.HasNoMatches, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
-                                       Kind="NoMatch"
-                                       IsActive="{x:Bind ViewModel.HasNoMatches, Mode=OneWay}" />
-                    <TextBlock Text="Nothing matches that search"
-                               Style="{StaticResource StateTitleStyle}"
-                               Margin="0,16,0,0" />
-                    <TextBlock Text="Try a shorter term, or clear the search to see every record."
-                               Style="{StaticResource StateBodyStyle}" />
-                </StackPanel>
+                <Border Background="{StaticResource CardBackgroundBrush}"
+                        Visibility="{x:Bind ViewModel.HasNoMatches, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                           Kind="NoMatch"
+                                           IsActive="{x:Bind ViewModel.HasNoMatches, Mode=OneWay}" />
+                        <TextBlock Text="Nothing matches that search"
+                                   Style="{StaticResource StateTitleStyle}"
+                                   Margin="0,16,0,0" />
+                        <TextBlock Text="Try a shorter term, or clear the search to see every record."
+                                   Style="{StaticResource StateBodyStyle}" />
+                    </StackPanel>
+                </Border>
 
                 <!-- Error -->
-                <StackPanel VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
-                                       Kind="Error"
-                                       IsActive="{x:Bind ViewModel.IsError, Mode=OneWay}" />
-                    <TextBlock Text="The directory could not be opened"
-                               Style="{StaticResource StateTitleStyle}"
-                               Margin="0,16,0,0" />
-                    <TextBlock Text="Nothing was changed. You can try again."
-                               Style="{StaticResource StateBodyStyle}" />
-                    <Button Margin="0,20,0,0"
-                            HorizontalAlignment="Center"
-                            Style="{StaticResource BareButtonStyle}"
-                            Command="{x:Bind ViewModel.RetryCommand}">
-                        <Border CornerRadius="20"
-                                Height="40"
-                                Padding="22,0,22,0"
-                                Background="{StaticResource BrandPrimaryBrush}">
-                            <TextBlock Text="TRY AGAIN"
-                                       VerticalAlignment="Center"
-                                       FontFamily="{StaticResource JerseyFont}"
-                                       FontSize="{StaticResource ButtonFontSize}"
-                                       Foreground="#FFFFFF"
-                                       CharacterSpacing="40" />
-                        </Border>
-                    </Button>
-                </StackPanel>
+                <Border Background="{StaticResource CardBackgroundBrush}"
+                        Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                           Kind="Error"
+                                           IsActive="{x:Bind ViewModel.IsError, Mode=OneWay}" />
+                        <TextBlock Text="The directory could not be opened"
+                                   Style="{StaticResource StateTitleStyle}"
+                                   Margin="0,16,0,0" />
+                        <TextBlock Text="Nothing was changed. You can try again."
+                                   Style="{StaticResource StateBodyStyle}" />
+                        <Button Margin="0,20,0,0"
+                                HorizontalAlignment="Center"
+                                Style="{StaticResource BareButtonStyle}"
+                                Command="{x:Bind ViewModel.RetryCommand}">
+                            <Border CornerRadius="20"
+                                    Height="40"
+                                    Padding="22,0,22,0"
+                                    Background="{StaticResource BrandPrimaryBrush}">
+                                <TextBlock Text="TRY AGAIN"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource JerseyFont}"
+                                           FontSize="{StaticResource ButtonFontSize}"
+                                           Foreground="#FFFFFF"
+                                           CharacterSpacing="40" />
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                </Border>
 
             </Grid>
         </Border>

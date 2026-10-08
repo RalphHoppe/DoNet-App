@@ -197,7 +197,8 @@
             </Grid>
         
             <!--
-                Edit and delete, while the pointer is over the card.
+                Edit and delete, anchored to the bottom-right corner of the card's
+                content box while the pointer is over the card.
 
                 They share the grid's cell instead of taking a column, so the fields
                 keep the card's full width when the actions are not there - a column
@@ -211,18 +212,19 @@
             <StackPanel x:Name="ActionLayer"
                         Grid.Row="0"
                         Grid.RowSpan="2"
+                        Orientation="Horizontal"
                         Spacing="12"
                         Opacity="0"
                         IsHitTestVisible="False"
                         HorizontalAlignment="Right"
-                        VerticalAlignment="Center">
+                        VerticalAlignment="Bottom">
                 <StackPanel.RenderTransform>
                     <TranslateTransform x:Name="ActionShift" X="14" />
                 </StackPanel.RenderTransform>
 
                 <Button x:Name="EditAction"
-                        Width="40"
-                        Height="40"
+                        Width="46"
+                        Height="46"
                         Style="{StaticResource BareButtonStyle}"
                         ToolTipService.ToolTip="Edit"
                         GotFocus="OnActionGotFocus"
@@ -230,20 +232,20 @@
                         PointerEntered="OnActionPointerEntered"
                         PointerExited="OnActionPointerExited"
                         Click="OnEditClick">
-                    <Border Width="40"
-                            Height="40"
-                            CornerRadius="20"
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
                             Background="{StaticResource BrandPrimaryBrush}">
                         <controls:LineIcon Kind="EditSquare"
-                                           Width="18"
-                                           Height="18"
+                                           Width="21"
+                                           Height="21"
                                            Foreground="White" />
                     </Border>
                 </Button>
 
                 <Button x:Name="DeleteAction"
-                        Width="40"
-                        Height="40"
+                        Width="46"
+                        Height="46"
                         Style="{StaticResource BareButtonStyle}"
                         ToolTipService.ToolTip="Delete"
                         GotFocus="OnActionGotFocus"
@@ -251,13 +253,13 @@
                         PointerEntered="OnActionPointerEntered"
                         PointerExited="OnActionPointerExited"
                         Click="OnDeleteClick">
-                    <Border Width="40"
-                            Height="40"
-                            CornerRadius="20"
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
                             Background="{StaticResource DangerBrush}">
                         <controls:LineIcon Kind="Trash"
-                                           Width="18"
-                                           Height="18"
+                                           Width="21"
+                                           Height="21"
                                            Foreground="White" />
                     </Border>
                 </Button>

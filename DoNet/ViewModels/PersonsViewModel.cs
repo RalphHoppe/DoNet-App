@@ -80,7 +80,6 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
     [NotifyPropertyChangedFor(nameof(IsLoading))]
     [NotifyPropertyChangedFor(nameof(IsError))]
     [NotifyPropertyChangedFor(nameof(IsEmpty))]
-    [NotifyPropertyChangedFor(nameof(HasCards))]
     [NotifyPropertyChangedFor(nameof(HasNoMatches))]
     private DirectoryState _state = DirectoryState.Loading;
 
@@ -101,8 +100,6 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
     public bool IsError => State == DirectoryState.Error;
 
     public bool IsEmpty => State == DirectoryState.Empty;
-
-    public bool HasCards => State == DirectoryState.Ready && People.Count > 0;
 
     /// <summary>
     /// Records exist but the search excluded all of them. Separate from
@@ -145,7 +142,7 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
         _loadCts?.Cancel();
         _searchCts?.Cancel();
 
-        People.Clear();
+        People.ClearSafely();
         SetProperty(ref _searchText, string.Empty, nameof(SearchText));
         HasMore = false;
         IsDialogOpen = false;
@@ -158,7 +155,6 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
         // rather than surfacing later as an unobserved task exception.
         _store.CloseAsync().Observe("Closing the store on lock");
 
-        OnPropertyChanged(nameof(HasCards));
         OnPropertyChanged(nameof(HasNoMatches));
     }
 
@@ -198,10 +194,13 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
 
             if (token.IsCancellationRequested || generation != _loadGeneration)
             {
+                // Leaving the state alone is deliberate. Every path that gets here
+                // has a newer owner: either a later LoadCoreAsync that will set its
+                // own state, or Reset, which parked it on Loading on purpose.
                 return;
             }
 
-            People.Clear();
+            People.ClearSafely();
             foreach (Person person in page)
             {
                 People.Add(person);
@@ -231,11 +230,15 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
         {
             // Superseded by a newer load, which owns the state now.
         }
-        catch (Exception)
+        catch (Exception error)
         {
-            People.Clear();
+            AppLog.Error("PersonsViewModel.LoadCoreAsync failed", error);
+            // Reach the terminal state first: a handler that mutates the same
+            // collection that just threw can throw again and escape the method,
+            // which would strand the directory on its loading state.
             HasMore = false;
             State = DirectoryState.Error;
+            People.ClearSafely();
         }
     }
 
@@ -280,8 +283,9 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
         {
             // Superseded by a newer load, which owns the list now.
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            AppLog.Error("PersonsViewModel.LoadMoreAsync failed", error);
             // A failed page does not invalidate what is already on screen; stop asking.
             HasMore = false;
         }
@@ -345,8 +349,9 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
                 await _directory.UpdateAsync(person).ConfigureAwait(true);
             }
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            AppLog.Error("PersonsViewModel.CommitDialogAsync failed", error);
             State = DirectoryState.Error;
             IsDialogOpen = false;
             return;
@@ -387,8 +392,9 @@ public sealed partial class PersonsViewModel : ObservableObject, IDeleteConfirmH
         {
             await _directory.DeleteAsync(person.Id).ConfigureAwait(true);
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            AppLog.Error("PersonsViewModel.ConfirmDeleteAsync failed", error);
             State = DirectoryState.Error;
             return;
         }

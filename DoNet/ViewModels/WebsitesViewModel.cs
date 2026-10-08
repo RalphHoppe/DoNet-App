@@ -49,7 +49,6 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
     [NotifyPropertyChangedFor(nameof(IsLoading))]
     [NotifyPropertyChangedFor(nameof(IsError))]
     [NotifyPropertyChangedFor(nameof(IsEmpty))]
-    [NotifyPropertyChangedFor(nameof(HasCards))]
     [NotifyPropertyChangedFor(nameof(HasNoMatches))]
     private DirectoryState _state = DirectoryState.Loading;
 
@@ -80,8 +79,6 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
 
     public bool IsEmpty => State == DirectoryState.Empty;
 
-    public bool HasCards => State == DirectoryState.Ready && Websites.Count > 0;
-
     public bool HasNoMatches => State == DirectoryState.Ready && Websites.Count == 0;
 
     public string ConfirmDeleteTitle => "Delete this website?";
@@ -98,7 +95,7 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
         _loadCts?.Cancel();
         _searchCts?.Cancel();
 
-        Websites.Clear();
+        Websites.ClearSafely();
         SetProperty(ref _searchText, string.Empty, nameof(SearchText));
         HasMore = false;
         IsDialogOpen = false;
@@ -106,7 +103,6 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
         PendingDelete = null;
         State = DirectoryState.Loading;
 
-        OnPropertyChanged(nameof(HasCards));
         OnPropertyChanged(nameof(HasNoMatches));
     }
 
@@ -135,10 +131,13 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
 
             if (token.IsCancellationRequested || generation != _loadGeneration)
             {
+                // Leaving the state alone is deliberate. Every path that gets here
+                // has a newer owner: either a later LoadCoreAsync that will set its
+                // own state, or Reset, which parked it on Loading on purpose.
                 return;
             }
 
-            Websites.Clear();
+            Websites.ClearSafely();
             foreach (Website website in page)
             {
                 Websites.Add(website);
@@ -165,11 +164,15 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
         {
             // Superseded by a newer load, which owns the state now.
         }
-        catch (Exception)
+        catch (Exception error)
         {
-            Websites.Clear();
+            AppLog.Error("WebsitesViewModel.LoadCoreAsync failed", error);
+            // Reach the terminal state first: a handler that mutates the same
+            // collection that just threw can throw again and escape the method,
+            // which would strand the directory on its loading state.
             HasMore = false;
             State = DirectoryState.Error;
+            Websites.ClearSafely();
         }
     }
 
@@ -208,8 +211,9 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
         {
             // A newer load owns the list.
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            AppLog.Error("WebsitesViewModel.LoadMoreAsync failed", error);
             HasMore = false;
         }
         finally
@@ -266,8 +270,9 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
                 await _directory.UpdateAsync(website).ConfigureAwait(true);
             }
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            AppLog.Error("WebsitesViewModel.CommitDialogAsync failed", error);
             State = DirectoryState.Error;
             IsDialogOpen = false;
             return;
@@ -323,8 +328,9 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
         {
             await _directory.DeleteAsync(target.Id).ConfigureAwait(true);
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            AppLog.Error("WebsitesViewModel.ConfirmDeleteAsync failed", error);
             State = DirectoryState.Error;
             return;
         }
