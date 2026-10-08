@@ -278,14 +278,17 @@ public sealed class EncryptedStore : IEncryptedStore, IDisposable
         AppLog.Info(
             $"Database opened and keyed in {Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds:F0} ms");
 
-        // EnsureCreated rather than migrations: the schema has one version so far, and
-        // migrations would add a toolchain for a problem that does not exist yet. This
-        // is the line that changes when the schema first evolves.
+        // EnsureCreated builds the whole schema when the file is new and does nothing
+        // when it already exists, so on its own it cannot add a table to a database
+        // written by an older build. That is exactly what happened the first time the
+        // Websites directory ran against an existing vault. SchemaGuard fills the gap:
+        // it compares the model against sqlite_master and creates whatever is missing.
         await Task.Run(
             async () =>
             {
                 await using DoNetDbContext db = new(connection);
                 await db.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+                await SchemaGuard.EnsureTablesAsync(db, cancellationToken).ConfigureAwait(false);
             },
             cancellationToken).ConfigureAwait(false);
 

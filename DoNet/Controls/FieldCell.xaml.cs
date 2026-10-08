@@ -76,6 +76,10 @@ public sealed partial class FieldCell : UserControl
         nameof(Label), typeof(string), typeof(FieldCell),
         new PropertyMetadata(string.Empty, OnAnyPropertyChanged));
 
+    public static readonly DependencyProperty IconKindProperty = DependencyProperty.Register(
+        nameof(IconKind), typeof(string), typeof(FieldCell),
+        new PropertyMetadata(null, OnAnyPropertyChanged));
+
     public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
         nameof(Value), typeof(string), typeof(FieldCell),
         new PropertyMetadata(string.Empty, OnValueChanged));
@@ -112,6 +116,15 @@ public sealed partial class FieldCell : UserControl
     {
         get => (string)GetValue(LabelProperty);
         set => SetValue(LabelProperty, value);
+    }
+
+    /// <summary>
+    /// Which icon sits beside the caption, named as in <see cref="LineIconData.Names"/>.
+    /// </summary>
+    public string? IconKind
+    {
+        get => (string?)GetValue(IconKindProperty);
+        set => SetValue(IconKindProperty, value);
     }
 
     public string Value
@@ -243,6 +256,7 @@ public sealed partial class FieldCell : UserControl
         }
 
         LabelText.Text = Label;
+        LabelText.IconKind = IconKind;
 
         bool automatic = Kind == FieldCellKind.Automatic;
         bool editable = Kind == FieldCellKind.Editable && !automatic;

@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using Microsoft.UI.Xaml.Media;
 using System.Collections.Generic;
 using DoNet.Models;
@@ -20,6 +19,11 @@ public sealed partial class WebsiteCard : UserControl
     public WebsiteCard()
     {
         InitializeComponent();
+
+        // The panel works out how many chips fit during layout, so the count arrives
+        // after the fact rather than being something this card can calculate.
+        MethodChips.RegisterPropertyChangedCallback(
+            WrapPanel.HiddenCountProperty, (_, _) => OnHiddenCountChanged());
     }
 
     public static readonly DependencyProperty WebsiteProperty = DependencyProperty.Register(
@@ -62,7 +66,7 @@ public sealed partial class WebsiteCard : UserControl
 
         // The record number, not an initial. The approved design puts the id in the
         // disc; it is the one field that is always present and always unique.
-        AvatarText.Text = website.Id > 0 ? website.Id.ToString(CultureInfo.InvariantCulture) : "-";
+        AvatarText.Text = Initial.From(website.Name, website.Domain);
         NameText.Text = website.DisplayName;
 
         NameValue.Text = Or(website.Name);
@@ -105,6 +109,16 @@ public sealed partial class WebsiteCard : UserControl
         {
             MethodChips.Children.Add(BuildChip(method));
         }
+
+        // The marker is declared in XAML but Clear detached it, and the panel only
+        // treats the final child as the overflow marker - so it goes back last.
+        MethodChips.Children.Add(MoreMethods);
+    }
+
+    private void OnHiddenCountChanged()
+    {
+        int hidden = MethodChips.HiddenCount;
+        MoreMethods.Text = hidden > 0 ? $"+{hidden}" : string.Empty;
     }
 
     private static Border BuildChip(string method)

@@ -113,7 +113,7 @@
         <Border x:Name="Card"
                 MaxWidth="1180"
                 Margin="24"
-                CornerRadius="24"
+                CornerRadius="26"
                 Background="{StaticResource CardBackgroundBrush}"
                 RenderTransformOrigin="0.5,0.5">
             <Border.RenderTransform>
@@ -138,13 +138,29 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel x:Name="HeaderBlock" Grid.Column="0">
+                        <StackPanel Orientation="Horizontal">
+                        <Border Width="40"
+                                Height="40"
+                                CornerRadius="20"
+                                Margin="0,0,14,0"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource CardAvatarBrush}"
+                                BorderBrush="{StaticResource SearchBorderBrush}"
+                                BorderThickness="1">
+                            <controls:LineIcon Kind="{x:Bind ViewModel.TitleIcon, Mode=OneWay}"
+                                               Width="19"
+                                               Height="19"
+                                               Foreground="{StaticResource BrandPrimaryBrush}" />
+                        </Border>
                         <TextBlock Text="{x:Bind ViewModel.Title, Mode=OneWay}"
                                    FontFamily="{StaticResource BaumansFont}"
                                    FontSize="{StaticResource SectionTitleFontSize}"
                                    Foreground="{StaticResource BrandPrimaryBrush}"
                                    CharacterSpacing="20"
+                                   VerticalAlignment="Center"
                                    LineStackingStrategy="BlockLineHeight"
                                    LineHeight="40" />
+                    </StackPanel>
                         <TextBlock Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
                                    FontFamily="{StaticResource BalooFont}"
                                    FontSize="{StaticResource SectionSubtitleFontSize}"
@@ -198,6 +214,7 @@
 
                         <controls:FieldCell Grid.Row="0" Grid.Column="0"
                                             Label="NAME"
+                                            IconKind="Tag"
                                             Placeholder="Enter website name"
                                             TabOrder="1"
                                             Value="{x:Bind ViewModel.Name, Mode=TwoWay}"
@@ -206,6 +223,7 @@
 
                         <controls:FieldCell Grid.Row="0" Grid.Column="1"
                                             Label="DOMAIN"
+                                            IconKind="Globe"
                                             Placeholder="Enter website domain"
                                             TabOrder="2"
                                             InputKind="Text"
@@ -215,6 +233,7 @@
 
                         <controls:FieldCell Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                                             Label="DESCRIPTION"
+                                            IconKind="FileText"
                                             Placeholder="Add a description of this website"
                                             TabOrder="3"
                                             InputKind="Multiline"
@@ -234,13 +253,7 @@
                                 BorderBrush="{StaticResource SearchBorderBrush}"
                                 BorderThickness="1">
                             <StackPanel Spacing="12">
-                                <TextBlock Text="AVAILABLE PAYMENT METHODS"
-                                           FontFamily="{StaticResource BalooFont}"
-                                           FontSize="{StaticResource FieldLabelFontSize}"
-                                           Foreground="{StaticResource FieldLabelBrush}"
-                                           CharacterSpacing="60"
-                                           LineStackingStrategy="BlockLineHeight"
-                                           LineHeight="14" />
+                                <controls:FieldLabel Text="AVAILABLE PAYMENT METHODS" IconKind="CreditCard" />
 
                                 <!-- Editing: every option, three across. -->
                                 <ItemsRepeater x:Name="MethodOptions"
@@ -293,7 +306,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <Border Grid.Column="0"
-                                            CornerRadius="12"
+                                            CornerRadius="21"
                                             Height="42"
                                             Padding="16,0,16,0"
                                             Background="{StaticResource CardBackgroundBrush}"
@@ -312,7 +325,7 @@
                                     <Button Grid.Column="1"
                                             Style="{StaticResource BareButtonStyle}"
                                             Click="OnAddMethodClick">
-                                        <Border CornerRadius="12"
+                                        <Border CornerRadius="21"
                                                 Height="42"
                                                 Padding="20,0,20,0"
                                                 Background="{StaticResource CardBackgroundBrush}"
@@ -332,6 +345,7 @@
 
                         <controls:FieldCell Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                                             Label="NOTE"
+                                            IconKind="Info"
                                             Placeholder="Add a note about this website"
                                             TabOrder="4"
                                             InputKind="Multiline"
@@ -341,6 +355,7 @@
 
                         <controls:FieldCell Grid.Row="4" Grid.Column="0"
                                             Label="# &#183; RECORD ID"
+                                            IconKind="Hash"
                                             Placeholder="Assigned on save"
                                             Kind="Automatic"
                                             Value="{x:Bind ViewModel.IdDisplay, Mode=OneWay}"
@@ -348,6 +363,7 @@
 
                         <controls:FieldCell Grid.Row="4" Grid.Column="1"
                                             Label="CREATED AT"
+                                            IconKind="Clock"
                                             Placeholder="Assigned on save"
                                             Kind="Automatic"
                                             Value="{x:Bind ViewModel.CreatedAtDisplay, Mode=OneWay}"
@@ -378,7 +394,7 @@
                             Style="{StaticResource BareButtonStyle}"
                             Click="OnPrimaryClick">
                         <Border Height="52"
-                                CornerRadius="12"
+                                CornerRadius="26"
                                 Background="{StaticResource BrandPrimaryBrush}">
                             <TextBlock Text="{x:Bind ViewModel.PrimaryActionText, Mode=OneWay}"
                                        HorizontalAlignment="Center"
@@ -398,7 +414,7 @@
                         <Button Style="{StaticResource BareButtonStyle}" Click="OnCancelClick">
                             <Border Height="52"
                                     MinWidth="150"
-                                    CornerRadius="12"
+                                    CornerRadius="26"
                                     Background="{StaticResource CardBackgroundBrush}"
                                     BorderBrush="{StaticResource SearchBorderBrush}"
                                     BorderThickness="1">
@@ -415,7 +431,7 @@
                         <Button Style="{StaticResource BareButtonStyle}" Click="OnPrimaryClick">
                             <Border Height="52"
                                     MinWidth="210"
-                                    CornerRadius="12"
+                                    CornerRadius="26"
                                     Background="{StaticResource BrandPrimaryBrush}">
                                 <TextBlock Text="{x:Bind ViewModel.PrimaryActionText, Mode=OneWay}"
                                            HorizontalAlignment="Center"

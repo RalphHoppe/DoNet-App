@@ -506,6 +506,62 @@ sends the answer back to that one. The alternative was a second copy with "perso
 swapped for "website", which is how two dialogs that are meant to look identical start
 to drift.
 
+## The icon set
+
+Every mark in the app comes from one sheet. `tools/icons-source.json` holds each
+icon's raw path exactly as it was drawn; `tools/build_icons.py` normalises them and
+writes `DoNet/Controls/LineIconData.cs`. Nothing else reads the JSON, and the
+generated file is never edited by hand.
+
+Normalising means moving each icon to its own origin and scaling it into a 24 by 24
+box, sized to leave the one-unit margin the source sheet's own 12 by 12 clip
+rectangles use. Two things fall out of that. The first is that one geometry serves
+every size: `LineIcon` puts it in a Viewbox, so a 13 px mark beside a field label and
+a 19 px mark inside a title disc are the same path scaled, and a 2 unit stroke lands
+on 1.08 px and 1.83 px respectively. The second is that the sheet's separate "large"
+drawings turned out to be redundant - once normalised, the large globe, info and
+shield were identical to their small versions to within 0.006 of a unit, and the user
+and users marks to within 1 unit in 24. They are not carried twice.
+
+A field's icon is chosen in one place. `FieldLabel` pairs the caption with its mark,
+and both the record card and the dialog use it, so a field cannot end up with a
+calendar in one view and something else in the other.
+
+`LineIcon` parses its path per instance rather than sharing a `Geometry` from a
+resource dictionary. A `Geometry` cannot be attached to two `Path` elements at once,
+so a shared one works until the second card appears and then throws.
+
+## Payment methods on a card
+
+A record with six payment methods used to make its card taller than its neighbours.
+The chip row is now capped at one line: `WrapPanel.MaxLines` lays out what fits and
+marks the rest, and the preview dialog still shows all of them.
+
+The count is measured rather than fixed, so a wide window shows more chips and a
+narrow one fewer, and the card's height never changes either way. Two details make
+that stable. Children that do not fit are arranged at zero size rather than collapsed
+- WinUI clips a child arranged smaller than it asked for, and unlike setting
+Visibility it changes no property, so it cannot dirty layout and restart the pass.
+And the "+N" marker carries a MinWidth, because the panel has to reserve room for it
+before it knows the number it will show; without a floor, "+1" and "+12" would
+reserve different widths and the second measuring pass could disagree with the first.
+
+## Schema changes on an existing database
+
+`EnsureCreated` builds the whole schema when the database file is new and does
+nothing at all when it already exists. It has no opinion about a file that exists but
+was written by an older build, which is why the first run after the Websites
+directory shipped opened a vault with no `Websites` table, failed every query against
+it, and showed the directory's error state. Erasing the database fixed it, which is
+not a repair anyone should have to discover.
+
+`SchemaGuard` closes that gap without taking on migrations. It reads `sqlite_master`,
+compares it against the model, and returns immediately when nothing is missing - the
+normal path costs one cheap query. When something is missing it takes the DDL from
+`GenerateCreateScript`, so the model stays the single source of truth, makes each
+statement idempotent and replays it. It cannot rename a column or change a type; when
+the schema needs that, this is the thing to replace with real migrations.
+
 ## Stability and performance
 
 ### Nothing fails silently

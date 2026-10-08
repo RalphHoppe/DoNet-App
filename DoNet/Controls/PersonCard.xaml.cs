@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using DoNet.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -59,7 +58,7 @@ public sealed partial class PersonCard : UserControl
 
         // The record number, not an initial. The approved design puts the id in the
         // disc; it is the one field that is always present and always unique.
-        AvatarText.Text = person.Id > 0 ? person.Id.ToString(CultureInfo.InvariantCulture) : "-";
+        AvatarText.Text = Initial.From(person.FirstName, person.LastName);
         NameText.Text = person.DisplayName;
 
         IdValue.Text = person.Id > 0 ? person.Id.ToString() : Dash;

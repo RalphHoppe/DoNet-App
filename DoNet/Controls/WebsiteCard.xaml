@@ -24,15 +24,6 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
 
-        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
-            <Setter Property="FontSize" Value="{StaticResource FieldLabelFontSize}" />
-            <Setter Property="Foreground" Value="{StaticResource FieldLabelBrush}" />
-            <Setter Property="CharacterSpacing" Value="60" />
-            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="14" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
 
         <Style x:Key="FieldValueStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
@@ -131,7 +122,7 @@
             Background="{StaticResource CardBackgroundBrush}"
             BorderBrush="{StaticResource CardBorderBrush}"
             BorderThickness="1"
-            CornerRadius="16"
+            CornerRadius="26"
             Padding="20"
             DoubleTapped="OnDoubleTapped"
             PointerExited="OnCardPointerExited">
@@ -162,9 +153,9 @@
                         BorderBrush="{StaticResource SearchBorderBrush}"
                         BorderThickness="1">
                     <TextBlock x:Name="AvatarText"
-                               FontFamily="{StaticResource BalooFont}"
-                               FontSize="15"
-                               Foreground="{StaticResource FieldLabelBrush}"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="20"
+                               Foreground="{StaticResource BrandPrimaryBrush}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center" />
                 </Border>
@@ -327,16 +318,16 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0">
-                    <TextBlock Text="NAME" Style="{StaticResource FieldLabelStyle}" />
+                    <controls:FieldLabel Text="NAME" IconKind="Tag" />
                     <TextBlock x:Name="NameValue" Style="{StaticResource FieldValueStyle}" />
                 </StackPanel>
                 <StackPanel Grid.Row="0" Grid.Column="1">
-                    <TextBlock Text="DOMAIN" Style="{StaticResource FieldLabelStyle}" />
+                    <controls:FieldLabel Text="DOMAIN" IconKind="Globe" />
                     <TextBlock x:Name="DomainValue" Style="{StaticResource FieldValueStyle}" />
                 </StackPanel>
 
                 <StackPanel Grid.Row="1" Grid.Column="0">
-                    <TextBlock Text="DESCRIPTION" Style="{StaticResource FieldLabelStyle}" />
+                    <controls:FieldLabel Text="DESCRIPTION" IconKind="FileText" />
                     <TextBlock x:Name="DescriptionValue" Style="{StaticResource FieldValueStyle}" />
                 </StackPanel>
 
@@ -346,17 +337,34 @@
                     none are selected; the two swap in code.
                 -->
                 <StackPanel Grid.Row="1" Grid.Column="1">
-                    <TextBlock Text="AVAILABLE PAYMENT METHODS"
-                               Style="{StaticResource FieldLabelStyle}" />
+                    <controls:FieldLabel Text="AVAILABLE PAYMENT METHODS" IconKind="CreditCard" />
                     <TextBlock x:Name="NoMethodsValue" Style="{StaticResource FieldValueStyle}" />
                     <controls:WrapPanel x:Name="MethodChips"
                                         Margin="0,6,0,0"
                                         ItemSpacing="6"
-                                        LineSpacing="6" />
+                                        LineSpacing="6"
+                                        MaxLines="1"
+                                        UseLastChildAsOverflow="True">
+                        <!--
+                            Always the last child, and never removed. The panel keeps
+                            room for it only when something did not fit, and reads its
+                            width before it knows the count - hence the MinWidth, so
+                            "+1" and "+12" reserve the same space and the second
+                            measuring pass agrees with the first.
+                        -->
+                        <TextBlock x:Name="MoreMethods"
+                                   MinWidth="26"
+                                   FontFamily="{StaticResource BalooFont}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource CardMetaBrush}"
+                                   VerticalAlignment="Center"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   LineHeight="19" />
+                    </controls:WrapPanel>
                 </StackPanel>
 
                 <StackPanel Grid.Row="2" Grid.Column="0">
-                    <TextBlock Text="NOTE" Style="{StaticResource FieldLabelStyle}" />
+                    <controls:FieldLabel Text="NOTE" IconKind="Info" />
                     <TextBlock x:Name="NoteValue" Style="{StaticResource FieldValueStyle}" />
                 </StackPanel>
             </Grid>

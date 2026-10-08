@@ -31,6 +31,7 @@ public sealed partial class WebsiteDialogViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title))]
     [NotifyPropertyChangedFor(nameof(Subtitle))]
+    [NotifyPropertyChangedFor(nameof(TitleIcon))]
     [NotifyPropertyChangedFor(nameof(PrimaryActionText))]
     [NotifyPropertyChangedFor(nameof(IsPreview))]
     [NotifyPropertyChangedFor(nameof(IsEditing))]
@@ -59,6 +60,14 @@ public sealed partial class WebsiteDialogViewModel : ObservableObject
         WebsiteDialogMode.Add => "ADD WEBSITE",
         WebsiteDialogMode.Edit => "EDIT WEBSITE",
         _ => "PREVIEW ALL INFO",
+    };
+
+    /// <summary>The mark beside the title, which tracks the mode.</summary>
+    public string TitleIcon => Mode switch
+    {
+        WebsiteDialogMode.Add => "Plus",
+        WebsiteDialogMode.Edit => "Pencil",
+        _ => "Info",
     };
 
     public string Subtitle => Mode switch

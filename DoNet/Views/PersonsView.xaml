@@ -93,13 +93,29 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
-                <TextBlock Text="PERSONS"
-                           FontFamily="{StaticResource BaumansFont}"
-                           FontSize="{StaticResource SectionTitleFontSize}"
-                           Foreground="{StaticResource BrandPrimaryBrush}"
-                           CharacterSpacing="20"
-                           LineStackingStrategy="BlockLineHeight"
-                           LineHeight="40" />
+                <StackPanel Orientation="Horizontal">
+                        <Border Width="40"
+                                Height="40"
+                                CornerRadius="20"
+                                Margin="0,0,14,0"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource CardAvatarBrush}"
+                                BorderBrush="{StaticResource SearchBorderBrush}"
+                                BorderThickness="1">
+                            <controls:LineIcon Kind="Users"
+                                               Width="19"
+                                               Height="19"
+                                               Foreground="{StaticResource BrandPrimaryBrush}" />
+                        </Border>
+                        <TextBlock Text="PERSONS"
+                                   FontFamily="{StaticResource BaumansFont}"
+                                   FontSize="{StaticResource SectionTitleFontSize}"
+                                   Foreground="{StaticResource BrandPrimaryBrush}"
+                                   CharacterSpacing="20"
+                                   VerticalAlignment="Center"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   LineHeight="40" />
+                    </StackPanel>
             </StackPanel>
 
             <!--
@@ -190,7 +206,7 @@
                         Grid.Column="1"
                         Style="{StaticResource BareButtonStyle}"
                         Command="{x:Bind ViewModel.AddPersonCommand}">
-                    <Border CornerRadius="10"
+                    <Border CornerRadius="21"
                             Padding="14,0,18,0"
                             Height="42"
                             Background="{StaticResource CardBackgroundBrush}"
@@ -230,7 +246,7 @@
         <!-- Card surface ..................................................... -->
         <Border x:Name="CardSurface"
                 Grid.Row="1"
-                CornerRadius="24"
+                CornerRadius="26"
                 Padding="24"
                 Background="{StaticResource CardBackgroundBrush}">
 
@@ -322,7 +338,7 @@
                             HorizontalAlignment="Center"
                             Style="{StaticResource BareButtonStyle}"
                             Command="{x:Bind ViewModel.RetryCommand}">
-                        <Border CornerRadius="10"
+                        <Border CornerRadius="20"
                                 Height="40"
                                 Padding="22,0,22,0"
                                 Background="{StaticResource BrandPrimaryBrush}">

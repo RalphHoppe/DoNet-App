@@ -88,7 +88,7 @@
                     <Button Style="{StaticResource BareButtonStyle}" Click="OnCancelClick">
                         <Border Height="44"
                                 MinWidth="110"
-                                CornerRadius="10"
+                                CornerRadius="22"
                                 Background="{StaticResource CardBackgroundBrush}"
                                 BorderBrush="{StaticResource SearchBorderBrush}"
                                 BorderThickness="1">
@@ -105,7 +105,7 @@
                     <Button Style="{StaticResource BareButtonStyle}" Click="OnConfirmClick">
                         <Border Height="44"
                                 MinWidth="110"
-                                CornerRadius="10"
+                                CornerRadius="22"
                                 Background="{StaticResource DangerBrush}">
                             <TextBlock Text="DELETE"
                                        HorizontalAlignment="Center"

@@ -112,7 +112,7 @@
         <Border x:Name="Card"
                 MaxWidth="1180"
                 Margin="24"
-                CornerRadius="24"
+                CornerRadius="26"
                 Background="{StaticResource CardBackgroundBrush}"
                 RenderTransformOrigin="0.5,0.5">
             <Border.RenderTransform>
@@ -137,13 +137,29 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel x:Name="HeaderBlock" Grid.Column="0">
+                        <StackPanel Orientation="Horizontal">
+                        <Border Width="40"
+                                Height="40"
+                                CornerRadius="20"
+                                Margin="0,0,14,0"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource CardAvatarBrush}"
+                                BorderBrush="{StaticResource SearchBorderBrush}"
+                                BorderThickness="1">
+                            <controls:LineIcon Kind="{x:Bind ViewModel.TitleIcon, Mode=OneWay}"
+                                               Width="19"
+                                               Height="19"
+                                               Foreground="{StaticResource BrandPrimaryBrush}" />
+                        </Border>
                         <TextBlock Text="{x:Bind ViewModel.Title, Mode=OneWay}"
                                    FontFamily="{StaticResource BaumansFont}"
                                    FontSize="{StaticResource SectionTitleFontSize}"
                                    Foreground="{StaticResource BrandPrimaryBrush}"
                                    CharacterSpacing="20"
+                                   VerticalAlignment="Center"
                                    LineStackingStrategy="BlockLineHeight"
                                    LineHeight="40" />
+                    </StackPanel>
                         <TextBlock Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
                                    FontFamily="{StaticResource BalooFont}"
                                    FontSize="{StaticResource SectionSubtitleFontSize}"
@@ -214,17 +230,20 @@
                         <!-- Left column -->
                         <StackPanel x:Name="LeftColumn" Grid.Row="0" Grid.Column="0" Spacing="16">
                             <controls:FieldCell Label="#"
+                                                IconKind="Hash"
                                                 Placeholder="Assigned on save"
                                                 Value="{x:Bind ViewModel.IdDisplay, Mode=OneWay}"
                                                 Kind="{x:Bind ViewModel.AutoFieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="LastNameCell" Label="LAST NAME"
+                                                IconKind="User"
                                                 TabOrder="2"
                                                 Placeholder="Enter last name"
                                                 Value="{x:Bind ViewModel.LastName, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="DobCell" Label="DATE OF BIRTH"
+                                                IconKind="Calendar"
                                                 TabOrder="4"
                                                 InputKind="Date"
                                                 Placeholder="DD / MM / YYYY"
@@ -232,18 +251,21 @@
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="StateCell" Label="STATE"
+                                                IconKind="MapPin"
                                                 TabOrder="6"
                                                 Placeholder="Enter state"
                                                 Value="{x:Bind ViewModel.State, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="StreetCell" Label="STREET"
+                                                IconKind="MapPin"
                                                 TabOrder="8"
                                                 Placeholder="Enter street address"
                                                 Value="{x:Bind ViewModel.Street, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="PhoneCell" Label="PHONE NUMBER"
+                                                IconKind="Phone"
                                                 TabOrder="10"
                                                 InputKind="Phone"
                                                 Placeholder="Enter phone number"
@@ -255,12 +277,14 @@
                         <!-- Middle column -->
                         <StackPanel x:Name="MiddleColumn" Grid.Row="0" Grid.Column="1" Spacing="16">
                             <controls:FieldCell x:Name="FirstNameCell" Label="FIRST NAME"
+                                                IconKind="User"
                                                 TabOrder="1"
                                                 Placeholder="Enter first name"
                                                 Value="{x:Bind ViewModel.FirstName, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="GenderCell" Label="GENDER"
+                                                IconKind="Users"
                                                 TabOrder="3"
                                                 InputKind="Gender"
                                                 Placeholder="Enter gender"
@@ -268,6 +292,7 @@
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="CountryCell" Label="COUNTRY"
+                                                IconKind="GlobeMeridian"
                                                 TabOrder="5"
                                                 InputKind="Country"
                                                 Placeholder="Enter country"
@@ -275,12 +300,14 @@
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="CityCell" Label="CITY"
+                                                IconKind="MapPin"
                                                 TabOrder="7"
                                                 Placeholder="Enter city"
                                                 Value="{x:Bind ViewModel.City, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="PostalCodeCell" Label="POSTAL CODE"
+                                                IconKind="MapPin"
                                                 TabOrder="9"
                                                 InputKind="PostalCode"
                                                 Placeholder="Enter postal code"
@@ -292,6 +319,7 @@
                         <!-- Right column: the email account and its recovery -->
                         <StackPanel x:Name="RightColumn" Grid.Row="0" Grid.Column="2" Spacing="16">
                             <controls:FieldCell x:Name="EmailCell" Label="EMAIL"
+                                                IconKind="Mail"
                                                 TabOrder="11"
                                                 InputKind="Email"
                                                 Placeholder="Enter primary email address"
@@ -299,6 +327,7 @@
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                             <controls:FieldCell x:Name="EmailPasswordCell" Label="EMAIL PASSWORD"
+                                                IconKind="Lock"
                                                 TabOrder="12"
                                                 Placeholder="Enter email account password"
                                                 IsSecret="True"
@@ -327,12 +356,10 @@
                                                 CornerRadius="15"
                                                 VerticalAlignment="Top"
                                                 Background="{StaticResource SuccessBackgroundBrush}">
-                                            <TextBlock Text="i"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       FontFamily="{StaticResource BalooSemiBoldFont}"
-                                                       FontSize="15"
-                                                       Foreground="{StaticResource SuccessForegroundBrush}" />
+                                            <controls:LineIcon Kind="Shield"
+                                                               Width="15"
+                                                               Height="15"
+                                                               Foreground="{StaticResource SuccessForegroundBrush}" />
                                         </Border>
 
                                         <TextBlock Grid.Column="1"
@@ -341,14 +368,16 @@
                                     </Grid>
 
                                     <controls:FieldCell x:Name="RecoveryEmailCell" Label="RECOVERY EMAIL"
-                                                TabOrder="13"
-                                                InputKind="Email"
+                                                        IconKind="Mail"
+                                                        TabOrder="13"
+                                                        InputKind="Email"
                                                         Placeholder="Enter recovery email address"
                                                         Value="{x:Bind ViewModel.RecoveryEmail, Mode=TwoWay}"
                                                         Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                         ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                                     <controls:FieldCell x:Name="RecoveryPasswordCell" Label="RECOVERY PASSWORD (OPTIONAL)"
-                                                TabOrder="14"
+                                                        IconKind="Lock"
+                                                        TabOrder="14"
                                                         Placeholder="Enter recovery password"
                                                         IsSecret="True"
                                                         ShowGenerate="True"
@@ -356,7 +385,8 @@
                                                         Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                         ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                                     <controls:FieldCell x:Name="RecoveryWordsCell" Label="RECOVERY WORDS"
-                                                TabOrder="15"
+                                                        IconKind="Key"
+                                                        TabOrder="15"
                                                         Placeholder="Enter recovery words"
                                                         IsSecret="True"
                                                         Value="{x:Bind ViewModel.RecoveryWords, Mode=TwoWay}"
@@ -372,6 +402,7 @@
                                             Grid.Column="0"
                                             Grid.ColumnSpan="2"
                                             Label="CREATED AT"
+                                            IconKind="Clock"
                                             Placeholder="Assigned on save"
                                             Value="{x:Bind ViewModel.CreatedAtDisplay, Mode=OneWay}"
                                             Kind="{x:Bind ViewModel.AutoFieldKind, Mode=OneWay}"
@@ -381,8 +412,9 @@
                                             Grid.Row="1"
                                             Grid.Column="2"
                                             Label="NOTE"
-                                                TabOrder="16"
-                                                InputKind="Multiline"
+                                            IconKind="Info"
+                                            TabOrder="16"
+                                            InputKind="Multiline"
                                             Placeholder="Add a note about this person"
                                             Value="{x:Bind ViewModel.Note, Mode=TwoWay}"
                                             Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
@@ -414,7 +446,7 @@
                             Style="{StaticResource BareButtonStyle}"
                             Click="OnPrimaryClick">
                         <Border Height="52"
-                                CornerRadius="12"
+                                CornerRadius="26"
                                 Background="{StaticResource BrandPrimaryBrush}">
                             <TextBlock Text="{x:Bind ViewModel.PrimaryActionText, Mode=OneWay}"
                                        HorizontalAlignment="Center"
@@ -434,7 +466,7 @@
                         <Button Style="{StaticResource BareButtonStyle}" Click="OnCancelClick">
                             <Border Height="52"
                                     MinWidth="150"
-                                    CornerRadius="12"
+                                    CornerRadius="26"
                                     Background="{StaticResource CardBackgroundBrush}"
                                     BorderBrush="{StaticResource SearchBorderBrush}"
                                     BorderThickness="1">
@@ -451,7 +483,7 @@
                         <Button Style="{StaticResource BareButtonStyle}" Click="OnPrimaryClick">
                             <Border Height="52"
                                     MinWidth="210"
-                                    CornerRadius="12"
+                                    CornerRadius="26"
                                     Background="{StaticResource BrandPrimaryBrush}">
                                 <TextBlock Text="{x:Bind ViewModel.PrimaryActionText, Mode=OneWay}"
                                            HorizontalAlignment="Center"

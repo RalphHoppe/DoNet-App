@@ -38,6 +38,7 @@ public sealed partial class PersonDialogViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title))]
     [NotifyPropertyChangedFor(nameof(Subtitle))]
+    [NotifyPropertyChangedFor(nameof(TitleIcon))]
     [NotifyPropertyChangedFor(nameof(PrimaryActionText))]
     [NotifyPropertyChangedFor(nameof(IsEditing))]
     [NotifyPropertyChangedFor(nameof(IsPreview))]
@@ -88,6 +89,14 @@ public sealed partial class PersonDialogViewModel : ObservableObject
         PersonDialogMode.Add => "ADD PERSON",
         PersonDialogMode.Edit => "EDIT PERSON",
         _ => "PREVIEW ALL INFO",
+    };
+
+    /// <summary>The mark beside the title, which tracks the mode.</summary>
+    public string TitleIcon => Mode switch
+    {
+        PersonDialogMode.Add => "Plus",
+        PersonDialogMode.Edit => "Pencil",
+        _ => "Info",
     };
 
     public string Subtitle => Mode switch
