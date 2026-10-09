@@ -431,6 +431,26 @@
         </Grid>
 
         <!--
+            One type's records, over the type list. Always in the tree and always
+            measured - an ItemsRepeater whose collection changes while it is
+            collapsed and unmeasured fails with COMException - and gated instead:
+            invisible and disabled until its type is drilled in. Disabled rather
+            than hit-test-invisible so the keyboard cannot tab into a layer that
+            is not there.
+        -->
+        <Grid x:Name="RecordsLayer"
+              Grid.Row="0"
+              Grid.RowSpan="2"
+              Opacity="0"
+              IsEnabled="False">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="RecordsShift" Y="14" />
+            </Grid.RenderTransform>
+
+            <views:ServiceRecordsView x:Name="RecordsScreen" />
+        </Grid>
+
+        <!--
             Adaptive layout, on the same threshold as every other directory: below
             820 the search row cannot sit beside the title without crushing one of
             them, so it drops to its own line and the search field stretches.
@@ -467,24 +487,5 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <!--
-            One type's records, over the type list. Always in the tree and always
-            measured - an ItemsRepeater whose collection changes while it is
-            collapsed and unmeasured fails with COMException - and gated instead:
-            invisible and disabled until its type is drilled in. Disabled rather
-            than hit-test-invisible so the keyboard cannot tab into a layer that
-            is not there.
-        -->
-        <Grid x:Name="RecordsLayer"
-              Grid.Row="0"
-              Grid.RowSpan="2"
-              Opacity="0"
-              IsEnabled="False">
-            <Grid.RenderTransform>
-                <TranslateTransform x:Name="RecordsShift" Y="14" />
-            </Grid.RenderTransform>
-
-            <views:ServiceRecordsView x:Name="RecordsScreen" />
-        </Grid>
     </Grid>
 </UserControl>

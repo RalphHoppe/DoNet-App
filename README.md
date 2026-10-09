@@ -371,7 +371,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/preview_animation.py` | Renders `docs/splash-animation.gif` |
 | `tools/preview_screens.py` | Renders a pixel reconstruction of the four screens for comparing against the design |
 | `tools/gen_nav_icons.py` | Parses the design's icon SVG, checks it fits, emits the XAML path data |
-| `tools/validate_xaml.py` | Checks resource keys, `x:Name`s, event handlers and Grid row/column indices without a Windows build |
+| `tools/validate_xaml.py` | Checks resource keys, `x:Name`s, event handlers, Grid row/column indices, and content children split by a property element (the duplicate-`Children` XAML compiler error) without a Windows build |
 | `tools/validate_handlers.py` | Resolves every XAML event attribute and `+=`/`-=` subscription against the methods that exist |
 | `tools/validate_control_usage.py` | Resolves every custom-control property set in XAML against the properties the controls declare |
 | `tools/validate_csharp_docs.py` | Checks every documentation comment block is well formed |
@@ -1330,6 +1330,22 @@ naming the group; deleting a type takes its records with it, counted in the
 confirmation, and deleting a record takes its rows. Search reads the title and a
 search text that excludes passwords - a vault's search box should not be able to
 find a password by typing it.
+
+### One XAML rule this cost a build to learn
+
+An element's content children must arrive as one run. A property element -
+`Grid.RowDefinitions`, `Border.Resources`, `VisualStateManager.VisualStateGroups` -
+may sit before the content or after all of it, but the moment one lands *between*
+two content children, the WinRT XAML parser ends the implicit assignment to the
+content property there and reads everything after it as a second one: `Duplication
+assignment to the 'Children' property of the 'Grid' object`, plus a follow-up
+`Unknown member` error against an element that plainly has that member, because
+the parser's recovery no longer matches the file. `PasswordField.xaml` is the
+legal shape on purpose - property elements first, then content, then nothing -
+and `ControlTemplate`s are exempt (the template loader places state groups freely;
+every template in the app relies on it). `tools/validate_xaml.py` check 6 now
+rejects the split anywhere outside a template, negative-tested against the shape
+that shipped.
 
 ### Still worth doing
 

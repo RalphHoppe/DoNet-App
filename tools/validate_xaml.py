@@ -8,6 +8,7 @@ Checks:
   3. every event-handler attribute names a method that exists in the code-behind
   4. every x:Name referenced from code-behind is actually declared in the markup
   5. every Grid.Row / Grid.Column sits inside the rows and columns its Grid defines
+  6. no element's content children are split in two by a property element
 
 Run from the repository root:   python3 tools/validate_xaml.py
 """
@@ -257,8 +258,53 @@ def check_grid_indices(path, problems):
                     + (f"{cols} column(s)" if cols else "no ColumnDefinitions"))
 
 
+def check_content_splits(path, problems):
+    """Content children split in two by a property element.
+
+    The WinRT XAML parser ends an element's implicit content assignment at the
+    first property element that arrives after content has started, so a second
+    run of content reads as a duplicate assignment - "Duplication assignment to
+    the 'Children' property of the 'Grid' object" - and everything after it is
+    reported against a parser state that no longer matches the file. Property
+    elements before the content, or after all of it, are fine; only a run of
+    content with a property element in the middle breaks. ControlTemplates are
+    exempt: the template loader places VisualStateManager groups freely, and
+    every template in this app relies on that.
+    """
+    rel = os.path.relpath(path, ROOT)
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError:
+        return  # already reported by check_grid_indices
+
+    def walk(element, in_template):
+        template = in_template or local(element.tag) == "ControlTemplate"
+        children = list(element)
+        tags = [local(child.tag) for child in children]
+        seen_content = False
+        for i, child in enumerate(children):
+            tag = tags[i]
+            if "." in tag:
+                # A property element after content only breaks the parse when
+                # more content follows it - a trailing one is fine.
+                more_content = any(not later.__contains__(".") for later in tags[i + 1:])
+                if seen_content and more_content and not template:
+                    problems.append(
+                        f"{rel}: {describe(element)} has content children on both "
+                        f"sides of <{tag}> - the parser reads the second run as a "
+                        f"duplicate assignment to the content property")
+                continue
+            seen_content = True
+            walk(child, template)
+
+    walk(tree.getroot(), False)
+
+
 for path in XAML:
     check_grid_indices(path, problems)
+
+for path in XAML:
+    check_content_splits(path, problems)
 
 print("\n".join(notes))
 print()
