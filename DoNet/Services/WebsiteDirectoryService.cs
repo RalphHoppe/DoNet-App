@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DoNet.Contracts;
+using DoNet.Data;
 using DoNet.Models;
 using Microsoft.EntityFrameworkCore;
 
