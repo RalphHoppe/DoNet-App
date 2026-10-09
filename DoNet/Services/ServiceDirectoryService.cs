@@ -129,6 +129,232 @@ public sealed class ServiceDirectoryService : IServiceDirectory
             cancellationToken);
     }
 
+    public Task<ServiceDefinition?> GetDefinitionAsync(
+        int serviceTypeId, CancellationToken cancellationToken = default)
+        => _store.RunAsync<ServiceDefinition?>(
+            async (db, token) => await db.ServiceDefinitions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.Id == serviceTypeId, token)
+                .ConfigureAwait(false),
+            cancellationToken);
+
+    public Task SaveDefinitionAsync(
+        ServiceDefinition definition, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+
+        return _store.RunAsync(
+            async (db, token) =>
+            {
+                ServiceDefinition? existing = await db.ServiceDefinitions
+                    .FirstOrDefaultAsync(d => d.Id == definition.Id, token)
+                    .ConfigureAwait(false);
+
+                if (existing is null)
+                {
+                    db.ServiceDefinitions.Add(new ServiceDefinition
+                    {
+                        Id = definition.Id,
+                        FieldsJson = definition.FieldsJson,
+                        TablesJson = definition.TablesJson,
+                        // First save stamps it; later saves keep the original moment,
+                        // which is what "set up" means as distinct from "edited".
+                        ConfiguredAt = definition.ConfiguredAt ?? DateTimeOffset.Now,
+                    });
+                }
+                else
+                {
+                    existing.FieldsJson = definition.FieldsJson;
+                    existing.TablesJson = definition.TablesJson;
+                    existing.ConfiguredAt = definition.ConfiguredAt;
+                }
+
+                await db.SaveChangesAsync(token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken);
+    }
+
+    public Task<int> CountRecordsAsync(
+        int serviceTypeId, CancellationToken cancellationToken = default)
+        => _store.RunAsync(
+            async (db, token) => await db.ServiceRecords
+                .AsNoTracking()
+                .CountAsync(r => r.ServiceTypeId == serviceTypeId
+                                 && r.ParentRecordId == null, token)
+                .ConfigureAwait(false),
+            cancellationToken);
+
+    public Task<(IReadOnlyList<ServiceRecord> Page, int Total)> GetRecordPageWithTotalAsync(
+        int serviceTypeId,
+        int skip,
+        int take,
+        string? search = null,
+        CancellationToken cancellationToken = default)
+        => _store.RunAsync<(IReadOnlyList<ServiceRecord> Page, int Total)>(
+            async (db, token) =>
+            {
+                IQueryable<ServiceRecord> records = db.ServiceRecords
+                    .AsNoTracking()
+                    .Where(r => r.ServiceTypeId == serviceTypeId && r.ParentRecordId == null);
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    string term = search.Trim();
+                    string pattern = SearchPattern.For(term);
+                    bool numeric = int.TryParse(term, out int id);
+
+                    records = records.Where(r =>
+                        (numeric && r.Id == id)
+                        || EF.Functions.Like(r.Title, pattern, SearchPattern.Escape)
+                        || EF.Functions.Like(r.SearchText, pattern, SearchPattern.Escape));
+                }
+
+                int total = await records.CountAsync(token).ConfigureAwait(false);
+
+                List<ServiceRecord> page = await records
+                    .OrderByDescending(r => r.Id)
+                    .Skip(skip)
+                    .Take(take)
+                    .ToListAsync(token)
+                    .ConfigureAwait(false);
+
+                return ((IReadOnlyList<ServiceRecord>)page, total);
+            },
+            cancellationToken);
+
+    public Task<ServiceRecord> AddRecordAsync(
+        ServiceRecord record,
+        IReadOnlyList<ServiceRecord> tableRows,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+
+        return _store.RunAsync(
+            async (db, token) =>
+            {
+                ServiceRecord stored = record.Clone();
+                stored.Id = 0;                          // the database assigns it
+                stored.CreatedAt = DateTimeOffset.Now;
+
+                db.ServiceRecords.Add(stored);
+                await db.SaveChangesAsync(token).ConfigureAwait(false);
+
+                foreach (ServiceRecord row in tableRows)
+                {
+                    db.ServiceRecords.Add(new ServiceRecord
+                    {
+                        ServiceTypeId = stored.ServiceTypeId,
+                        ParentRecordId = stored.Id,
+                        TableKey = row.TableKey,
+                        Title = row.Title,
+                        DataJson = row.DataJson,
+                        SearchText = row.SearchText,
+                        CreatedAt = stored.CreatedAt,
+                    });
+                }
+
+                if (tableRows.Count > 0)
+                {
+                    await db.SaveChangesAsync(token).ConfigureAwait(false);
+                }
+
+                return stored;
+            },
+            cancellationToken);
+    }
+
+    public Task UpdateRecordAsync(
+        ServiceRecord record,
+        IReadOnlyList<ServiceRecord> tableRows,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+
+        return _store.RunAsync(
+            async (db, token) =>
+            {
+                ServiceRecord? existing = await db.ServiceRecords
+                    .FirstOrDefaultAsync(r => r.Id == record.Id, token)
+                    .ConfigureAwait(false);
+
+                if (existing is null)
+                {
+                    return false;
+                }
+
+                existing.Title = record.Title;
+                existing.DataJson = record.DataJson;
+                existing.SearchText = record.SearchText;
+
+                // Rows are replaced wholesale: the form shows the full set, so the
+                // difference between what is on screen and what is in the store is
+                // exactly the rows the user removed.
+                List<ServiceRecord> oldRows = await db.ServiceRecords
+                    .Where(r => r.ParentRecordId == existing.Id)
+                    .ToListAsync(token)
+                    .ConfigureAwait(false);
+
+                db.ServiceRecords.RemoveRange(oldRows);
+
+                foreach (ServiceRecord row in tableRows)
+                {
+                    db.ServiceRecords.Add(new ServiceRecord
+                    {
+                        ServiceTypeId = existing.ServiceTypeId,
+                        ParentRecordId = existing.Id,
+                        TableKey = row.TableKey,
+                        Title = row.Title,
+                        DataJson = row.DataJson,
+                        SearchText = row.SearchText,
+                        CreatedAt = existing.CreatedAt,
+                    });
+                }
+
+                await db.SaveChangesAsync(token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken);
+    }
+
+    public async Task DeleteRecordAsync(int id, CancellationToken cancellationToken = default)
+        => await _store.RunAsync(
+            async (db, token) =>
+            {
+                // Children first, by hand: ParentRecordId is a plain column with no
+                // cascade behind it, so the store owns the order.
+                List<ServiceRecord> rows = await db.ServiceRecords
+                    .Where(r => r.ParentRecordId == id)
+                    .ToListAsync(token)
+                    .ConfigureAwait(false);
+
+                db.ServiceRecords.RemoveRange(rows);
+
+                ServiceRecord? record = await db.ServiceRecords
+                    .FirstOrDefaultAsync(r => r.Id == id, token)
+                    .ConfigureAwait(false);
+
+                if (record is not null)
+                {
+                    db.ServiceRecords.Remove(record);
+                }
+
+                await db.SaveChangesAsync(token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken).ConfigureAwait(false);
+
+    public Task<IReadOnlyList<ServiceRecord>> GetTableRowsAsync(
+        int recordId, CancellationToken cancellationToken = default)
+        => _store.RunAsync<IReadOnlyList<ServiceRecord>>(
+            async (db, token) => await db.ServiceRecords
+                .AsNoTracking()
+                .Where(r => r.ParentRecordId == recordId)
+                .OrderBy(r => r.Id)
+                .ToListAsync(token)
+                .ConfigureAwait(false),
+            cancellationToken);
+
     /// <summary>
     /// Applies the search box to a query. Same LIKE reasoning as every other
     /// directory: instr() is case sensitive, and a search that misses "Cloud"

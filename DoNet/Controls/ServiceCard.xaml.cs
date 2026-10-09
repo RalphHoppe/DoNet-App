@@ -188,6 +188,16 @@ public sealed partial class ServiceCard : UserControl
         }
     }
 
+    private void OnOpenClick(object sender, RoutedEventArgs args)
+    {
+        HideActions();
+
+        if (Service is { } service)
+        {
+            OpenRequested?.Invoke(this, service);
+        }
+    }
+
     private void OnDeleteClick(object sender, RoutedEventArgs args)
     {
         HideActions();

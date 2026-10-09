@@ -250,6 +250,8 @@
             <views:AccountDialog x:Name="AccountModal" x:Load="False" />
             <views:WebsiteDialog x:Name="WebsiteModal" x:Load="False" />
             <views:ServiceDialog x:Name="ServiceModal" x:Load="False" />
+            <views:ServiceDesignerDialog x:Name="ServiceDesignerModal" x:Load="False" />
+            <views:ServiceRecordDialog x:Name="ServiceRecordModal" x:Load="False" />
             <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
         </Grid>
     </Page>

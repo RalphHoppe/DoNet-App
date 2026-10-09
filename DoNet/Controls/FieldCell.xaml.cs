@@ -239,6 +239,18 @@ public sealed partial class FieldCell : UserControl
     public event EventHandler? AddChoiceRequested;
 
     /// <summary>
+    /// Raised whenever the user changed the value and the change has landed in
+    /// <see cref="Value"/>.
+    /// </summary>
+    /// <remarks>
+    /// The XAML dialogs bind to <see cref="Value"/> two ways and need nothing else.
+    /// The service record form builds its cells in code - there is no x:Bind to
+    /// carry the value out - so this is the channel: every editor funnels here,
+    /// carrying the new value.
+    /// </remarks>
+    public event EventHandler<string>? ValueCommitted;
+
+    /// <summary>
     /// The input this cell is currently showing, or null if it is showing none -
     /// a display cell, or an automatic one like the record number.
     /// </summary>
@@ -525,6 +537,8 @@ public sealed partial class FieldCell : UserControl
         _syncing = true;
         Value = value;
         _syncing = false;
+
+        ValueCommitted?.Invoke(this, value);
     }
 
     private void OnRevealClick(object sender, RoutedEventArgs args)
@@ -538,7 +552,7 @@ public sealed partial class FieldCell : UserControl
     }
 
     private void OnGenerateClick(object sender, RoutedEventArgs args)
-        => Value = PasswordGenerator.Generate();
+        => Commit(PasswordGenerator.Generate());
 
     private void OnCopyClick(object sender, RoutedEventArgs args)
     {

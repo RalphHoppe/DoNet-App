@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    x:Class="DoNet.Views.ServicesView"
+    x:Class="DoNet.Views.ServiceRecordsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:DoNet.Models"
     xmlns:controls="using:DoNet.Controls"
-    xmlns:views="using:DoNet.Views"
     mc:Ignorable="d">
 
     <!--
-        The Services directory, hosted inside the home screen's content surface.
-
-        The same screen as the other three directories, on purpose: the header, the
-        search, the card surface and the four states are what a directory is in this
-        app, and the Services tab is where the records to come - a VPS, a phone
-        number - will be filed. The cards it shows today are the vocabulary those
-        records will be filed under.
+        One service type's own directory: the same header, search, card surface
+        and four states as every other screen in the app, filled with what the
+        user designed for the type in the structure designer. What changes from
+        the type list is behind the title - a back button instead of the rail,
+        and the type's name instead of the app's word for the tab.
     -->
 
     <UserControl.Resources>
@@ -34,7 +31,6 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <!-- Shared by the four message states so they cannot drift apart. -->
         <Style x:Key="StateTitleStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
             <Setter Property="FontSize" Value="{StaticResource CardTitleFontSize}" />
@@ -57,67 +53,19 @@
             <Setter Property="LineHeight" Value="22" />
         </Style>
 
-        <DataTemplate x:Key="ServiceCardTemplate" x:DataType="models:Service">
-            <controls:ServiceCard Service="{x:Bind}"
-                                  OpenRequested="OnCardOpen"
-                                  EditRequested="OnCardEdit"
-                                  DeleteRequested="OnCardDelete" />
+        <DataTemplate x:Key="RecordCardTemplate" x:DataType="models:ServiceRecord">
+            <!--
+                The structure and the relationship options come from the host view
+                rather than the record: they belong to the type, and one drill-in
+                loads them once. Loaded is the moment to hand them over, because a
+                recycled card is a new card.
+            -->
+            <controls:ServiceRecordCard Record="{x:Bind}"
+                                        Loaded="OnRecordCardLoaded"
+                                        OpenRequested="OnCardOpen"
+                                        EditRequested="OnCardEdit"
+                                        DeleteRequested="OnCardDelete" />
         </DataTemplate>
-
-        <!--
-            The drill between the type list and one type's records, on the same
-            timings as the app's other layer changes: the outgoing layer dips out
-            fast, the incoming one rises in behind it.
-        -->
-        <Storyboard x:Key="DrillInStoryboard">
-            <DoubleAnimation Storyboard.TargetName="Header"
-                             Storyboard.TargetProperty="Opacity"
-                             To="0" Duration="0:0:0.12" />
-            <DoubleAnimation Storyboard.TargetName="CardSurface"
-                             Storyboard.TargetProperty="Opacity"
-                             To="0" Duration="0:0:0.12" />
-            <DoubleAnimation Storyboard.TargetName="RecordsLayer"
-                             Storyboard.TargetProperty="Opacity"
-                             From="0" To="1" Duration="0:0:0.22">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="RecordsShift"
-                             Storyboard.TargetProperty="Y"
-                             From="14" To="0" Duration="0:0:0.22">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
-
-        <Storyboard x:Key="DrillOutStoryboard">
-            <DoubleAnimation Storyboard.TargetName="RecordsLayer"
-                             Storyboard.TargetProperty="Opacity"
-                             To="0" Duration="0:0:0.12" />
-            <DoubleAnimation Storyboard.TargetName="Header"
-                             Storyboard.TargetProperty="Opacity"
-                             From="0" To="1" Duration="0:0:0.22">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="CardSurface"
-                             Storyboard.TargetProperty="Opacity"
-                             From="0" To="1" Duration="0:0:0.22">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="TypeShift"
-                             Storyboard.TargetProperty="Y"
-                             From="14" To="0" Duration="0:0:0.22">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
 
     </UserControl.Resources>
 
@@ -126,19 +74,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-
-        <!--
-            The type list. Shifts as one unit when the drill changes layers, which
-            is why the header and the card surface sit under one transform.
-        -->
-        <Grid Grid.Row="0" Grid.RowSpan="2">
-            <Grid.RenderTransform>
-                <TranslateTransform x:Name="TypeShift" Y="0" />
-            </Grid.RenderTransform>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
 
         <!-- Header ........................................................... -->
         <Grid x:Name="Header" Grid.Row="0" Margin="0,0,0,24" ColumnSpacing="24">
@@ -156,10 +91,35 @@
                   VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0"
+                <!-- Back to the type list: the same disc the section icons sit
+                     in, with the back arrow promoted into the icon set. -->
+                <Button x:Name="BackButton"
+                        Grid.Column="0"
+                        Width="{StaticResource SectionDiscSize}"
+                        Height="{StaticResource SectionDiscSize}"
+                        Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Back to services"
+                        Margin="0,0,14,0"
+                        VerticalAlignment="Center"
+                        Command="{x:Bind ViewModel.GoBackCommand}">
+                    <Border Width="{StaticResource SectionDiscSize}"
+                            Height="{StaticResource SectionDiscSize}"
+                            CornerRadius="{StaticResource SectionDiscCorner}"
+                            Background="{StaticResource CardAvatarBrush}"
+                            BorderBrush="{StaticResource SearchBorderBrush}"
+                            BorderThickness="1">
+                        <controls:LineIcon Kind="ArrowLeft"
+                                           Width="{StaticResource SectionDiscIconSize}"
+                                           Height="{StaticResource SectionDiscIconSize}"
+                                           Foreground="{StaticResource BrandPrimaryBrush}" />
+                    </Border>
+                </Button>
+
+                <Border Grid.Column="1"
                         Width="{StaticResource SectionDiscSize}"
                         Height="{StaticResource SectionDiscSize}"
                         CornerRadius="{StaticResource SectionDiscCorner}"
@@ -168,19 +128,15 @@
                         Background="{StaticResource CardAvatarBrush}"
                         BorderBrush="{StaticResource SearchBorderBrush}"
                         BorderThickness="1">
-                    <!--
-                        The briefcase from the rail button, promoted into the icon
-                        set so the tab's header and its rail entry carry the same
-                        mark - the rule every other section follows.
-                    -->
                     <controls:LineIcon Kind="Briefcase"
                                        Width="{StaticResource SectionDiscIconSize}"
                                        Height="{StaticResource SectionDiscIconSize}"
                                        Foreground="{StaticResource BrandPrimaryBrush}" />
                 </Border>
 
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="SERVICES"
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText"
+                               Text="SERVICES"
                                FontFamily="{StaticResource BaumansFont}"
                                FontSize="{StaticResource SectionTitleFontSize}"
                                Foreground="{StaticResource BrandPrimaryBrush}"
@@ -188,7 +144,7 @@
                                TextTrimming="CharacterEllipsis"
                                LineStackingStrategy="BlockLineHeight"
                                LineHeight="36" />
-                    <TextBlock Text="Every service saved in your vault"
+                    <TextBlock Text="Everything filed under this type"
                                FontFamily="{StaticResource BalooFont}"
                                FontSize="{StaticResource SectionSubtitleFontSize}"
                                Foreground="{StaticResource SectionSubtitleBrush}"
@@ -205,6 +161,7 @@
                   ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition x:Name="SearchColumn" Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
@@ -265,17 +222,36 @@
 
                         <TextBox Grid.Column="1"
                                  Style="{StaticResource SearchBoxStyle}"
-                                 PlaceholderText="SEARCH DIRECTORY"
+                                 PlaceholderText="SEARCH RECORDS"
                                  PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
-                                 Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                 Text="{x:Bind ViewModel.RecordSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                 </Border>
 
-                <!-- ADD SERVICE, the same supplied icon treatment as every tab. -->
-                <Button x:Name="AddServiceButton"
+                <!-- Reopen the structure designer over what the type holds. -->
+                <Button x:Name="EditStructureButton"
                         Grid.Column="1"
                         Style="{StaticResource BareButtonStyle}"
-                        Command="{x:Bind ViewModel.AddServiceCommand}">
+                        ToolTipService.ToolTip="Edit structure"
+                        Command="{x:Bind ViewModel.EditStructureCommand}">
+                    <Border Width="42"
+                            Height="42"
+                            CornerRadius="21"
+                            Background="{StaticResource CardBackgroundBrush}"
+                            BorderBrush="{StaticResource AddActionBorderBrush}"
+                            BorderThickness="1">
+                        <controls:LineIcon Kind="EditSquare"
+                                           Width="19"
+                                           Height="19"
+                                           Foreground="{StaticResource BrandPrimaryBrush}" />
+                    </Border>
+                </Button>
+
+                <!-- ADD RECORD, the same supplied icon treatment as every tab. -->
+                <Button x:Name="AddRecordButton"
+                        Grid.Column="2"
+                        Style="{StaticResource BareButtonStyle}"
+                        Command="{x:Bind ViewModel.AddRecordCommand}">
                     <Border CornerRadius="21"
                             Padding="14,0,18,0"
                             Height="42"
@@ -301,7 +277,7 @@
                                     </Canvas>
                                 </Viewbox>
                             </Grid>
-                            <TextBlock Text="ADD SERVICE"
+                            <TextBlock Text="ADD RECORD"
                                        VerticalAlignment="Center"
                                        FontFamily="{StaticResource JerseyFont}"
                                        FontSize="{StaticResource ButtonFontSize}"
@@ -326,8 +302,9 @@
                     Deliberately always visible. An ItemsRepeater inside a collapsed
                     ScrollViewer has no measured viewport, and a collection change
                     reaching it in that state fails with COMException: Unspecified
-                    error. With nothing selected it draws nothing anyway, and the
-                    state panels below paint over it.
+                    error. The host keeps this view out of the tree until it is
+                    drilled in, so the states below paint over an empty surface on
+                    the way in and the list is long lived once it is.
                 -->
                 <ScrollViewer x:Name="CardScroller"
                               VerticalScrollBarVisibility="Auto"
@@ -335,8 +312,8 @@
                               ViewChanged="OnCardScrollChanged"
                               Padding="0,0,4,0">
                     <ItemsRepeater x:Name="CardRepeater"
-                                   ItemsSource="{x:Bind ViewModel.Services}"
-                                   ItemTemplate="{StaticResource ServiceCardTemplate}">
+                                   ItemsSource="{x:Bind ViewModel.Records}"
+                                   ItemTemplate="{StaticResource RecordCardTemplate}">
                         <ItemsRepeater.Layout>
                             <UniformGridLayout MinItemWidth="430"
                                                MinColumnSpacing="20"
@@ -348,60 +325,60 @@
 
                 <!-- Loading -->
                 <Border Background="{StaticResource CardBackgroundBrush}"
-                        Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        Visibility="{x:Bind ViewModel.IsRecordLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel VerticalAlignment="Center"
                                 HorizontalAlignment="Center">
                         <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
                                            Kind="Loading"
-                                           IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
-                        <TextBlock Text="Opening the directory"
+                                           IsActive="{x:Bind ViewModel.IsRecordLoading, Mode=OneWay}" />
+                        <TextBlock Text="Opening the records"
                                    Style="{StaticResource StateTitleStyle}"
                                    Margin="0,16,0,0" />
                         <TextBlock Text="Just a moment." Style="{StaticResource StateBodyStyle}" />
                     </StackPanel>
                 </Border>
 
-                <!-- Empty: no service types at all -->
+                <!-- Empty: the type has been designed but holds nothing -->
                 <Border Background="{StaticResource CardBackgroundBrush}"
-                        Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        Visibility="{x:Bind ViewModel.IsRecordEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel VerticalAlignment="Center"
                                 HorizontalAlignment="Center">
                         <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
                                            Kind="Empty"
-                                           IsActive="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
-                        <TextBlock Text="No services yet"
+                                           IsActive="{x:Bind ViewModel.IsRecordEmpty, Mode=OneWay}" />
+                        <TextBlock Text="No records yet"
                                    Style="{StaticResource StateTitleStyle}"
                                    Margin="0,16,0,0" />
-                        <TextBlock Text="Service types you add will appear here."
+                        <TextBlock Text="The records you file under this type will appear here."
                                    Style="{StaticResource StateBodyStyle}" />
                     </StackPanel>
                 </Border>
 
-                <!-- Empty: types exist, the search excluded them -->
+                <!-- Empty: records exist, the search excluded them -->
                 <Border Background="{StaticResource CardBackgroundBrush}"
-                        Visibility="{x:Bind ViewModel.HasNoMatches, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        Visibility="{x:Bind ViewModel.HasRecordNoMatches, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel VerticalAlignment="Center"
                                 HorizontalAlignment="Center">
                         <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
                                            Kind="NoMatch"
-                                           IsActive="{x:Bind ViewModel.HasNoMatches, Mode=OneWay}" />
+                                           IsActive="{x:Bind ViewModel.HasRecordNoMatches, Mode=OneWay}" />
                         <TextBlock Text="Nothing matches that search"
                                    Style="{StaticResource StateTitleStyle}"
                                    Margin="0,16,0,0" />
-                        <TextBlock Text="Try a shorter term, or clear the search to see every type."
+                        <TextBlock Text="Try a shorter term, or clear the search to see every record."
                                    Style="{StaticResource StateBodyStyle}" />
                     </StackPanel>
                 </Border>
 
                 <!-- Error -->
                 <Border Background="{StaticResource CardBackgroundBrush}"
-                        Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        Visibility="{x:Bind ViewModel.IsRecordError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel VerticalAlignment="Center"
                                 HorizontalAlignment="Center">
                         <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
                                            Kind="Error"
-                                           IsActive="{x:Bind ViewModel.IsError, Mode=OneWay}" />
-                        <TextBlock Text="The directory could not be opened"
+                                           IsActive="{x:Bind ViewModel.IsRecordError, Mode=OneWay}" />
+                        <TextBlock Text="The records could not be opened"
                                    Style="{StaticResource StateTitleStyle}"
                                    Margin="0,16,0,0" />
                         <TextBlock Text="Nothing was changed. You can try again."
@@ -409,7 +386,7 @@
                         <Button Margin="0,20,0,0"
                                 HorizontalAlignment="Center"
                                 Style="{StaticResource BareButtonStyle}"
-                                Command="{x:Bind ViewModel.RetryCommand}">
+                                Command="{x:Bind ViewModel.RetryRecordsCommand}">
                             <Border CornerRadius="20"
                                     Height="40"
                                     Padding="22,0,22,0"
@@ -427,8 +404,6 @@
 
             </Grid>
         </Border>
-
-        </Grid>
 
         <!--
             Adaptive layout, on the same threshold as every other directory: below
@@ -466,25 +441,5 @@
 
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
-
-        <!--
-            One type's records, over the type list. Always in the tree and always
-            measured - an ItemsRepeater whose collection changes while it is
-            collapsed and unmeasured fails with COMException - and gated instead:
-            invisible and disabled until its type is drilled in. Disabled rather
-            than hit-test-invisible so the keyboard cannot tab into a layer that
-            is not there.
-        -->
-        <Grid x:Name="RecordsLayer"
-              Grid.Row="0"
-              Grid.RowSpan="2"
-              Opacity="0"
-              IsEnabled="False">
-            <Grid.RenderTransform>
-                <TranslateTransform x:Name="RecordsShift" Y="14" />
-            </Grid.RenderTransform>
-
-            <views:ServiceRecordsView x:Name="RecordsScreen" />
-        </Grid>
     </Grid>
 </UserControl>

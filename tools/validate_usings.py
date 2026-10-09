@@ -156,7 +156,11 @@ QUALIFIER_MEMBERS: dict[str, list[str]] = {
     "DispatcherQueue": ["TryEnqueue"],
 }
 
-TYPE_DECLARATION = re.compile(r"\b(?:class|enum|interface|record|struct)\s+(\w+)")
+# Type names in this codebase are PascalCase, and the pattern needs that: a
+# local named "record" - "record is not null", "foreach (ServiceRecord record
+# in page)" - reads as the contextual keyword followed by a lowercase word, and
+# without the case gate that word gets filed as a declared type.
+TYPE_DECLARATION = re.compile(r"\b(?:class|enum|interface|record|struct)\s+([A-Z]\w+)")
 NAMESPACE = re.compile(r"^namespace\s+([\w.]+);", re.M)
 USING = re.compile(r"^using\s+(?:static\s+)?([\w.]+);", re.M)
 

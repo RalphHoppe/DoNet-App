@@ -43,4 +43,60 @@ public interface IServiceDirectory
     /// </param>
     Task<bool> NameInUseAsync(
         string name, int exceptId = 0, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The structure of a service type, or null when the type has never been
+    /// designed.
+    /// </summary>
+    Task<ServiceDefinition?> GetDefinitionAsync(
+        int serviceTypeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves a type's structure, creating the definition row on first save.
+    /// </summary>
+    Task SaveDefinitionAsync(
+        ServiceDefinition definition, CancellationToken cancellationToken = default);
+
+    /// <summary>How many records a type has, not counting its table rows.</summary>
+    Task<int> CountRecordsAsync(
+        int serviceTypeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// One page of a type's records and the matching total, newest first. Table
+    /// rows are not included - they travel with the record they belong to.
+    /// </summary>
+    Task<(IReadOnlyList<ServiceRecord> Page, int Total)> GetRecordPageWithTotalAsync(
+        int serviceTypeId,
+        int skip,
+        int take,
+        string? search = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Inserts a record with its table rows, assigning ids and creation times, and
+    /// returns the stored record.
+    /// </summary>
+    Task<ServiceRecord> AddRecordAsync(
+        ServiceRecord record,
+        IReadOnlyList<ServiceRecord> tableRows,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates a record and replaces its table rows wholesale - rows removed from
+    /// the form are deleted, rows added are inserted, in one save.
+    /// </summary>
+    Task UpdateRecordAsync(
+        ServiceRecord record,
+        IReadOnlyList<ServiceRecord> tableRows,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes a record and the table rows attached to it.</summary>
+    Task DeleteRecordAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The table rows attached to one record, in definition order is not the
+    /// store's to know - they arrive in id order and the form sorts itself.
+    /// </summary>
+    Task<IReadOnlyList<ServiceRecord>> GetTableRowsAsync(
+        int recordId, CancellationToken cancellationToken = default);
 }

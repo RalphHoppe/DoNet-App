@@ -52,6 +52,17 @@ public sealed class DoNetDbContext : DbContext
     /// </summary>
     public DbSet<Service> Services => Set<Service>();
 
+    /// <summary>
+    /// The user-designed structure of each service type. One row per type, keyed by
+    /// the same id.
+    /// </summary>
+    public DbSet<ServiceDefinition> ServiceDefinitions => Set<ServiceDefinition>();
+
+    /// <summary>
+    /// The records of the service types, and the rows of their tables.
+    /// </summary>
+    public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         options.UseSqlite(_connection);
@@ -129,6 +140,36 @@ public sealed class DoNetDbContext : DbContext
             // Read on every catalog load, and written only when a built-in is
             // deleted or revived.
             entity.HasIndex(h => h.Name);
+        });
+
+        model.Entity<ServiceDefinition>(entity =>
+        {
+            entity.ToTable("ServiceDefinitions");
+            entity.HasKey(d => d.Id);
+
+            // Deliberately not ValueGeneratedOnAdd: the id mirrors the Services row
+            // it describes, so the pair is one-to-one by construction rather than by
+            // a unique index the store would have to check.
+        });
+
+        model.Entity<ServiceRecord>(entity =>
+        {
+            entity.ToTable("ServiceRecords");
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Id).ValueGeneratedOnAdd();
+
+            // Deleting a type removes its records and their table rows in one go -
+            // every row, top-level or child, carries the type id.
+            entity.HasOne<Service>()
+                  .WithMany()
+                  .HasForeignKey(r => r.ServiceTypeId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // ParentRecordId is a plain column, not a relationship: a self-referencing
+            // cascade next to the type cascade is two delete paths over one row, and
+            // the store already removes a record's children explicitly before it.
+            entity.HasIndex(r => r.ServiceTypeId);
+            entity.HasIndex(r => r.ParentRecordId);
         });
 
         model.Entity<Service>(entity =>

@@ -1280,6 +1280,57 @@ is not a seed, that is a haunting.
 
 `SchemaGuard` creating the table on an existing vault means no vault has to be
 rebuilt to get the catalog - it appears, seeded, at the next unlock.
+
+### The records arrive: a type you design, then fill
+
+Every service-type card carries a third hover action, Open, first in the row and
+teal like the others - the eye from the icon set. What it opens depends on the
+one question that matters: has this type been designed yet?
+
+**The first open of a type is the structure designer.** A type with no structure
+has nothing to show, so the first open is the moment to ask what it should hold.
+The designer speaks the user's vocabulary, not a database's: a field is not a
+"column with a type", it is a label plus one of eight kinds - Text, Long text,
+Number, Date, Password, Person, Website, Account - and the three last ones are
+pointers into the directories that already exist, which is what a relationship
+is when the database word is taken away. The order of the rows is the structure:
+the card previews the first four fields, and the first text field names every
+record. Below the fields, repeatable tables - the "VPS Systems Informations"
+shape - each a named block with its own field rows, filled one row at a time in
+the record form. Save is disabled until the structure is worth saving: at least
+one field, every label filled in, no two labels alike in the same scope.
+
+**Every later open is the type's own directory.** The same screen as the other
+four - header with the disc, search, card surface, the four states - with the
+type's name as the section title and a back disc in place of the briefcase. The
+records are the same cards as everywhere: identity row with the title (the first
+text field's value) and the record number, then the first four fields in
+definition order, passwords masked, relationships shown as the labels of what
+they point at. The structure can be reopened from the header's edit-structure
+disc at any time; a saved edit re-reads the records, because a field added to
+the structure is a field the cards should start showing.
+
+**The record dialog is built, not laid out.** Its XAML is the shell - header,
+scroller, footer - and the fields arrive as `FieldCell`s made in code from the
+type's structure, each as the input its kind calls for: a calendar for a date, a
+masked generate-able input for a password, the choice picker for a relationship
+- and the website picker carries its "Add a website" row, the account form's
+whole flow, with the new site coming back selected in the picker it was created
+for. Tables in the dialog are row editors: existing rows collapsed to a one-line
+summary that opens into their fields, new rows arriving expanded, empty rows
+never stored. Preview shows the record read-only with copy on every field; EDIT
+RECORD turns it into the form in place, as everywhere.
+
+Under it, the schema is data. A `ServiceDefinitions` row per type holds its
+fields and tables as JSON - one source of truth for what a record means, inside
+the same encrypted file, with no DDL at runtime - and `ConfiguredAt` is the
+designed-once signal the first open asks about. Records and table rows live in
+one `ServiceRecords` table, a null parent marking the record and the table key
+naming the group; deleting a type takes its records with it, counted in the
+confirmation, and deleting a record takes its rows. Search reads the title and a
+search text that excludes passwords - a vault's search box should not be able to
+find a password by typing it.
+
 ### Still worth doing
 
 A test project. The logic worth covering is pure .NET and does not need a UI:

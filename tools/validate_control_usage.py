@@ -30,6 +30,19 @@ FRAMEWORK = {
     "XYFocusKeyboardNavigation", "TabFocusNavigation", "KeyboardAcceleratorPlacementMode",
 }
 
+# Inherited UIElement events wired in XAML; declared on FrameworkElement, not on
+# the control's own code-behind, so the member scan of the .xaml.cs cannot see
+# them and they are none of its business.
+INHERITED_EVENTS = {
+    "Loaded", "Unloaded", "SizeChanged", "LayoutUpdated",
+    "PointerEntered", "PointerExited", "PointerPressed", "PointerReleased",
+    "PointerMoved", "PointerCaptureLost", "PointerWheelChanged",
+    "Tapped", "DoubleTapped", "RightTapped", "Holding",
+    "GotFocus", "LostFocus", "KeyDown", "KeyUp", "CharacterReceived",
+    "DragEnter", "DragLeave", "DragOver", "Drop",
+    "GettingFocus", "LosingFocus", "ProcessKeyboardAccelerators",
+}
+
 
 def declared_members(name: str) -> set[str] | None:
     """Properties and events on a control, from its code-behind."""
@@ -59,7 +72,8 @@ def main() -> int:
 
             checked += 1
             for attr in re.findall(r"(?:^|\s)([\w:\.]+)\s*=\s*\"", body):
-                if attr in FRAMEWORK or attr.startswith(("x:", "xmlns")) or "." in attr:
+                if (attr in FRAMEWORK or attr in INHERITED_EVENTS
+                        or attr.startswith(("x:", "xmlns")) or "." in attr):
                     continue
                 if attr not in members:
                     rel = xaml.relative_to(ROOT.parent)

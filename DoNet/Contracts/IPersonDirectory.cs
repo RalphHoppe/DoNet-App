@@ -50,4 +50,10 @@ public interface IPersonDirectory
 
     Task DeleteAsync(int id, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Every person, for the pickers other records use to point at one.
+    /// </summary>
+    Task<IReadOnlyList<Person>> GetOptionsAsync(
+        CancellationToken cancellationToken = default);
+
 }

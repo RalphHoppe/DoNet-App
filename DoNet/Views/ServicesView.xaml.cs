@@ -1,15 +1,18 @@
 using System;
+using System.ComponentModel;
 using DoNet.Models;
 using DoNet.Services;
 using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace DoNet.Views;
 
 /// <summary>
-/// The Services directory, hosted inside the home screen's content surface.
+/// The Services directory: the type list, and the drill from it into one type's
+/// records.
 /// </summary>
 public sealed partial class ServicesView : UserControl
 {
@@ -19,10 +22,43 @@ public sealed partial class ServicesView : UserControl
 
         InitializeComponent();
 
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
         Loaded += OnLoaded;
+
+        // HomePage is rebuilt on every unlock, and the view model is a singleton -
+        // without this, each cycle leaves another detached listener behind.
+        Unloaded += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
     }
 
     public ServicesViewModel ViewModel { get; }
+
+    /// <summary>
+    /// Plays the drill when the view model enters or leaves a type.
+    /// </summary>
+    /// <remarks>
+    /// The layers are gated rather than collapsed - see the XAML - so this is
+    /// opacity, a slide, and flipping which layer answers the pointer and the
+    /// keyboard.
+    /// </remarks>
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName != nameof(ServicesViewModel.IsDrilled))
+        {
+            return;
+        }
+
+        bool drilled = ViewModel.IsDrilled;
+
+        Header.IsEnabled = !drilled;
+        CardSurface.IsEnabled = !drilled;
+        RecordsLayer.IsEnabled = drilled;
+
+        if (Resources[drilled ? "DrillInStoryboard" : "DrillOutStoryboard"] is Storyboard board)
+        {
+            board.Begin();
+        }
+    }
 
     /// <summary>
     /// Releases this control's hold on the view model. Called when the host page is
@@ -40,6 +76,7 @@ public sealed partial class ServicesView : UserControl
     {
         Bindings.StopTracking();
         CardRepeater.ItemsSource = null;
+        RecordsScreen.ReleaseBindings();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs args)
@@ -57,11 +94,39 @@ public sealed partial class ServicesView : UserControl
         }
     }
 
-    private void OnCardOpen(object? sender, Service service) => ViewModel.OpenPreview(service);
+    /// <summary>
+    /// The open action on a type card. The first open of a type is the structure
+    /// designer; every later one is its records.
+    /// </summary>
+    private async void OnCardOpen(object? sender, Service service)
+    {
+        try
+        {
+            await ViewModel.OpenTypeAsync(service);
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Opening a service type failed", error);
+        }
+    }
 
     private void OnCardEdit(object? sender, Service service) => ViewModel.OpenEdit(service);
 
-    private void OnCardDelete(object? sender, Service service) => ViewModel.RequestDelete(service);
+    /// <summary>
+    /// The delete on a type card asks first - the confirmation says how many
+    /// records would go with the type.
+    /// </summary>
+    private async void OnCardDelete(object? sender, Service service)
+    {
+        try
+        {
+            await ViewModel.RequestDeleteAsync(service);
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Asking to delete a service type failed", error);
+        }
+    }
 
     /// <summary>
     /// Fetches the next page as the end of the list comes into reach.

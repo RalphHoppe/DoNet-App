@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    x:Class="DoNet.Controls.ServiceCard"
+    x:Class="DoNet.Controls.ServiceRecordCard"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,11 +9,10 @@
     mc:Ignorable="d">
 
     <!--
-        A service-type card: the smallest record in the app, and deliberately the
-        plainest card - the name in the identity row and again as a field beside
-        the description, with the note spanning below, the same arrangement as the
-        website card. Its own control rather than a DataTemplate for the same
-        reason the other cards are: the hover actions need named elements.
+        One record of a designed service type. The shell is every other card in the
+        app - identity row, fields, hover actions - and the middle of it is built in
+        code, because what a record carries was decided by the user, in the
+        structure designer, not by this markup.
     -->
 
     <UserControl.Resources>
@@ -28,11 +27,6 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
-        <!--
-            The actions arriving under the pointer, on the same timings as every
-            other card in the app: opacity and a translate, so they run on the
-            compositor thread and never touch layout.
-        -->
         <Storyboard x:Key="ActionsShow">
             <DoubleAnimation Storyboard.TargetName="ActionLayer"
                              Storyboard.TargetProperty="Opacity"
@@ -77,7 +71,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Identity row: the initial, the name, and the caption. -->
+            <!-- Identity row: the record's title, not a field. -->
             <Grid Grid.Row="0" ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -100,7 +94,7 @@
                 </Border>
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock x:Name="NameText"
+                    <TextBlock x:Name="TitleText"
                                FontFamily="{StaticResource BalooSemiBoldFont}"
                                FontSize="{StaticResource CardTitleFontSize}"
                                Foreground="{StaticResource TextPrimaryBrush}"
@@ -108,7 +102,7 @@
                                LineStackingStrategy="BlockLineHeight"
                                LineHeight="22" />
                     <TextBlock x:Name="CaptionText"
-                               Text="Service type"
+                               Text="Record"
                                FontFamily="{StaticResource BalooFont}"
                                FontSize="{StaticResource FieldValueFontSize}"
                                Foreground="{StaticResource CardMetaBrush}"
@@ -117,52 +111,18 @@
                                LineStackingStrategy="BlockLineHeight"
                                LineHeight="20" />
                 </StackPanel>
-
             </Grid>
 
-            <!--
-                The record's own fields. The name appears here as well as in the
-                identity row, the same arrangement as the website card: the row
-                says what the card is at a glance, the field says it in the same
-                voice as every other value - and a preview dialog built from the
-                same labels reads back exactly what the card showed.
-            -->
-            <Grid Grid.Row="1" RowSpacing="18" ColumnSpacing="12">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Row="0" Grid.Column="0">
-                    <controls:FieldLabel Text="NAME" IconKind="Tag" />
-                    <TextBlock x:Name="NameValue" Style="{StaticResource FieldValueStyle}" />
-                </StackPanel>
-
-                <StackPanel Grid.Row="0" Grid.Column="1">
-                    <controls:FieldLabel Text="DESCRIPTION" IconKind="FileText" />
-                    <TextBlock x:Name="DescriptionValue" Style="{StaticResource FieldValueStyle}" />
-                </StackPanel>
-
-                <!-- Spans both columns: a note is prose, and half a card is a
-                     poor place to read prose. -->
-                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
-                    <controls:FieldLabel Text="NOTE" IconKind="Info" />
-                    <TextBlock x:Name="NoteValue" Style="{StaticResource FieldValueStyle}" />
-                </StackPanel>
-            </Grid>
+            <!-- The record's fields, built in code from the type's structure. -->
+            <Grid x:Name="FieldsHost"
+                  Grid.Row="1"
+                  RowSpacing="18"
+                  ColumnSpacing="12" />
 
             <!--
                 Open, edit and delete, anchored to the bottom-right corner while the
-                pointer is over the card. Same arrangement as every other card: they
-                share the grid's cell so the fields keep the full width, and they
-                also appear on keyboard focus, because a hover-only affordance is a
-                mouse-only affordance. Open is first and teal, because opening is
-                what this card is for: the first open of a type is where its
-                structure gets designed, and every later one is its records.
+                pointer is over the card. Open is first because it is the most
+                common thing to want; edit and delete follow it, as on every card.
             -->
             <StackPanel x:Name="ActionLayer"
                         Grid.Row="0"

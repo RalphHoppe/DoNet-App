@@ -160,6 +160,8 @@ public sealed partial class HomePage : Page
                 Realize("WebsiteModal");
                 Realize("AccountModal");
                 Realize("ServiceModal");
+                Realize("ServiceDesignerModal");
+                Realize("ServiceRecordModal");
                 Realize("ConfirmModal");
 
                 // The Persons page was preloaded on the welcome screen; this is the
@@ -385,6 +387,16 @@ public sealed partial class HomePage : Page
         {
             Realize("ServiceModal");
         }
+        else if (args.PropertyName == nameof(ServicesViewModel.IsDesignerOpen)
+                 && _services.IsDesignerOpen)
+        {
+            Realize("ServiceDesignerModal");
+        }
+        else if (args.PropertyName == nameof(ServicesViewModel.IsRecordDialogOpen)
+                 && _services.IsRecordDialogOpen)
+        {
+            Realize("ServiceRecordModal");
+        }
         else if (args.PropertyName == nameof(ServicesViewModel.IsConfirmingDelete)
                  && _services.IsConfirmingDelete)
         {
@@ -499,6 +511,8 @@ public sealed partial class HomePage : Page
         // And Services.
         ServicesGrid?.ReleaseBindings();
         ServiceModal?.ReleaseBindings();
+        ServiceDesignerModal?.ReleaseBindings();
+        ServiceRecordModal?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();

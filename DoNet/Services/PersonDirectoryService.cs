@@ -119,6 +119,16 @@ public sealed class PersonDirectoryService : IPersonDirectory
             cancellationToken).ConfigureAwait(false);
     }
 
+    public Task<IReadOnlyList<Person>> GetOptionsAsync(
+        CancellationToken cancellationToken = default)
+        => _store.RunAsync<IReadOnlyList<Person>>(
+            async (db, token) => await db.People
+                .AsNoTracking()
+                .OrderBy(p => p.Id)
+                .ToListAsync(token)
+                .ConfigureAwait(false),
+            cancellationToken);
+
     public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
         => await _store.RunAsync(
             async (db, token) =>

@@ -121,6 +121,22 @@ public sealed class AccountDirectoryService : IAccountDirectory
             },
             cancellationToken).ConfigureAwait(false);
 
+    public Task<IReadOnlyList<Account>> GetOptionsAsync(
+        CancellationToken cancellationToken = default)
+        => _store.RunAsync<IReadOnlyList<Account>>(
+            async (db, token) =>
+            {
+                List<Account> options = await db.Accounts
+                    .AsNoTracking()
+                    .Include(a => a.Website)
+                    .OrderBy(a => a.Id)
+                    .ToListAsync(token)
+                    .ConfigureAwait(false);
+
+                return options;
+            },
+            cancellationToken);
+
     public Task<IReadOnlyList<Website>> GetWebsiteOptionsAsync(
         CancellationToken cancellationToken = default)
         => _store.RunAsync<IReadOnlyList<Website>>(

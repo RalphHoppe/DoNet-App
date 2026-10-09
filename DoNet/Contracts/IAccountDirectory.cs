@@ -41,6 +41,13 @@ public interface IAccountDirectory
     /// rather than a text box. Ordered by name so the list reads the way the user
     /// would look through it, not the way the rows happen to sit on disk.
     /// </remarks>
+    /// <summary>
+    /// Every account with its website, for the pickers other records use to point
+    /// at one.
+    /// </summary>
+    Task<IReadOnlyList<Account>> GetOptionsAsync(
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Website>> GetWebsiteOptionsAsync(
         CancellationToken cancellationToken = default);
 }
