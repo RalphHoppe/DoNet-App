@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.FlagIcon"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    IsTabStop="False"
+    IsHitTestVisible="False"
+    Width="24"
+    Height="16">
+
+    <!--
+        One country's flag, drawn from the table in FlagData.
+
+        Windows has no flag font. Emoji flags render as two boxed letters there, and
+        there is no licensed flag asset pack in this repository, so every flag is a
+        short list of rectangles, ellipses and paths in a 3 by 2 box that the code
+        behind turns into shapes.
+
+        Square corners and a hairline edge, which is how flags are set everywhere
+        else. Rounding them would need a corner clip on the Viewbox, and a white flag
+        on a white row needs the edge far more than it needs the radius.
+    -->
+
+    <Grid>
+        <Viewbox Stretch="Fill">
+            <Canvas x:Name="Surface" Width="3" Height="2" />
+        </Viewbox>
+
+        <!-- Drawn over the flag rather than around it, so it costs no layout. -->
+        <Rectangle Stroke="{StaticResource FlagEdgeBrush}" StrokeThickness="1" />
+    </Grid>
+</UserControl>

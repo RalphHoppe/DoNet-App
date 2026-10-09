@@ -1,0 +1,508 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Views.WebsiteDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    xmlns:vm="using:DoNet.ViewModels"
+    mc:Ignorable="d">
+
+    <!--
+        The website dialog, in all three modes: PREVIEW ALL INFO, ADD WEBSITE and
+        EDIT WEBSITE. One control, for the same reason the person dialog is one - the
+        three designs are the same fields differing only in whether they are readable
+        or writable.
+
+        Hosted at the HomePage root rather than inside WebsitesView so it covers the
+        whole window including the rail, which is what a modal should do.
+    -->
+
+    <UserControl.Resources>
+        <Style x:Key="DialogLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="{StaticResource FieldValueFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource CardMetaBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="22" />
+        </Style>
+
+        <!-- The dialog's entrance: a short rise and settle under a fading scrim. -->
+        <Storyboard x:Key="OpenStoryboard">
+            <DoubleAnimation Storyboard.TargetName="Scrim"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.16" />
+            <DoubleAnimation Storyboard.TargetName="CardOffset"
+                             Storyboard.TargetProperty="Y"
+                             From="18" To="0" Duration="0:0:0.26">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="CardScale"
+                             Storyboard.TargetProperty="ScaleX"
+                             From="0.985" To="1" Duration="0:0:0.26">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="CardScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="0.985" To="1" Duration="0:0:0.26">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="Card"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.20" />
+        </Storyboard>
+
+        <!--
+            PREVIEW ALL INFO turning into the edit form. The grid is the same eighteen
+            cells either way, so a hard swap looks like a glitch rather than a change
+            of mode: the cells blink and nothing explains why. A short dip and rise
+            makes it read as the same panel changing state.
+        -->
+        <Storyboard x:Key="ModeChangeStoryboard">
+            <DoubleAnimation Storyboard.TargetName="FieldGrid"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0.25" To="1" Duration="0:0:0.26">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="FieldShift"
+                             Storyboard.TargetProperty="Y"
+                             From="10" To="0" Duration="0:0:0.30">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="HeaderBlock"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0.3" To="1" Duration="0:0:0.24" />
+            <DoubleAnimation Storyboard.TargetName="FooterBlock"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.28" />
+        </Storyboard>
+
+        <Storyboard x:Key="CloseStoryboard" Completed="OnCloseCompleted">
+            <DoubleAnimation Storyboard.TargetName="Scrim"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="Card"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="CardOffset"
+                             Storyboard.TargetProperty="Y"
+                             To="12" Duration="0:0:0.14">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </UserControl.Resources>
+
+    <Grid x:Name="Root" Visibility="Collapsed">
+
+        <Rectangle x:Name="Scrim" Fill="#59000000" Tapped="OnScrimTapped" />
+
+        <Border x:Name="Card"
+                MaxWidth="1180"
+                Margin="24"
+                CornerRadius="26"
+                Background="{StaticResource CardBackgroundBrush}"
+                RenderTransformOrigin="0.5,0.5">
+            <Border.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="CardScale" ScaleX="1" ScaleY="1" />
+                    <TranslateTransform x:Name="CardOffset" Y="0" />
+                </TransformGroup>
+            </Border.RenderTransform>
+
+            <Grid Padding="40,32,40,28" RowSpacing="24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Header .................................................. -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel x:Name="HeaderBlock" Grid.Column="0">
+                        <StackPanel Orientation="Horizontal">
+                        <Border Width="40"
+                                Height="40"
+                                CornerRadius="20"
+                                Margin="0,0,14,0"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource CardAvatarBrush}"
+                                BorderBrush="{StaticResource SearchBorderBrush}"
+                                BorderThickness="1">
+                            <controls:LineIcon Kind="{x:Bind ViewModel.TitleIcon, Mode=OneWay}"
+                                               Width="19"
+                                               Height="19"
+                                               Foreground="{StaticResource BrandPrimaryBrush}" />
+                        </Border>
+                        <TextBlock Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                                   FontFamily="{StaticResource BaumansFont}"
+                                   FontSize="{StaticResource SectionTitleFontSize}"
+                                   Foreground="{StaticResource BrandPrimaryBrush}"
+                                   CharacterSpacing="20"
+                                   VerticalAlignment="Center"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   LineHeight="40" />
+                    </StackPanel>
+                        <TextBlock Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
+                                   FontFamily="{StaticResource BalooFont}"
+                                   FontSize="{StaticResource SectionSubtitleFontSize}"
+                                   Foreground="{StaticResource SectionSubtitleBrush}"
+                                   TextWrapping="Wrap"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   LineHeight="20" />
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            VerticalAlignment="Top"
+                            Style="{StaticResource BareButtonStyle}"
+                            ToolTipService.ToolTip="Close"
+                            Click="OnCloseClick">
+                        <!--
+                            The title bar's close dot, at dialog scale. No glyph inside:
+                            the red disc is the affordance, the same way the window's own
+                            close dot is, and a cross drawn at this size only adds noise.
+                            The 38px hit target is kept by padding the button, so the mark
+                            is small without being hard to hit.
+                        -->
+                        <Border Width="22"
+                                Height="22"
+                                Margin="8"
+                                CornerRadius="11"
+                                Background="#FF5F57" />
+                    </Button>
+                </Grid>
+
+                <!-- Fields .................................................. -->
+                <ScrollViewer Grid.Row="1"
+                              Margin="0,0,-26,0"
+                              Padding="0,0,26,0"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollMode="Disabled">
+                    <Grid x:Name="FieldGrid" RowSpacing="16" ColumnSpacing="24">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="FieldShift" Y="0" />
+                        </Grid.RenderTransform>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="ColLeft" Width="*" />
+                            <ColumnDefinition x:Name="ColRight" Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <!--
+                            Seven rows, though the wide layout only fills five. The
+                            narrow state unstacks the two paired rows into their own,
+                            and the spare Auto rows cost nothing while empty.
+                        -->
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <controls:FieldCell x:Name="NameCell"
+                                            Grid.Row="0" Grid.Column="0"
+                                            Label="NAME"
+                                            IconKind="Tag"
+                                            Placeholder="Enter website name"
+                                            TabOrder="1"
+                                            Value="{x:Bind ViewModel.Name, Mode=TwoWay}"
+                                            Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                                            ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                        <controls:FieldCell x:Name="DomainCell"
+                                            Grid.Row="0" Grid.Column="1"
+                                            Label="DOMAIN"
+                                            IconKind="Globe"
+                                            Placeholder="Enter website domain"
+                                            TabOrder="2"
+                                            InputKind="Text"
+                                            Value="{x:Bind ViewModel.Domain, Mode=TwoWay}"
+                                            Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                                            ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                        <controls:FieldCell x:Name="DescriptionCell"
+                                            Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                            Label="DESCRIPTION"
+                                            IconKind="FileText"
+                                            Placeholder="Add a description of this website"
+                                            TabOrder="3"
+                                            InputKind="Multiline"
+                                            Value="{x:Bind ViewModel.Description, Mode=TwoWay}"
+                                            Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                                            ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                        <!--
+                            Payment methods. One panel rather than a FieldCell: it is a
+                            multi-select with its own chips and an add box, which is a
+                            different thing from a labelled value.
+                        -->
+                        <Border x:Name="MethodsPanel"
+                                Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                CornerRadius="16"
+                                Padding="16"
+                                Background="{StaticResource CardAvatarBrush}"
+                                BorderBrush="{StaticResource SearchBorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel Spacing="12">
+                                <controls:FieldLabel Text="AVAILABLE PAYMENT METHODS" IconKind="CreditCard" />
+
+                                <!-- Editing: every option, three across. -->
+                                <!--
+                                    ItemsSource is attached from code-behind, not bound.
+                                    See WebsiteDialog.SyncMethodOptionsSource.
+                                -->
+                                <ItemsRepeater x:Name="MethodOptions"
+                                               Visibility="{x:Bind ViewModel.IsEditing, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                    <ItemsRepeater.Layout>
+                                        <UniformGridLayout MinItemWidth="210"
+                                                           MinItemHeight="34"
+                                                           MinColumnSpacing="12"
+                                                           MinRowSpacing="4"
+                                                           ItemsStretch="Fill" />
+                                    </ItemsRepeater.Layout>
+                                    <ItemsRepeater.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:PaymentMethodChoice">
+                                            <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                                      MinWidth="0"
+                                                      VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <controls:PaymentMethodIcon
+                                                        Method="{x:Bind Name}"
+                                                        Width="18" Height="18"
+                                                        VerticalAlignment="Center" />
+                                                    <TextBlock Text="{x:Bind Name}"
+                                                               VerticalAlignment="Center"
+                                                               FontFamily="{StaticResource BalooFont}"
+                                                               FontSize="{StaticResource FieldValueFontSize}"
+                                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </DataTemplate>
+                                    </ItemsRepeater.ItemTemplate>
+                                </ItemsRepeater>
+
+                                <!-- The current selection, in both modes. -->
+                                <controls:WrapPanel x:Name="SelectedChips" ItemSpacing="8" LineSpacing="8" />
+
+                                <TextBlock x:Name="NoMethodsText"
+                                           Text="No payment methods selected."
+                                           FontFamily="{StaticResource BalooFont}"
+                                           FontSize="{StaticResource FieldValueFontSize}"
+                                           Foreground="{StaticResource CardMetaBrush}" />
+
+                                <!-- Adding one of your own. -->
+                                <Grid x:Name="AddMethodRow"
+                                      ColumnSpacing="12"
+                                      Visibility="{x:Bind ViewModel.IsEditing, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                            CornerRadius="21"
+                                            Height="42"
+                                            Padding="16,0,16,0"
+                                            Background="{StaticResource CardBackgroundBrush}"
+                                            BorderBrush="{StaticResource SearchBorderBrush}"
+                                            BorderThickness="1">
+                                        <TextBox Style="{StaticResource BareTextBoxStyle}"
+                                                 VerticalAlignment="Center"
+                                                 FontFamily="{StaticResource BalooFont}"
+                                                 FontSize="{StaticResource FieldValueFontSize}"
+                                                 PlaceholderText="Enter another payment method"
+                                                 PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
+                                                 Text="{x:Bind ViewModel.NewMethod, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 KeyDown="OnNewMethodKeyDown" />
+                                    </Border>
+
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource BareButtonStyle}"
+                                            Click="OnAddMethodClick">
+                                        <Border CornerRadius="21"
+                                                Height="42"
+                                                Padding="20,0,20,0"
+                                                Background="{StaticResource CardBackgroundBrush}"
+                                                BorderBrush="{StaticResource AddActionBorderBrush}"
+                                                BorderThickness="1">
+                                            <TextBlock Text="ADD METHOD"
+                                                       VerticalAlignment="Center"
+                                                       FontFamily="{StaticResource JerseyFont}"
+                                                       FontSize="{StaticResource ButtonFontSize}"
+                                                       Foreground="{StaticResource BrandPrimaryBrush}"
+                                                       CharacterSpacing="40" />
+                                        </Border>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <controls:FieldCell x:Name="NoteCell"
+                                            Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                            Label="NOTE"
+                                            IconKind="Info"
+                                            Placeholder="Add a note about this website"
+                                            TabOrder="4"
+                                            InputKind="Multiline"
+                                            Value="{x:Bind ViewModel.Note, Mode=TwoWay}"
+                                            Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                                            ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                        <controls:FieldCell x:Name="IdCell"
+                                            Grid.Row="4" Grid.Column="0"
+                                            Label="# &#183; RECORD ID"
+                                            IconKind="Hash"
+                                            Placeholder="Assigned on save"
+                                            Kind="Automatic"
+                                            Value="{x:Bind ViewModel.IdDisplay, Mode=OneWay}"
+                                            ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                        <controls:FieldCell x:Name="CreatedCell"
+                                            Grid.Row="4" Grid.Column="1"
+                                            Label="CREATED AT"
+                                            IconKind="Clock"
+                                            Placeholder="Assigned on save"
+                                            Kind="Automatic"
+                                            Value="{x:Bind ViewModel.CreatedAtDisplay, Mode=OneWay}"
+                                            ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+                    </Grid>
+                </ScrollViewer>
+
+                <Grid x:Name="FooterBlock" Grid.Row="2" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Text="Copy is disabled for empty and automatic values."
+                               Visibility="{x:Bind ViewModel.IsEditing, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                               FontFamily="{StaticResource BalooFont}"
+                               FontSize="{StaticResource FieldValueFontSize}"
+                               Foreground="{StaticResource CardMetaBrush}" />
+
+                    <!-- Preview: one full-width action. -->
+                    <Button x:Name="PreviewAction"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            HorizontalAlignment="Stretch"
+                            Visibility="{x:Bind ViewModel.IsPreview, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                            Style="{StaticResource BareButtonStyle}"
+                            Click="OnPrimaryClick">
+                        <Border Height="52"
+                                CornerRadius="26"
+                                Background="{StaticResource BrandPrimaryBrush}">
+                            <TextBlock Text="{x:Bind ViewModel.PrimaryActionText, Mode=OneWay}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontFamily="{StaticResource JerseyFont}"
+                                       FontSize="{StaticResource ButtonFontSize}"
+                                       Foreground="#FFFFFF"
+                                       CharacterSpacing="40" />
+                        </Border>
+                    </Button>
+
+                    <!-- Add and edit: cancel plus the commit. -->
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="14"
+                                Visibility="{x:Bind ViewModel.IsEditing, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        <Button Style="{StaticResource BareButtonStyle}" Click="OnCancelClick">
+                            <Border Height="52"
+                                    MinWidth="150"
+                                    CornerRadius="26"
+                                    Background="{StaticResource CardBackgroundBrush}"
+                                    BorderBrush="{StaticResource SearchBorderBrush}"
+                                    BorderThickness="1">
+                                <TextBlock Text="CANCEL"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource JerseyFont}"
+                                           FontSize="{StaticResource ButtonFontSize}"
+                                           Foreground="{StaticResource CardMetaBrush}"
+                                           CharacterSpacing="40" />
+                            </Border>
+                        </Button>
+
+                        <Button Style="{StaticResource BareButtonStyle}" Click="OnPrimaryClick">
+                            <Border Height="52"
+                                    MinWidth="210"
+                                    CornerRadius="26"
+                                    Background="{StaticResource BrandPrimaryBrush}">
+                                <TextBlock Text="{x:Bind ViewModel.PrimaryActionText, Mode=OneWay}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource JerseyFont}"
+                                           FontSize="{StaticResource ButtonFontSize}"
+                                           Foreground="#FFFFFF"
+                                           CharacterSpacing="40" />
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!--
+            Below 1000 the three columns cannot hold a readable field box, so they
+            become one and the dialog turns into a single scrolling list.
+        -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="DialogWidthStates">
+                <VisualState x:Name="DialogWide">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1000" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="DialogNarrow">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="ColRight.Width" Value="0" />
+
+                        <Setter Target="NameCell.(Grid.ColumnSpan)" Value="2" />
+
+                        <Setter Target="DomainCell.(Grid.Column)" Value="0" />
+                        <Setter Target="DomainCell.(Grid.Row)" Value="1" />
+                        <Setter Target="DomainCell.(Grid.ColumnSpan)" Value="2" />
+
+                        <Setter Target="DescriptionCell.(Grid.Row)" Value="2" />
+                        <Setter Target="MethodsPanel.(Grid.Row)" Value="3" />
+                        <Setter Target="NoteCell.(Grid.Row)" Value="4" />
+
+                        <Setter Target="IdCell.(Grid.Row)" Value="5" />
+                        <Setter Target="IdCell.(Grid.ColumnSpan)" Value="2" />
+
+                        <Setter Target="CreatedCell.(Grid.Column)" Value="0" />
+                        <Setter Target="CreatedCell.(Grid.Row)" Value="6" />
+                        <Setter Target="CreatedCell.(Grid.ColumnSpan)" Value="2" />
+
+                        <Setter Target="Card.Margin" Value="12" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+</UserControl>

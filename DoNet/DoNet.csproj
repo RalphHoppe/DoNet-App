@@ -23,6 +23,24 @@
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
 
+  <!--
+    Embedded fonts. Referenced from XAML as
+    "ms-appx:///Assets/Fonts/<file>#<family name>" - see Styles/Fonts.xaml.
+    All three are SIL Open Font License 1.1; the OFL.txt files ship with them to
+    satisfy the licence's attribution requirement.
+  -->
+  <ItemGroup>
+    <Content Include="Assets\Fonts\Pacifico-Regular.ttf" />
+    <Content Include="Assets\Fonts\Baloo2-Regular.ttf" />
+    <Content Include="Assets\Fonts\Baloo2-SemiBold.ttf" />
+    <Content Include="Assets\Fonts\Jersey25-Regular.ttf" />
+    <Content Include="Assets\Fonts\Baumans-Regular.ttf" />
+    <Content Include="Assets\Fonts\Pacifico-OFL.txt" />
+    <Content Include="Assets\Fonts\Baloo2-OFL.txt" />
+    <Content Include="Assets\Fonts\Jersey25-OFL.txt" />
+    <Content Include="Assets\Fonts\Baumans-OFL.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
@@ -38,6 +56,23 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+
+    <!-- Source-generated ObservableProperty / RelayCommand for the view models. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+
+    <!-- Composition root; see App.xaml.cs. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+
+    <!--
+      EF Core over SQLCipher. The .Core package is deliberate: the ordinary
+      Microsoft.EntityFrameworkCore.Sqlite package drags in bundle_e_sqlite3, whose
+      native library has no encryption and would win the reference fight against the
+      cipher build. Pairing .Core with bundle_e_sqlcipher is the supported way to get
+      an encrypted SQLite under EF.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.31" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
   </ItemGroup>
 
   <!--
@@ -49,11 +84,50 @@
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
 
+  <!--
+    Runtime tuning. These are the settings a desktop app wants and the defaults do not
+    always give it.
+  -->
+  <PropertyGroup>
+    <!--
+      Workstation, concurrent GC. Server GC sizes its heaps per core and collects in
+      parallel, which suits a machine doing nothing but serving requests; in a desktop
+      app it costs memory and produces longer individual pauses. Concurrent (background)
+      collection keeps gen2 work off the thread that is drawing.
+    -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+
+    <!--
+      Dynamic PGO. The runtime watches which types and branches actually occur and
+      re-jits hot methods specialised for them - which matters here because the UI is
+      built on interface and virtual dispatch that PGO can devirtualise. On by default
+      in .NET 8; set explicitly so it survives a future default change.
+    -->
+    <TieredPGO>true</TieredPGO>
+
+    <!--
+      Static analysis. On by default for .NET 5+, stated here so it is visible. The
+      rule selection lives in .editorconfig at the repo root - a curated set where a
+      hit means a defect, rather than AnalysisMode=All and a wall of style opinions.
+
+      Analyzer findings stay warnings even under -warnaserror. A quality gate that
+      blocks a build is a gate someone turns off.
+    -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+  </PropertyGroup>
+
   <!-- Publish Properties -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <!--
+      Trimming is off, including for Release. EF Core builds its model by reflecting
+      over entity types, and the trimmer cannot see those reference paths - it would
+      strip members the model needs and the failure would appear at runtime in a
+      packaged build, which is the worst place to discover it.
+    -->
+    <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
 </Project>

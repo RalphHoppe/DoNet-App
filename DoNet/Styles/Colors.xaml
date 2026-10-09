@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    DoNet palette. The brand teal, the home surfaces and their strokes are the
+    design's own values; the hover, pressed and disabled steps are derived from the
+    teal so they move with it.
+
+    Colors are declared separately from Brushes because the logo gradient needs raw
+    Color values for its GradientStops.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Brand ................................................................
+
+        Written as literals rather than shared <Color x:Key> resources. The WinUI 3
+        default XAML namespace maps the Microsoft.UI.* namespaces, and the Color struct
+        is Windows.UI.Color - so a bare <Color> element raises WMC0011 "Unknown type"
+        from the XAML compiler. (Thickness and x:Double in this project do not, because
+        they are Microsoft.UI.Xaml.Thickness and a XAML language primitive.) The
+        resource still works at runtime, but it is nine warnings for no gain.
+
+        Only five values exist and none appears more than three times. The canonical
+        palette, which is what to edit if the brand moves:
+
+            teal            #4BAA98   primary, nav selection, ring gradient start
+            teal light      #8CD7C5   ring gradient end
+            teal deep       #49A48C   logo gradient start
+            teal soft       #83CDB4   logo gradient end
+            hover/pressed   #449989 / #3C887A   derived, 0.90x and 0.80x the teal
+            disabled        #BBDFD8   derived, 62% toward white
+    -->
+    <SolidColorBrush x:Key="BrandPrimaryBrush" Color="#4BAA98" />
+    <SolidColorBrush x:Key="BrandPrimaryHoverBrush" Color="#449989" />
+    <SolidColorBrush x:Key="BrandPrimaryPressedBrush" Color="#3C887A" />
+    <SolidColorBrush x:Key="BrandPrimaryDisabledBrush" Color="#BBDFD8" />
+
+    <!-- Surfaces ............................................................. -->
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="FieldBackgroundBrush" Color="#FFFFFF" />
+
+    <!--
+        The home shell's two panels, which share one flat fill and carry no stroke at
+        all. The design stacks FFFFFF at 72.16% under BEBEBE at 16.1%; over the white
+        page that composites to F5F5F5, so the panels read against the background and
+        against each other on the gap alone.
+    -->
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#F5F5F5" />
+
+    <!--
+        Navigation rail. The icon colours are Colors rather than Brushes because the
+        selection animation is a ColorAnimation into each button's own brush instance.
+    -->
+    <SolidColorBrush x:Key="NavRestBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="#4BAA98" />
+    <SolidColorBrush x:Key="LockActionBrush" Color="#F59E0B" />
+
+    <!-- FFFFFF at 40%, the design's 1px inside stroke on each disc. Invisible on the
+         white resting disc, a soft inner lip on the filled one. -->
+    <SolidColorBrush x:Key="NavDiscEdgeBrush" Color="#66FFFFFF" />
+
+    <!-- Rail tooltips -->
+    <SolidColorBrush x:Key="TooltipBackgroundBrush" Color="#2B2F33" />
+    <SolidColorBrush x:Key="TooltipForegroundBrush" Color="#FFFFFF" />
+
+    <!-- Text ................................................................. -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#2B2F33" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5C6066" />
+    <SolidColorBrush x:Key="TextPlaceholderBrush" Color="#8C9196" />
+    <SolidColorBrush x:Key="TextOnBrandBrush" Color="#FFFFFF" />
+
+    <!-- Fields ............................................................... -->
+    <SolidColorBrush x:Key="FieldBorderBrush" Color="#E4E6E9" />
+    <SolidColorBrush x:Key="FieldBorderHoverBrush" Color="#CFD3D8" />
+    <SolidColorBrush x:Key="FieldBorderFocusedBrush" Color="#429882" />
+    <SolidColorBrush x:Key="FieldBorderErrorBrush" Color="#D9705F" />
+    <SolidColorBrush x:Key="FieldIconBrush" Color="#A0A5AB" />
+    <SolidColorBrush x:Key="FieldIconHoverBrush" Color="#F0F1F2" />
+    <SolidColorBrush x:Key="FieldIconPressedBrush" Color="#E4E6E9" />
+
+    <!-- Amber notice (the "do not forget your password" strip) ............... -->
+    <SolidColorBrush x:Key="NoticeBackgroundBrush" Color="#FDF4E7" />
+    <SolidColorBrush x:Key="NoticeBorderBrush" Color="#F6DEB4" />
+    <SolidColorBrush x:Key="NoticeForegroundBrush" Color="#C4710B" />
+
+    <!-- Caption buttons ...................................................... -->
+    <SolidColorBrush x:Key="CaptionMinimizeBrush" Color="#28C840" />
+    <SolidColorBrush x:Key="CaptionMaximizeBrush" Color="#FEBC2E" />
+    <SolidColorBrush x:Key="CaptionCloseBrush" Color="#FF5F57" />
+
+    <!-- Destructive: the reset action on the forgot-password screen .......... -->
+    <SolidColorBrush x:Key="DangerBrush" Color="#E01B24" />
+    <SolidColorBrush x:Key="DangerHeadingBrush" Color="#A4161A" />
+    <SolidColorBrush x:Key="DangerBodyBrush" Color="#C0392B" />
+
+    <!-- Green notice, shown in the same slot when the vault is created ...... -->
+    <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="#EAF6F1" />
+    <SolidColorBrush x:Key="SuccessBorderBrush" Color="#BFE0D2" />
+    <SolidColorBrush x:Key="SuccessForegroundBrush" Color="#2E7D5B" />
+
+    <!-- Red notice, shown in the same slot when validation fails ............. -->
+    <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="#FDECEA" />
+    <SolidColorBrush x:Key="ErrorBorderBrush" Color="#F3C6C0" />
+    <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#C0392B" />
+
+    <!--
+        Persons directory. Exact values supplied by the designer; the slate family here
+        is intentionally cooler than the warm greys used on screens 1-4, so these are
+        separate keys rather than reuses of TextSecondaryBrush and friends.
+    -->
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#CBD5E1" />
+    <SolidColorBrush x:Key="CardAvatarBrush" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="FieldLabelBrush" Color="#7A8798" />
+    <SolidColorBrush x:Key="CardMetaBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="SectionSubtitleBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="SearchBorderBrush" Color="#E6EBF0" />
+
+    <!--
+        The hairline around a flag. Black at 15% rather than a grey, so it reads as an
+        edge on a dark flag and still separates a white one from a white row.
+    -->
+    <SolidColorBrush x:Key="FlagEdgeBrush" Color="#26000000" />
+    <SolidColorBrush x:Key="SearchPlaceholderBrush" Color="#7B8491" />
+
+    <!--
+        ADD PERSON's outline. The same value as BrandPrimaryDisabledBrush, but keyed
+        separately: that brush means "this control is unavailable", and reusing it on an
+        enabled button would make a later change to the disabled look silently restyle
+        this border.
+    -->
+    <SolidColorBrush x:Key="AddActionBorderBrush" Color="#BBDFD8" />
+
+</ResourceDictionary>

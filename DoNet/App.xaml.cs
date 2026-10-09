@@ -1,50 +1,130 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Runtime;
+using DoNet.Contracts;
+using DoNet.Services;
+using DoNet.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+namespace DoNet;
 
-namespace DoNet
+/// <summary>
+/// Application entry point and composition root.
+/// </summary>
+public partial class App : Application
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
-    public partial class App : Application
+    private Window? _window;
+
+    public App()
     {
-        private Window? _window;
+        // Multicore JIT, before anything else runs so it records as much as possible.
+        //
+        // The runtime writes down which methods it just-in-time compiled during
+        // startup, and on every launch after this one it recompiles them in the
+        // background across spare cores while the main thread gets on with starting.
+        // Desktop apps have to opt in; ASP.NET gets it by default. It needs more than
+        // one core and is silently ignored otherwise, and the profile is around 30 KB.
+        StartMulticoreJit();
 
-        /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
-        /// </summary>
-        public App()
-        {
-            InitializeComponent();
-        }
+        // Anything that throws before this is invisible, so nothing else goes above it.
+        CrashHandler.Install(this);
 
-        /// <summary>
-        /// Invoked when the application is launched.
-        /// </summary>
-        /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        InitializeComponent();
+        Services = ConfigureServices();
+    }
+
+    /// <summary>
+    /// The app's service provider.
+    /// </summary>
+    /// <remarks>
+    /// WinUI constructs pages itself via <c>Frame.Navigate</c>, which needs a parameterless
+    /// constructor, so pages pull their view model from here instead of receiving it through
+    /// constructor injection.
+    /// </remarks>
+    public new static App Current => (App)Application.Current;
+
+    public IServiceProvider Services { get; }
+
+    public Window? MainWindowInstance => _window;
+
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        _window = new MainWindow();
+
+        // WinUI desktop has no application-level exit event, so the main window closing
+        // is the shutdown hook. Disposing the provider disposes the singletons that hold
+        // unmanaged resources - in particular it closes the encrypted database, which
+        // lets SQLite check the write-ahead log back into the main file instead of
+        // leaving a -wal beside it for the next launch to recover.
+        _window.Closed += OnMainWindowClosed;
+
+        _window.Activate();
+    }
+
+    private void OnMainWindowClosed(object sender, WindowEventArgs args)
+    {
+        try
         {
-            _window = new MainWindow();
-            _window.Activate();
+            (Services as IDisposable)?.Dispose();
+            AppLog.Info("--- DoNet closed ---");
         }
+        catch (Exception error)
+        {
+            // Shutdown is not a place to throw; the window is already going.
+            AppLog.Error("Shutdown failed", error);
+        }
+    }
+
+    /// <summary>
+    /// Turns on profile-guided background JIT. Best effort: a failure here costs some
+    /// startup time and nothing else, so it must never stop the app launching.
+    /// </summary>
+    private static void StartMulticoreJit()
+    {
+        try
+        {
+            string root = Path.Combine(AppPaths.DataFolder, "jit");
+            Directory.CreateDirectory(root);
+
+            ProfileOptimization.SetProfileRoot(root);
+            ProfileOptimization.StartProfile("startup.profile");
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Could not start profile-guided JIT", error);
+        }
+    }
+
+    private static ServiceProvider ConfigureServices()
+    {
+        var services = new ServiceCollection();
+
+        services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<IVaultService, VaultService>();
+
+        // One connection to the encrypted file, shared by every directory. A second
+        // would pay the 256,000-round key derivation again on each unlock and put a
+        // second writer on the same write-ahead log.
+        services.AddSingleton<IEncryptedStore, EncryptedStore>();
+
+        // The person store. Real add, edit and delete; what it does not yet do is
+        // survive a restart. Swapping this one registration for EF Core over SQLCipher
+        // is the whole of that change - nothing above this line needs to move.
+        services.AddSingleton<IPersonDirectory, PersonDirectoryService>();
+        services.AddSingleton<IWebsiteDirectory, WebsiteDirectoryService>();
+        services.AddSingleton<IAccountDirectory, AccountDirectoryService>();
+
+        services.AddTransient<CreatePasswordViewModel>();
+        services.AddTransient<LockViewModel>();
+        services.AddTransient<HomeViewModel>();
+        services.AddTransient<ForgotPasswordViewModel>();
+        // Singleton: the directory grid and the two modals hosted at the HomePage root
+        // are three views onto one screen and must share its state.
+        services.AddSingleton<PersonsViewModel>();
+        services.AddSingleton<WebsitesViewModel>();
+        services.AddSingleton<AccountsViewModel>();
+
+        return services.BuildServiceProvider();
     }
 }

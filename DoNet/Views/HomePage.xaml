@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DoNet.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DoNet.Controls"
+    xmlns:views="using:DoNet.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{StaticResource AppBackgroundBrush}">
+
+    <Page.Resources>
+        <Storyboard x:Key="IntroStoryboard">
+            <DoubleAnimation Storyboard.TargetName="Rail"
+                             Storyboard.TargetProperty="(UIElement.Opacity)"
+                             From="0" To="1" Duration="0:0:0.34" />
+            <DoubleAnimation Storyboard.TargetName="RailSlide"
+                             Storyboard.TargetProperty="X"
+                             From="-26" To="0" Duration="0:0:0.42">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="ContentHost"
+                             Storyboard.TargetProperty="(UIElement.Opacity)"
+                             From="0" To="1" BeginTime="0:0:0.08" Duration="0:0:0.40" />
+            <DoubleAnimation Storyboard.TargetName="ContentScale"
+                             Storyboard.TargetProperty="ScaleX"
+                             From="0.985" To="1" BeginTime="0:0:0.08" Duration="0:0:0.46">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="ContentScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="0.985" To="1" BeginTime="0:0:0.08" Duration="0:0:0.46">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </Page.Resources>
+
+    <!--
+        The rail is fixed-width chrome and the content surface takes the rest, which is
+        how every desktop nav rail behaves and why the screen holds its proportions from
+        the smallest window the app allows up to a 4K display. Only the content area
+        changes size; the rail, the discs and the icons never do.
+
+        Sizes come from the design's exported SVG and property panels, scaled by 6/7
+        against the first cut so the rail reads as chrome beside the other screens:
+        disc 48 (the title bar's own height), icon 24 (half the disc, as before), rail
+        64. The rail's corner radius is still half its width, so it stays a true pill.
+
+        The top padding clears the 48px title bar, which overlays the frame rather than
+        taking a row of its own, and leaves 6 beneath it. Hard-coding it here rather
+        than giving MainWindow a second row keeps the centred screens 2-4 centred in
+        the full window, which is what their layout was measured against.
+    -->
+
+    <!--
+        An outer, unpadded layer so the modal dialogs can cover the entire page. The
+        shell keeps its own padding; a dialog placed inside it would stop short of the
+        window edges and leave a visible frame around the scrim.
+    -->
+    <Grid>
+        <Grid Padding="12,54,12,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="64" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Navigation rail ................................................... -->
+            <Grid x:Name="Rail" Grid.Column="0">
+                <Grid.RenderTransform>
+                    <TranslateTransform x:Name="RailSlide" />
+                </Grid.RenderTransform>
+
+                <!-- Fully flat: no stroke and no shadow. The panels are separated from the
+                     page by colour alone, F5F5F5 on white. -->
+                <Rectangle x:Name="RailPlate"
+                           RadiusX="32"
+                           RadiusY="32"
+                           Fill="{StaticResource SurfaceBrush}" />
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- The logo mark, straight from the design's SVG: a 32px ring with a
+                         16px hole, filled left to right. Two nested closed subpaths, so the
+                         hole falls out of either fill rule. The Viewbox takes it to 28
+                         without the path data being touched. -->
+                    <Viewbox Grid.Row="0"
+                             Width="28"
+                             Height="28"
+                             Margin="0,16,0,0"
+                             HorizontalAlignment="Center">
+                        <Canvas Width="32" Height="32">
+                            <Path Data="M32 16C32 24.8366 24.8366 32 16 32C7.16344 32 0 24.8366 0 16C0 7.16344 7.16344 0 16 0C24.8366 0 32 7.16344 32 16ZM8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8C11.5817 8 8 11.5817 8 16Z">
+                                <Path.Fill>
+                                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                        <GradientStop Offset="0" Color="#4BAA98" />
+                                        <GradientStop Offset="1" Color="#8CD7C5" />
+                                    </LinearGradientBrush>
+                                </Path.Fill>
+                            </Path>
+                        </Canvas>
+                    </Viewbox>
+
+                    <!-- Top-aligned, as in the design. The gap above is twice the spacing
+                         between the discs, which keeps the rhythm obvious. -->
+                    <StackPanel Grid.Row="1"
+                                Margin="0,32,0,0"
+                                Spacing="16"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top">
+
+                        <controls:NavRailButton
+                            Label="Services"
+                            AccentBrush="{StaticResource NavSelectedBrush}"
+                            IsSelected="{x:Bind ViewModel.IsServicesSelected, Mode=OneWay}"
+                            Command="{x:Bind ViewModel.SelectServicesCommand}"
+                            IconData="M21 8.5H7C5.067 8.5 3.5 10.067 3.5 12V21C3.5 22.933 5.067 24.5 7 24.5H21C22.933 24.5 24.5 22.933 24.5 21V12C24.5 10.067 22.933 8.5 21 8.5Z M9 8.5V6C9 5.33696 9.26339 4.70107 9.73223 4.23223C10.2011 3.76339 10.837 3.5 11.5 3.5H16.5C17.163 3.5 17.7989 3.76339 18.2678 4.23223C18.7366 4.70107 19 5.33696 19 6V8.5M3.5 14.5C9.9 18.1 18.1 18.1 24.5 14.5M14 14.5V18.5" />
+
+                        <controls:NavRailButton
+                            Label="Persons"
+                            AccentBrush="{StaticResource NavSelectedBrush}"
+                            IsSelected="{x:Bind ViewModel.IsPersonsSelected, Mode=OneWay}"
+                            Command="{x:Bind ViewModel.SelectPersonsCommand}"
+                            IconData="M11 12.5C13.2091 12.5 15 10.7091 15 8.5C15 6.29086 13.2091 4.5 11 4.5C8.79086 4.5 7 6.29086 7 8.5C7 10.7091 8.79086 12.5 11 12.5Z M3.5 23V21C3.5 19.0109 4.29018 17.1032 5.6967 15.6967C7.10322 14.2902 9.01088 13.5 11 13.5C12.9891 13.5 14.8968 14.2902 16.3033 15.6967C17.7098 17.1032 18.5 19.0109 18.5 21V23M20 5C21.0609 5 22.0783 5.42143 22.8284 6.17157C23.5786 6.92172 24 7.93913 24 9C24 10.0609 23.5786 11.0783 22.8284 11.8284C22.0783 12.5786 21.0609 13 20 13M21 16C22.0514 16.4819 22.9412 17.2574 23.5621 18.2332C24.1831 19.209 24.5088 20.3434 24.5 21.5V23" />
+
+                        <controls:NavRailButton
+                            Label="Sites"
+                            AccentBrush="{StaticResource NavSelectedBrush}"
+                            IsSelected="{x:Bind ViewModel.IsSitesSelected, Mode=OneWay}"
+                            Command="{x:Bind ViewModel.SelectSitesCommand}"
+                            IconData="M23 11.5C23 18 14 25 14 25C14 25 5 18 5 11.5C5 10.3181 5.23279 9.14778 5.68508 8.05585C6.13738 6.96392 6.80031 5.97177 7.63604 5.13604C8.47177 4.30031 9.46392 3.63738 10.5558 3.18508C11.6478 2.73279 12.8181 2.5 14 2.5C15.1819 2.5 16.3522 2.73279 17.4442 3.18508C18.5361 3.63738 19.5282 4.30031 20.364 5.13604C21.1997 5.97177 21.8626 6.96392 22.3149 8.05585C22.7672 9.14778 23 10.3181 23 11.5Z M14 14.75C15.7949 14.75 17.25 13.2949 17.25 11.5C17.25 9.70507 15.7949 8.25 14 8.25C12.2051 8.25 10.75 9.70507 10.75 11.5C10.75 13.2949 12.2051 14.75 14 14.75Z" />
+
+                        <!--
+                            Filled, unlike the three above: the supplied artwork is an
+                            outer contour and an inner one filled even-odd, which the
+                            F0 prefix selects. Stroking it would trace both edges.
+                        -->
+                        <controls:NavRailButton
+                            Label="Accounts"
+                            AccentBrush="{StaticResource NavSelectedBrush}"
+                            IsSelected="{x:Bind ViewModel.IsAccountsSelected, Mode=OneWay}"
+                            Command="{x:Bind ViewModel.SelectAccountsCommand}"
+                            IconFilled="True"
+                            IconData="F0 M8.577 8.577 C8.577 5.635 11.005 3.25 14.0 3.25 C16.995 3.25 19.423 5.635 19.423 8.577 C19.423 11.519 16.995 13.903 14.0 13.903 C11.005 13.903 8.577 11.519 8.577 8.577 Z M14.0 5.13 C12.062 5.13 10.491 6.673 10.491 8.577 C10.491 10.48 12.062 12.024 14.0 12.024 C15.938 12.024 17.51 10.48 17.51 8.577 C17.51 6.673 15.938 5.13 14.0 5.13 Z M8.896 17.664 C7.31 17.664 6.025 18.927 6.025 20.483 V21.973 C6.025 21.996 6.041 22.015 6.063 22.018 C11.32 22.862 16.68 22.862 21.937 22.018 C21.959 22.015 21.975 21.996 21.975 21.973 V20.483 C21.975 18.927 20.69 17.664 19.104 17.664 H18.67 C18.635 17.664 18.602 17.669 18.571 17.68 L17.466 18.033 C15.214 18.756 12.786 18.756 10.534 18.033 L9.429 17.68 C9.398 17.669 9.365 17.664 9.33 17.664 H8.896 Z M4.11 20.483 C4.11 17.888 6.252 15.783 8.896 15.783 H9.33 C9.566 15.783 9.8 15.82 10.024 15.892 L11.129 16.247 C12.994 16.844 15.006 16.844 16.871 16.247 L17.976 15.892 C18.2 15.82 18.434 15.783 18.67 15.783 H19.104 C21.748 15.783 23.89 17.888 23.89 20.483 V21.973 C23.89 22.917 23.193 23.722 22.244 23.874 C16.784 24.75 11.216 24.75 5.756 23.874 C4.807 23.722 4.11 22.917 4.11 21.973 V20.483 Z" />
+                    </StackPanel>
+
+                    <!--
+                        Permanently filled. It is an action, not a destination, so it never
+                        takes part in the rail's selection and keeps its own accent.
+                    -->
+                    <controls:NavRailButton
+                        Grid.Row="2"
+                        Margin="0,0,0,16"
+                        HorizontalAlignment="Center"
+                        Label="Lock DoNet"
+                        AccentBrush="{StaticResource LockActionBrush}"
+                        IsSelected="True"
+                        IconStrokeThickness="2.2"
+                        Command="{x:Bind ViewModel.LockCommand}"
+                        IconData="M19.5 12H8.5C6.567 12 5 13.567 5 15.5V21.5C5 23.433 6.567 25 8.5 25H19.5C21.433 25 23 23.433 23 21.5V15.5C23 13.567 21.433 12 19.5 12Z M9 12V8.5C9 7.04131 9.57946 5.64236 10.6109 4.61091C11.6424 3.57946 13.0413 3 14.5 3C15.9587 3 17.3576 3.57946 18.3891 4.61091C19.4205 5.64236 20 7.04131 20 8.5V12 M14 17.5V21" />
+                </Grid>
+            </Grid>
+
+            <!--
+                Content surface. The plate is the shared background for all three sections;
+                each section's content sits on top of it. Services and Sites have not been
+                designed yet, so only Persons has anything to show.
+            -->
+            <Grid x:Name="ContentHost" Grid.Column="2" RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform>
+                    <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1" />
+                </Grid.RenderTransform>
+
+                <Rectangle x:Name="ContentPlate"
+                           RadiusX="34"
+                           RadiusY="34"
+                           Fill="{StaticResource SurfaceBrush}" />
+
+                <!--
+                    The sections live in their own layer above the plate, so switching
+                    tabs can move and fade them without taking the plate with them. The
+                    plate belongs to the shell rather than to any one section, and a
+                    surface that blinks on every tab change reads as a failed redraw
+                    instead of as navigation.
+
+                    Visibility is assigned in code here rather than bound to the view
+                    model. A binding flips the moment the rail is clicked, which leaves
+                    nothing on screen to animate out - the old section would already be
+                    gone before the transition started. HomePage.BeginSectionTransition
+                    owns the swap and performs it at the midpoint, while the layer is
+                    invisible.
+                -->
+                <Grid x:Name="SectionHost">
+                    <Grid.RenderTransform>
+                        <TranslateTransform x:Name="SectionShift" />
+                    </Grid.RenderTransform>
+
+                    <views:PersonsView x:Name="DirectoryView" />
+
+                    <!--
+                        Deferred: the home screen opens on Persons, so the Websites grid
+                        is built the first time the rail switches to it rather than
+                        behind the screen nobody asked for. The transition builds it
+                        before the animation starts, never during it.
+                    -->
+                    <views:WebsitesView x:Name="SitesView" x:Load="False" />
+
+                    <views:AccountsView x:Name="AccountsGrid" x:Load="False" />
+                </Grid>
+            </Grid>
+            </Grid>
+
+            <!--
+                Modals, outside the padded shell and last in the tree so they sit above it.
+                Both are driven by the same PersonsViewModel singleton that backs the grid.
+
+                x:Load="False", not Visibility="Collapsed". A collapsed element is still
+                constructed; it is only skipped when drawing. Between them these two
+                expand to roughly 1,700 elements - the person dialog alone instantiates
+                eighteen FieldCells, each carrying a TextBox, a PasswordBox, a ComboBox,
+                a CalendarDatePicker and three buttons - and Microsoft's own guidance
+                budgets about a millisecond per element created. All of it was being
+                built while the user waited for the home screen, to show nothing.
+
+                HomePage realises them itself: on demand if something opens one, and
+                otherwise during idle time once the entrance animation has finished, so
+                the first click is not the one that pays.
+            -->
+            <views:PersonDialog x:Name="PersonModal" x:Load="False" />
+            <views:WebsiteDialog x:Name="WebsiteModal" x:Load="False" />
+            <views:AccountDialog x:Name="AccountModal" x:Load="False" />
+            <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
+        </Grid>
+    </Page>

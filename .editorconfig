@@ -1,0 +1,90 @@
+; DoNet - code analysis configuration
+;
+; The .NET SDK ships hundreds of analyzer rules but enables only about twenty by
+; default, because turning them all on breaks builds and buries the useful warnings
+; under style opinions. Rather than flip AnalysisMode to All and then suppress the
+; noise, this file goes the other way: the default set stays, and the rules raised
+; below are ones where a hit means a real defect, not a matter of taste.
+;
+; Everything here is a warning. Nothing fails the build - a quality gate that stops a
+; developer shipping is a gate that gets switched off.
+;
+; Two rules this codebase deliberately violates are left at their defaults rather than
+; raised, and the reasons are worth recording:
+;   CA1031 (do not catch general exception types) - the crash handlers and the async
+;          void wrappers catch Exception on purpose; that is the entire point of them.
+;   CA1303 (do not pass literals as localized parameters) - the app is English-only and
+;          has no resource strings.
+
+root = true
+
+[*.cs]
+
+; ----------------------------------------------------------------------------------
+; Resource lifetime. This app holds a keyed database connection and a semaphore; a
+; missed dispose here is a file handle and a derived key outliving the lock screen.
+; ----------------------------------------------------------------------------------
+dotnet_diagnostic.CA1001.severity = warning   ; type owns a disposable field but is not IDisposable
+dotnet_diagnostic.CA2213.severity = warning   ; disposable field never disposed
+dotnet_diagnostic.CA1063.severity = warning   ; IDisposable implemented incorrectly
+dotnet_diagnostic.CA1816.severity = warning   ; Dispose should call GC.SuppressFinalize
+dotnet_diagnostic.CA2215.severity = warning   ; Dispose should call base.Dispose
+
+; ----------------------------------------------------------------------------------
+; Async and cancellation. Dropping a CancellationToken is how a debounced search ends
+; up racing itself, and it is invisible in review.
+; ----------------------------------------------------------------------------------
+dotnet_diagnostic.CA2016.severity = warning   ; forward the CancellationToken parameter
+dotnet_diagnostic.CA2008.severity = warning   ; Task created without a TaskScheduler
+dotnet_diagnostic.CA2012.severity = warning   ; ValueTask consumed incorrectly
+dotnet_diagnostic.CA1849.severity = warning   ; sync call where an async one exists
+
+; ----------------------------------------------------------------------------------
+; Correctness traps. CA1310 is the one that actually bit: StartsWith without a
+; StringComparison is culture-sensitive, and the Turkish dotless i makes that a real
+; bug rather than a theoretical one.
+; ----------------------------------------------------------------------------------
+dotnet_diagnostic.CA1309.severity = warning   ; use ordinal StringComparison
+dotnet_diagnostic.CA1310.severity = warning   ; string compare without StringComparison
+dotnet_diagnostic.CA1862.severity = warning   ; use StringComparison instead of ToLower()
+dotnet_diagnostic.CA2201.severity = warning   ; do not raise reserved exception types
+dotnet_diagnostic.CA1065.severity = warning   ; do not raise exceptions from property getters
+dotnet_diagnostic.CA2219.severity = warning   ; do not throw from a finally block
+dotnet_diagnostic.CA1507.severity = warning   ; use nameof instead of a string literal
+
+; ----------------------------------------------------------------------------------
+; Allocation and hot paths. Small individually; this is a UI thread that has to hit a
+; sixteen millisecond frame budget.
+; ----------------------------------------------------------------------------------
+dotnet_diagnostic.CA1826.severity = warning   ; use the indexer, not Enumerable.First
+dotnet_diagnostic.CA1827.severity = warning   ; Count() where Any() would do
+dotnet_diagnostic.CA1829.severity = warning   ; use Length/Count rather than Count()
+dotnet_diagnostic.CA1860.severity = warning   ; prefer Length/Count over Any()
+dotnet_diagnostic.CA1854.severity = warning   ; prefer TryGetValue over double lookup
+dotnet_diagnostic.CA1805.severity = warning   ; redundant initialisation to default
+dotnet_diagnostic.CA1822.severity = suggestion ; member can be static - useful, but noisy
+
+; ----------------------------------------------------------------------------------
+; Security. This is a password manager; these are not optional.
+; ----------------------------------------------------------------------------------
+dotnet_diagnostic.CA5350.severity = warning   ; weak cryptographic algorithm
+dotnet_diagnostic.CA5351.severity = warning   ; broken cryptographic algorithm
+dotnet_diagnostic.CA5359.severity = warning   ; certificate validation disabled
+dotnet_diagnostic.CA5392.severity = warning   ; DllImport without DefaultDllImportSearchPaths
+dotnet_diagnostic.CA2100.severity = warning   ; SQL built from a string
+
+; ----------------------------------------------------------------------------------
+; Nullable reference types are on in the project file. These keep them meaningful.
+; ----------------------------------------------------------------------------------
+dotnet_diagnostic.CS8600.severity = warning
+dotnet_diagnostic.CS8602.severity = warning
+dotnet_diagnostic.CS8603.severity = warning
+dotnet_diagnostic.CS8625.severity = warning
+
+[*.{xaml,axaml}]
+indent_style = space
+indent_size = 4
+
+[*.{csproj,props,targets}]
+indent_style = space
+indent_size = 2
