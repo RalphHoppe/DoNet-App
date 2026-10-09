@@ -1251,7 +1251,10 @@ the hardest thing in the app to design, for the reason the whole directory has b
 waiting on: a service record can be almost anything, with its own columns and its
 own relationships. So the tab starts where the workbook starts: not with records but
 with the *vocabulary* they will be filed under. The six types the workbook names -
-VPS, Domain, SMS, Proxy, Phone, Cloud - with a description and a note each, as cards.
+VPS, Domain, SMS, Proxy, Phone, Cloud - with a description and a note each, as cards
+that name the type twice: in the identity row, and again as a NAME field beside the
+description, with the note spanning below - the arrangement the website card already
+established.
 
 It is the same screen as the other three directories - the header with the disc, the
 search, the card surface, the four states - because a fifth thing that behaved like a

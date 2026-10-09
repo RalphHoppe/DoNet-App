@@ -10,8 +10,9 @@
 
     <!--
         A service-type card: the smallest record in the app, and deliberately the
-        plainest card - a name, a description and a note, in the identity row and
-        one two-column line. Its own control rather than a DataTemplate for the same
+        plainest card - the name in the identity row and again as a field beside
+        the description, with the note spanning below, the same arrangement as the
+        website card. Its own control rather than a DataTemplate for the same
         reason the other cards are: the hover actions need named elements.
     -->
 
@@ -119,7 +120,13 @@
 
             </Grid>
 
-            <!-- The two describable columns, side by side. -->
+            <!--
+                The record's own fields. The name appears here as well as in the
+                identity row, the same arrangement as the website card: the row
+                says what the card is at a glance, the field says it in the same
+                voice as every other value - and a preview dialog built from the
+                same labels reads back exactly what the card showed.
+            -->
             <Grid Grid.Row="1" RowSpacing="18" ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -127,11 +134,18 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0">
+                    <controls:FieldLabel Text="NAME" IconKind="Tag" />
+                    <TextBlock x:Name="NameValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="0" Grid.Column="1">
                     <controls:FieldLabel Text="DESCRIPTION" IconKind="FileText" />
                     <TextBlock x:Name="DescriptionValue" Style="{StaticResource FieldValueStyle}" />
                 </StackPanel>
 
-                <StackPanel Grid.Row="0" Grid.Column="1">
+                <!-- Spans both columns: a note is prose, and half a card is a
+                     poor place to read prose. -->
+                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
                     <controls:FieldLabel Text="NOTE" IconKind="Info" />
                     <TextBlock x:Name="NoteValue" Style="{StaticResource FieldValueStyle}" />
                 </StackPanel>

@@ -59,6 +59,7 @@ public sealed partial class ServiceCard : UserControl
         AvatarText.Text = Initial.From(service.Name);
         NameText.Text = service.DisplayName;
 
+        NameValue.Text = Or(service.Name);
         DescriptionValue.Text = Or(service.Description);
         NoteValue.Text = Or(service.Note);
 
