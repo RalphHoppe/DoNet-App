@@ -1119,21 +1119,24 @@ somewhere else.
 The drawer is a `Flyout` with the app's own geometry: 20px corners, the field's own
 white, no padding of its own. Rows are 42px tall with 13px corners and inset 8px from
 the edge, so the highlight is a pill inside the surface rather than a bar across it.
-Thirteen `ListViewItem` brush keys are overridden in the flyout's own resources - hover
-`#F0F7F5`, selected `#E4F0EC`, and the two pressed variants - which is what it takes to
-get the system list to stop painting itself blue. The selection indicator, the vertical
-bar WinUI draws down the left edge of a selected row, is switched off outright; the tick
-on the right says the same thing more quietly.
+The rows carry a template this app owns rather than the stock one: a single rounded
+`Border` whose pointer-over, pressed and selected states paint the app's teal directly -
+hover `#F0F7F5`, selected `#E4F0EC`, and the pressed variants. No stock state brush
+remains to paint the row blue, and no selection indicator bar exists to switch off; the
+tick on the right says selected more quietly.
 
-The row corners have their own story, because the first version of them did not work.
-`DrawerRowStyle` set the `ListViewItem`'s `CornerRadius` property to 13 and the rows
-stayed square, and the reason is worth writing down: the stock `ListViewItem` template
-draws its states inside a `ListViewItemPresenter` whose `CornerRadius` is bound to the
-`ListViewItemCornerRadius` **theme resource**, not to the control's property, which the
-template never reads. Setting the property rounds nothing. Overriding the resource the
-presenter actually consults - one `<CornerRadius>` element in the drawer's scoped
-resources - is the only way in. The brush overrides worked first time because those the
-template *does* take from resources; the corner was the one that didn't.
+The row corners are why the stock template had to go, and the story is worth writing
+down because two attempts failed first. Setting the `ListViewItem`'s `CornerRadius`
+property rounded nothing: the stock template draws its states inside a
+`ListViewItemPresenter` that reads the `ListViewItemCornerRadius` theme resource and
+never the property. Overriding that theme resource in the drawer's scope is the
+textbook fix, it is what the reference template's presenter asks for, and on the
+machine that matters it rounded nothing either - whichever list-item variant that
+Windows App SDK build actually ships was not listening to either lever. So the row
+template is owned: one `Border` with `CornerRadius="{TemplateBinding CornerRadius}"`,
+five states with the names the `ListViewItem` control itself raises, taken from the
+platform's own expanded template. A template the app owns cannot be second-guessed by
+whichever variant the platform picked.
 
 **Countries get flags.** Real ones now: the 196 flags in `Assets/Flags` are from
 [flag-icons](https://github.com/yammadev/flag-icons) by Yammadev, MIT licensed, with the

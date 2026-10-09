@@ -114,50 +114,99 @@
                 <Grid x:Name="DrawerBody" RowSpacing="0">
                     <Grid.Resources>
                         <!--
-                            Scoped to the drawer, so nothing else in the app inherits a
-                            teal list. These are the keys the stock container reads for
-                            its own states; the alternative is a full ListViewItem
-                            template, which is forty more lines to say the same thing.
+                            The row palette: a teal for every state a drawer row can
+                            be in. Scoped to the drawer so nothing else in the app
+                            inherits them.
                         -->
-                        <SolidColorBrush x:Key="ListViewItemBackground" Color="Transparent" />
-                        <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#F0F7F5" />
-                        <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="#E4F0EC" />
-                        <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#E4F0EC" />
-                        <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#DBEBE6" />
-                        <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="#D2E6E0" />
-                        <SolidColorBrush x:Key="ListViewItemForeground" Color="#2B2F33" />
-                        <SolidColorBrush x:Key="ListViewItemForegroundPointerOver" Color="#2B2F33" />
-                        <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="#2B2F33" />
-                        <SolidColorBrush x:Key="ListViewItemFocusVisualPrimaryBrush" Color="Transparent" />
-                        <SolidColorBrush x:Key="ListViewItemFocusVisualSecondaryBrush" Color="Transparent" />
-                        <SolidColorBrush x:Key="ListViewItemFocusBorderBrush" Color="Transparent" />
-                        <SolidColorBrush x:Key="ListViewItemFocusSecondaryBorderBrush" Color="Transparent" />
-
-                        <!-- The left accent bar WinUI draws beside a selected row. -->
-                        <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
+                        <SolidColorBrush x:Key="RowHoverBrush" Color="#F0F7F5" />
+                        <SolidColorBrush x:Key="RowPressedBrush" Color="#E4F0EC" />
+                        <SolidColorBrush x:Key="RowSelectedBrush" Color="#E4F0EC" />
+                        <SolidColorBrush x:Key="RowSelectedHoverBrush" Color="#DBEBE6" />
+                        <SolidColorBrush x:Key="RowSelectedPressedBrush" Color="#D2E6E0" />
 
                         <!--
-                            The row's rounded corners. The stock ListViewItem template
-                            draws its hover and selection fills inside a
-                            ListViewItemPresenter, whose CornerRadius is bound to this
-                            theme resource - not to the row's own CornerRadius
-                            property, which the template never reads. Setting the
-                            property rounds nothing; overriding the resource the
-                            presenter actually consults is the one way in.
-                        -->
-                        <CornerRadius x:Key="ListViewItemCornerRadius">13</CornerRadius>
+                            The row template is owned, not overridden.
 
+                            Two stock mechanisms were tried first and neither rounded a
+                            corner on the machine that matters. Setting the
+                            ListViewItem's CornerRadius property does nothing, because
+                            the default template draws its states inside a
+                            ListViewItemPresenter that never reads the property.
+                            Overriding the ListViewItemCornerRadius theme resource -
+                            which is exactly what the reference template's presenter
+                            reads - is the textbook fix and did nothing either on the
+                            shipped Windows App SDK build. Whichever list-item variant
+                            the platform picked, it was not listening.
+
+                            So the template is this one: a single rounded Border bound
+                            to the row's own CornerRadius, with states that set the
+                            border's fill from the palette above. Nothing stock
+                            remains to paint the row blue, draw the accent bar down
+                            its left edge, or ignore the corner radius. The state
+                            names are the ones the ListViewItem control itself raises,
+                            taken from the platform's own expanded template, so the
+                            control's state engine drives this one unchanged.
+                        -->
                         <Style x:Key="DrawerRowStyle" TargetType="ListViewItem">
                             <Setter Property="MinHeight" Value="42" />
                             <Setter Property="Height" Value="42" />
                             <Setter Property="Padding" Value="12,0" />
                             <Setter Property="Margin" Value="8,1" />
-
-                            <!-- Control defaults this to Center, which would centre
-                                 every row's content instead of filling the row. -->
+                            <Setter Property="CornerRadius" Value="13" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="VerticalContentAlignment" Value="Center" />
                             <Setter Property="UseSystemFocusVisuals" Value="False" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListViewItem">
+                                        <Border x:Name="ContentBorder"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="{TemplateBinding CornerRadius}"
+                                                Padding="{TemplateBinding Padding}">
+                                            <VisualStateManager.VisualStateGroups>
+                                                <VisualStateGroup x:Name="CommonStates">
+                                                    <VisualState x:Name="Normal" />
+                                                    <VisualState x:Name="PointerOver">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="ContentBorder.Background" Value="{StaticResource RowHoverBrush}" />
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+                                                    <VisualState x:Name="Pressed">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="ContentBorder.Background" Value="{StaticResource RowPressedBrush}" />
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+                                                    <VisualState x:Name="Selected">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="ContentBorder.Background" Value="{StaticResource RowSelectedBrush}" />
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+                                                    <VisualState x:Name="PointerOverSelected">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="ContentBorder.Background" Value="{StaticResource RowSelectedHoverBrush}" />
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+                                                    <VisualState x:Name="PressedSelected">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="ContentBorder.Background" Value="{StaticResource RowSelectedPressedBrush}" />
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+                                                </VisualStateGroup>
+                                            </VisualStateManager.VisualStateGroups>
+
+                                            <ContentPresenter Content="{TemplateBinding Content}"
+                                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                              ContentTransitions="{TemplateBinding ContentTransitions}"
+                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
                         </Style>
                     </Grid.Resources>
 
