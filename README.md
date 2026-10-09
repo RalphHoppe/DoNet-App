@@ -734,6 +734,49 @@ names the cells it moves and has the seven rows a single column needs.
 `Storyboard.TargetName` against the names declared in the same file. 156 targets, all
 resolving. It would have caught this the day it was written.
 
+### Moving between tabs
+
+Switching rail destinations used to be a cut. The three grids sat in one cell with their
+`Visibility` bound to the view model, so a click swapped one for another between frames.
+Nothing was wrong with it; it just did not look like the rest of the app, where every
+other state change is animated.
+
+The sections now sit in their own layer above the content plate. The plate does not move
+or fade - it belongs to the shell, and a surface that blinks on every tab change reads as
+a failed redraw rather than as navigation. Only the layer above it animates: 0.12s out,
+then the swap, then 0.22s in. Opacity is linear and movement is eased, which is what the
+rail and the entrance animation already do.
+
+The motion is directional. Going down the rail sends the old section up and brings the
+new one in from below; going back up reverses it. Fourteen pixels, which is enough to be
+felt and not enough to be watched.
+
+Three things had to be true for it to be safe:
+
+**The bindings had to go.** A binding flips the instant the rail is clicked, so the old
+section would already be gone before there was anything to animate. `HomePage` owns
+section visibility now and performs the swap at the midpoint, while the layer is
+invisible.
+
+**The incoming grid is built before the animation starts, not at the midpoint.** Each one
+is a few hundred elements, and element construction is UI-thread work. Dropped in the
+middle of a transition it would be a visible hitch; done up front it happens while
+nothing is moving.
+
+**And it is built transparent rather than collapsed.** This is the part that is not
+obvious. A collapsed element is never measured, and an `ItemsRepeater` that has never
+been measured throws on any change to its collection - the same fault this app has now
+hit three times. Leaving the incoming grid collapsed for the 0.12s of the fade-out would
+have opened a crash window for anything that finished loading inside it. `Visibility`
+`Visible` at `Opacity` 0 is laid out like anything else while showing exactly as much as
+collapsed does.
+
+A transition in flight is never interrupted. A second click during one is recorded by the
+view model and chased when the current one finishes, which costs at most a third of a
+second. The alternative is restarting an animation from a value the UI thread cannot
+reliably read mid-flight, because these run on the compositor - and that is how a clean
+fade turns into a flash.
+
 ### A handler that was never there
 
 The `Options` property added to `FieldCell` for the account dialog's website picker

@@ -113,17 +113,17 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Grid.Column="0"
-                        Width="40"
-                        Height="40"
-                        CornerRadius="20"
+                        Width="{StaticResource SectionDiscSize}"
+                        Height="{StaticResource SectionDiscSize}"
+                        CornerRadius="{StaticResource SectionDiscCorner}"
                         Margin="0,0,14,0"
                         VerticalAlignment="Center"
                         Background="{StaticResource CardAvatarBrush}"
                         BorderBrush="{StaticResource SearchBorderBrush}"
                         BorderThickness="1">
                     <controls:LineIcon Kind="Globe"
-                                       Width="22"
-                                       Height="22"
+                                       Width="{StaticResource SectionDiscIconSize}"
+                                       Height="{StaticResource SectionDiscIconSize}"
                                        Foreground="{StaticResource BrandPrimaryBrush}" />
                 </Border>
 

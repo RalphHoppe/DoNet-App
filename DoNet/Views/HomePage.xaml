@@ -188,24 +188,37 @@
                            RadiusY="34"
                            Fill="{StaticResource SurfaceBrush}" />
 
-                <views:PersonsView
-                    x:Name="DirectoryView"
-                    Visibility="{x:Bind ViewModel.IsPersonsSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-
                 <!--
-                    Deferred: the home screen opens on Persons, so the Websites grid is
-                    built the first time the rail switches to it rather than behind the
-                    screen nobody asked for.
-                -->
-                <views:WebsitesView
-                    x:Name="SitesView"
-                    x:Load="False"
-                    Visibility="{x:Bind ViewModel.IsSitesSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    The sections live in their own layer above the plate, so switching
+                    tabs can move and fade them without taking the plate with them. The
+                    plate belongs to the shell rather than to any one section, and a
+                    surface that blinks on every tab change reads as a failed redraw
+                    instead of as navigation.
 
-                <views:AccountsView
-                    x:Name="AccountsGrid"
-                    x:Load="False"
-                    Visibility="{x:Bind ViewModel.IsAccountsSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    Visibility is assigned in code here rather than bound to the view
+                    model. A binding flips the moment the rail is clicked, which leaves
+                    nothing on screen to animate out - the old section would already be
+                    gone before the transition started. HomePage.BeginSectionTransition
+                    owns the swap and performs it at the midpoint, while the layer is
+                    invisible.
+                -->
+                <Grid x:Name="SectionHost">
+                    <Grid.RenderTransform>
+                        <TranslateTransform x:Name="SectionShift" />
+                    </Grid.RenderTransform>
+
+                    <views:PersonsView x:Name="DirectoryView" />
+
+                    <!--
+                        Deferred: the home screen opens on Persons, so the Websites grid
+                        is built the first time the rail switches to it rather than
+                        behind the screen nobody asked for. The transition builds it
+                        before the animation starts, never during it.
+                    -->
+                    <views:WebsitesView x:Name="SitesView" x:Load="False" />
+
+                    <views:AccountsView x:Name="AccountsGrid" x:Load="False" />
+                </Grid>
             </Grid>
             </Grid>
 

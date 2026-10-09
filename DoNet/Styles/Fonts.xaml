@@ -48,9 +48,23 @@
     <x:Double x:Key="LinkFontSize">14</x:Double>
     <x:Double x:Key="ButtonFontSize">17</x:Double>
 
-    <!-- Persons directory -->
+    <!-- Directory screens: Persons, Sites, Accounts -->
     <x:Double x:Key="SectionTitleFontSize">34</x:Double>
     <x:Double x:Key="SectionSubtitleFontSize">14</x:Double>
+
+    <!--
+        The disc beside a section title, and the icon inside it. Shared keys rather
+        than three copies of the same numbers, because the three directory headers
+        have to stay identical and have already drifted apart once.
+
+        The icon is 28 in a 46 disc - a little over six-tenths of it. The disc grew
+        with the icon so the glyph keeps air around it instead of touching the rim,
+        and at 46 it still sits inside the 56px line box the title and subtitle make
+        together, so the header's height does not change.
+    -->
+    <x:Double x:Key="SectionDiscSize">46</x:Double>
+    <x:Double x:Key="SectionDiscIconSize">28</x:Double>
+    <CornerRadius x:Key="SectionDiscCorner">23</CornerRadius>
     <x:Double x:Key="CardTitleFontSize">16</x:Double>
     <x:Double x:Key="CardMetaFontSize">13</x:Double>
     <x:Double x:Key="FieldLabelFontSize">11</x:Double>
