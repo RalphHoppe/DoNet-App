@@ -299,12 +299,13 @@
             <Grid>
 
                 <!--
-                    Deliberately always visible. An ItemsRepeater inside a collapsed
-                    ScrollViewer has no measured viewport, and a collection change
-                    reaching it in that state fails with COMException: Unspecified
-                    error. The host keeps this view out of the tree until it is
-                    drilled in, so the states below paint over an empty surface on
-                    the way in and the list is long lived once it is.
+                    Deliberately always visible within its layer: an ItemsRepeater
+                    inside a collapsed ScrollViewer has no measured viewport, and a
+                    collection change reaching it in that state fails with
+                    COMException. The layer itself is collapsed between drills, so
+                    the repeater's source is attached and measured by the host the
+                    moment the layer becomes visible - see AttachSource - and the
+                    list is long lived for exactly as long as it is on screen.
                 -->
                 <ScrollViewer x:Name="CardScroller"
                               VerticalScrollBarVisibility="Auto"
@@ -312,7 +313,6 @@
                               ViewChanged="OnCardScrollChanged"
                               Padding="0,0,4,0">
                     <ItemsRepeater x:Name="CardRepeater"
-                                   ItemsSource="{x:Bind ViewModel.Records}"
                                    ItemTemplate="{StaticResource RecordCardTemplate}">
                         <ItemsRepeater.Layout>
                             <UniformGridLayout MinItemWidth="430"

@@ -371,7 +371,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/preview_animation.py` | Renders `docs/splash-animation.gif` |
 | `tools/preview_screens.py` | Renders a pixel reconstruction of the four screens for comparing against the design |
 | `tools/gen_nav_icons.py` | Parses the design's icon SVG, checks it fits, emits the XAML path data |
-| `tools/validate_xaml.py` | Checks resource keys, `x:Name`s, event handlers, Grid row/column indices, and content children split by a property element (the duplicate-`Children` XAML compiler error) without a Windows build |
+| `tools/validate_xaml.py` | Checks resource keys, `x:Name`s, event handlers, Grid row/column indices, content children split by a property element (the duplicate-`Children` error), and members that exist on Controls but not on panels (`IsEnabled` on a `Grid`) without a Windows build |
 | `tools/validate_handlers.py` | Resolves every XAML event attribute and `+=`/`-=` subscription against the methods that exist |
 | `tools/validate_control_usage.py` | Resolves every custom-control property set in XAML against the properties the controls declare |
 | `tools/validate_csharp_docs.py` | Checks every documentation comment block is well formed |
@@ -1331,7 +1331,7 @@ confirmation, and deleting a record takes its rows. Search reads the title and a
 search text that excludes passwords - a vault's search box should not be able to
 find a password by typing it.
 
-### One XAML rule this cost a build to learn
+### Two XAML rules that each cost a build
 
 An element's content children must arrive as one run. A property element -
 `Grid.RowDefinitions`, `Border.Resources`, `VisualStateManager.VisualStateGroups` -
@@ -1346,6 +1346,22 @@ and `ControlTemplate`s are exempt (the template loader places state groups freel
 every template in the app relies on it). `tools/validate_xaml.py` check 6 now
 rejects the split anywhere outside a template, negative-tested against the shape
 that shipped.
+
+The second: **`IsEnabled` is a `Control` member.** `Grid`, `StackPanel`, `Border`,
+`Canvas`, `ItemsRepeater`, `ContentPresenter` - panels and decorators are
+`FrameworkElement`s, not `Control`s, and setting `IsEnabled` on one is `WMC0011
+Unknown member`, in the XAML or from code-behind alike. (The error that finally
+taught this was reported alongside the duplicate-`Children` one and dismissed as
+its cascade; it was not, and it survived the fix. Two errors from one file can be
+two errors.) The gate the drill layers actually want is `Visibility`: a collapsed
+layer cannot be clicked, cannot be tabbed into, and cannot hold focus - which no
+opacity trick can promise, since an invisible layer that still hit-tests sits
+over the screen swallowing clicks. The records layer therefore collapses between
+drills, and its card repeater's source is attached only while it is visible, with
+the host forcing a layout pass before the first record can arrive - a collection
+change against a collapsed, unmeasured `ItemsRepeater` being the COMException
+this app has met before. The validator now rejects `IsEnabled` on every panel and
+decorator it knows about, negative-tested both ways.
 
 ### Still worth doing
 

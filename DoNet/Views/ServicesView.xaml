@@ -65,17 +65,15 @@
         </DataTemplate>
 
         <!--
-            The drill between the type list and one type's records, on the same
-            timings as the app's other layer changes: the outgoing layer dips out
-            fast, the incoming one rises in behind it.
+            The drill between the type list and one type's records, on the settle
+            timing the app's other layer changes use. Only the arriving layer
+            animates: the leaving one is collapsed outright at the same moment,
+            because a layer that is merely invisible can still be tabbed into,
+            and one that is invisible and hit-testable sits over the screen
+            swallowing clicks. Collapsed is the one state the platform guarantees
+            is inert.
         -->
         <Storyboard x:Key="DrillInStoryboard">
-            <DoubleAnimation Storyboard.TargetName="Header"
-                             Storyboard.TargetProperty="Opacity"
-                             To="0" Duration="0:0:0.12" />
-            <DoubleAnimation Storyboard.TargetName="CardSurface"
-                             Storyboard.TargetProperty="Opacity"
-                             To="0" Duration="0:0:0.12" />
             <DoubleAnimation Storyboard.TargetName="RecordsLayer"
                              Storyboard.TargetProperty="Opacity"
                              From="0" To="1" Duration="0:0:0.22">
@@ -93,9 +91,6 @@
         </Storyboard>
 
         <Storyboard x:Key="DrillOutStoryboard">
-            <DoubleAnimation Storyboard.TargetName="RecordsLayer"
-                             Storyboard.TargetProperty="Opacity"
-                             To="0" Duration="0:0:0.12" />
             <DoubleAnimation Storyboard.TargetName="Header"
                              Storyboard.TargetProperty="Opacity"
                              From="0" To="1" Duration="0:0:0.22">
@@ -128,10 +123,14 @@
         </Grid.RowDefinitions>
 
         <!--
-            The type list. Shifts as one unit when the drill changes layers, which
-            is why the header and the card surface sit under one transform.
+            The type list. Shifts as one unit when the drill changes layers, and
+            collapses as one unit while a type's records are on screen - which is
+            why the header and the card surface sit under one transform and one
+            name.
         -->
-        <Grid Grid.Row="0" Grid.RowSpan="2">
+        <Grid x:Name="TypeWrapper"
+              Grid.Row="0"
+              Grid.RowSpan="2">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="TypeShift" Y="0" />
             </Grid.RenderTransform>
@@ -431,18 +430,18 @@
         </Grid>
 
         <!--
-            One type's records, over the type list. Always in the tree and always
-            measured - an ItemsRepeater whose collection changes while it is
-            collapsed and unmeasured fails with COMException - and gated instead:
-            invisible and disabled until its type is drilled in. Disabled rather
-            than hit-test-invisible so the keyboard cannot tab into a layer that
-            is not there.
+            One type's records, over the type list. Collapsed until its type is
+            drilled in, and empty-handed while it is: the card repeater's source
+            is attached only for as long as the layer is visible, because a
+            collection change reaching a collapsed, unmeasured ItemsRepeater is
+            the COMException this app has met before. The host attaches, measures
+            and only then lets the records load.
         -->
         <Grid x:Name="RecordsLayer"
               Grid.Row="0"
               Grid.RowSpan="2"
               Opacity="0"
-              IsEnabled="False">
+              Visibility="Collapsed">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="RecordsShift" Y="14" />
             </Grid.RenderTransform>

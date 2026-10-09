@@ -43,6 +43,21 @@ FORBIDDEN_MEMBERS = {
             "PasswordBox has PlaceholderText but no PlaceholderForeground. "
             "Set the TextControlPlaceholderForeground brush in the parent's Resources.",
     },
+
+    # IsEnabled is a Control member. Panels and decorators are FrameworkElements
+    # and do not have it - WMC0011 Unknown member, one build cycle per mistake.
+    # Gate a layer with Visibility (fully inert) or IsHitTestVisible (pointer only).
+    **{
+        tag: {
+            "IsEnabled":
+                f"{tag} is not a Control and has no IsEnabled. "
+                "Gate a layer with Visibility, or IsHitTestVisible for the pointer alone."
+        }
+        for tag in (
+            "Grid", "StackPanel", "Border", "Canvas", "ItemsRepeater",
+            "ContentPresenter", "Viewbox", "RelativePanel", "WrapPanel",
+        )
+    },
 }
 
 

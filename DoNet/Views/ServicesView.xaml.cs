@@ -37,9 +37,20 @@ public sealed partial class ServicesView : UserControl
     /// Plays the drill when the view model enters or leaves a type.
     /// </summary>
     /// <remarks>
-    /// The layers are gated rather than collapsed - see the XAML - so this is
-    /// opacity, a slide, and flipping which layer answers the pointer and the
-    /// keyboard.
+    /// <para>
+    /// The hidden layer is collapsed, not faded under or disabled in place. Grid
+    /// and Border are not Controls and have no IsEnabled to disable anything
+    /// with, and an invisible layer that still hit-tests would sit over the
+    /// screen swallowing clicks; Collapsed is the one state the platform
+    /// guarantees is inert - no pointer, no tab stops, no focus.
+    /// </para>
+    /// <para>
+    /// The records layer's repeater source is attached only while it is visible,
+    /// and <see cref="UIElement.UpdateLayout"/> runs before the drill-in load can
+    /// land a single record: a collection change against a collapsed, unmeasured
+    /// ItemsRepeater is the COMException this app has met before, and the layer
+    /// starts collapsed, so the measure has to be forced rather than hoped for.
+    /// </para>
     /// </remarks>
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
@@ -48,13 +59,22 @@ public sealed partial class ServicesView : UserControl
             return;
         }
 
-        bool drilled = ViewModel.IsDrilled;
+        if (ViewModel.IsDrilled)
+        {
+            TypeWrapper.Visibility = Visibility.Collapsed;
+            RecordsLayer.Visibility = Visibility.Visible;
+            RecordsScreen.AttachSource();
+            RecordsLayer.UpdateLayout();
+        }
+        else
+        {
+            RecordsScreen.DetachSource();
+            RecordsLayer.Visibility = Visibility.Collapsed;
+            TypeWrapper.Visibility = Visibility.Visible;
+        }
 
-        Header.IsEnabled = !drilled;
-        CardSurface.IsEnabled = !drilled;
-        RecordsLayer.IsEnabled = drilled;
-
-        if (Resources[drilled ? "DrillInStoryboard" : "DrillOutStoryboard"] is Storyboard board)
+        if (Resources[ViewModel.IsDrilled ? "DrillInStoryboard" : "DrillOutStoryboard"]
+                is Storyboard board)
         {
             board.Begin();
         }

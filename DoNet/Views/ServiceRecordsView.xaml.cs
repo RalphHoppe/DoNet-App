@@ -13,9 +13,11 @@ namespace DoNet.Views;
 /// One service type's records, as a directory screen in its own right.
 /// </summary>
 /// <remarks>
-/// The host keeps this view out of the tree until its type is drilled in, and
-/// drops it again on the way back out - so Loaded is a reliable "we just arrived"
-/// and there is no invisible second list to keep alive.
+/// The host layer is collapsed between drills, and this view hands its card
+/// list's source over only while the layer is visible - <see cref="AttachSource"/>
+/// and <see cref="DetachSource"/> are the whole contract, and the reason is the
+/// one in their remarks: a collection change reaching a collapsed, unmeasured
+/// ItemsRepeater is a crash, and a detached one cannot hear it.
 /// </remarks>
 public sealed partial class ServiceRecordsView : UserControl
 {
@@ -37,6 +39,28 @@ public sealed partial class ServiceRecordsView : UserControl
     public ServicesViewModel ViewModel { get; }
 
     /// <summary>
+    /// Hands the card list its source, as the layer becomes visible.
+    /// </summary>
+    /// <remarks>
+    /// Called by the host after making the layer visible and before the drill-in
+    /// load lands: the source is attached first, the layer is measured next (the
+    /// host forces a layout pass), and only then can a record arrive.
+    /// </remarks>
+    public void AttachSource() => CardRepeater.ItemsSource = ViewModel.Records;
+
+    /// <summary>
+    /// Drops the card list's source, as the layer is hidden.
+    /// </summary>
+    /// <remarks>
+    /// A detached repeater hears no collection change. The layer is collapsed
+    /// while hidden - so its repeater is also unmeasured, and a collection change
+    /// against an unmeasured ItemsRepeater is the COMException this app has met
+    /// before. The source stays detached for exactly as long as the layer is
+    /// invisible.
+    /// </remarks>
+    public void DetachSource() => CardRepeater.ItemsSource = null;
+
+    /// <summary>
     /// Releases this control's hold on the view model. Called by the host when
     /// the home screen is leaving for good.
     /// </summary>
@@ -44,7 +68,7 @@ public sealed partial class ServiceRecordsView : UserControl
     {
         Bindings.StopTracking();
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
-        CardRepeater.ItemsSource = null;
+        DetachSource();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
