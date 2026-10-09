@@ -71,6 +71,38 @@ public sealed class Website
     public string DisplayName =>
         string.IsNullOrWhiteSpace(Name) ? "Website record" : Name.Trim();
 
+    /// <summary>
+    /// How this site reads wherever it is referred to from somewhere else - the
+    /// account picker, and the website cell on an account card.
+    /// </summary>
+    /// <remarks>
+    /// Name and domain together, because either alone can repeat: two records can
+    /// share a name, and a picker that offers the same entry twice is unusable.
+    /// Falls back through whichever parts exist so a half-filled record still has a
+    /// label rather than an empty row.
+    /// </remarks>
+    [NotMapped]
+    public string PickerLabel
+    {
+        get
+        {
+            string name = Name.Trim();
+            string domain = Domain.Trim();
+
+            if (name.Length > 0 && domain.Length > 0)
+            {
+                return $"{name} \u00B7 {domain}";
+            }
+
+            if (name.Length > 0)
+            {
+                return name;
+            }
+
+            return domain.Length > 0 ? domain : $"Website #{Id}";
+        }
+    }
+
     /// <summary>The methods as one readable line, for the card's preview cell.</summary>
     [NotMapped]
     public string PaymentMethodsDisplay => string.Join(", ", PaymentMethods);

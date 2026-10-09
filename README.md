@@ -686,6 +686,54 @@ the buttons also appear when either takes keyboard focus - with the decision que
 the dispatcher, because tabbing between them raises `LostFocus` before the other's
 `GotFocus` and deciding immediately would hide the buttons out from under the caret.
 
+### Accounts, and the first real relationship
+
+Persons and Websites stand alone. An account cannot: it is a login *on a site*, so
+`Account.WebsiteId` is a required foreign key rather than a nullable one, and the form
+offers a list of saved websites instead of a text box. A typed name that nearly matches
+is not a near miss - it is a record the database will refuse.
+
+Three things fell out of that which the standalone tables never needed.
+
+**The page read uses `Include`.** The card names the site, and without the navigation
+loaded every card would go back to the database for one string: the classic page of
+twenty-four extra queries.
+
+**The picker works in labels, the store works in ids.** A combo box shows text, so the
+dialog holds the label and the id side by side and resolves one to the other on save.
+The label is name *and* domain together, because either alone can repeat and a picker
+offering the same entry twice is unusable. The card shows that same label, so the value
+you chose is the value you see afterwards.
+
+**Deleting a website cascades to its accounts.** The alternative - refusing the delete -
+turns a confirmed destructive action into an error the user cannot act on without
+hunting down records the Websites screen never mentions.
+
+Two traps worth naming. `AddAsync` nulls the cloned `Website` before inserting, or EF
+treats the attached object as a second unsaved site and writes a duplicate alongside the
+account. And `FieldCell` only ever assigned a combo box's `ItemsSource` once, which is
+right for the static gender and country catalogs and wrong for a list that is data: a
+website added after the cell first rendered would never appear. It now reassigns when
+the list itself changes.
+
+The password is not previewed on the card. A card sits in a grid that is visible across
+a room, and a secret on screen whenever the directory is has stopped being a secret.
+
+### A visual state that pointed at nothing
+
+`WebsiteDialog.xaml` was cloned from `PersonDialog.xaml` and kept five `Setter Target`s
+naming elements that only ever existed in the original - `ColMiddle`, `MiddleColumn`,
+`RightColumn`, `CreatedCell`, `NoteCell`. Nine setters in total, all unresolvable.
+
+Nothing complained, because a `VisualState` is inert until it activates. This one is
+driven by an `AdaptiveTrigger`, so it was waiting for somebody to drag the window under
+1000px with the website dialog open, and would then have thrown. The narrow layout now
+names the cells it moves and has the seven rows a single column needs.
+
+`tools/validate_visual_states.py` checks every `Setter Target` and
+`Storyboard.TargetName` against the names declared in the same file. 156 targets, all
+resolving. It would have caught this the day it was written.
+
 ### Arriving with the data already there
 
 The home screen used to appear empty for a beat after every unlock, then fill in. The

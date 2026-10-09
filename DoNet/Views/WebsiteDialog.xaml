@@ -204,7 +204,14 @@
                             <ColumnDefinition x:Name="ColLeft" Width="*" />
                             <ColumnDefinition x:Name="ColRight" Width="*" />
                         </Grid.ColumnDefinitions>
+                        <!--
+                            Seven rows, though the wide layout only fills five. The
+                            narrow state unstacks the two paired rows into their own,
+                            and the spare Auto rows cost nothing while empty.
+                        -->
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -212,7 +219,8 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <controls:FieldCell Grid.Row="0" Grid.Column="0"
+                        <controls:FieldCell x:Name="NameCell"
+                                            Grid.Row="0" Grid.Column="0"
                                             Label="NAME"
                                             IconKind="Tag"
                                             Placeholder="Enter website name"
@@ -221,7 +229,8 @@
                                             Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                             ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                        <controls:FieldCell Grid.Row="0" Grid.Column="1"
+                        <controls:FieldCell x:Name="DomainCell"
+                                            Grid.Row="0" Grid.Column="1"
                                             Label="DOMAIN"
                                             IconKind="Globe"
                                             Placeholder="Enter website domain"
@@ -231,7 +240,8 @@
                                             Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                             ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                        <controls:FieldCell Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                        <controls:FieldCell x:Name="DescriptionCell"
+                                            Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                                             Label="DESCRIPTION"
                                             IconKind="FileText"
                                             Placeholder="Add a description of this website"
@@ -246,7 +256,8 @@
                             multi-select with its own chips and an add box, which is a
                             different thing from a labelled value.
                         -->
-                        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                        <Border x:Name="MethodsPanel"
+                                Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                                 CornerRadius="16"
                                 Padding="16"
                                 Background="{StaticResource CardAvatarBrush}"
@@ -346,7 +357,8 @@
                             </StackPanel>
                         </Border>
 
-                        <controls:FieldCell Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                        <controls:FieldCell x:Name="NoteCell"
+                                            Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                                             Label="NOTE"
                                             IconKind="Info"
                                             Placeholder="Add a note about this website"
@@ -356,7 +368,8 @@
                                             Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                             ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                        <controls:FieldCell Grid.Row="4" Grid.Column="0"
+                        <controls:FieldCell x:Name="IdCell"
+                                            Grid.Row="4" Grid.Column="0"
                                             Label="# &#183; RECORD ID"
                                             IconKind="Hash"
                                             Placeholder="Assigned on save"
@@ -364,7 +377,8 @@
                                             Value="{x:Bind ViewModel.IdDisplay, Mode=OneWay}"
                                             ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                        <controls:FieldCell Grid.Row="4" Grid.Column="1"
+                        <controls:FieldCell x:Name="CreatedCell"
+                                            Grid.Row="4" Grid.Column="1"
                                             Label="CREATED AT"
                                             IconKind="Clock"
                                             Placeholder="Assigned on save"
@@ -466,16 +480,25 @@
                         <AdaptiveTrigger MinWindowWidth="0" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="ColMiddle.Width" Value="0" />
                         <Setter Target="ColRight.Width" Value="0" />
-                        <Setter Target="MiddleColumn.(Grid.Column)" Value="0" />
-                        <Setter Target="MiddleColumn.(Grid.Row)" Value="1" />
-                        <Setter Target="RightColumn.(Grid.Column)" Value="0" />
-                        <Setter Target="RightColumn.(Grid.Row)" Value="2" />
-                        <Setter Target="CreatedCell.(Grid.Row)" Value="3" />
-                        <Setter Target="CreatedCell.(Grid.ColumnSpan)" Value="1" />
-                        <Setter Target="NoteCell.(Grid.Column)" Value="0" />
+
+                        <Setter Target="NameCell.(Grid.ColumnSpan)" Value="2" />
+
+                        <Setter Target="DomainCell.(Grid.Column)" Value="0" />
+                        <Setter Target="DomainCell.(Grid.Row)" Value="1" />
+                        <Setter Target="DomainCell.(Grid.ColumnSpan)" Value="2" />
+
+                        <Setter Target="DescriptionCell.(Grid.Row)" Value="2" />
+                        <Setter Target="MethodsPanel.(Grid.Row)" Value="3" />
                         <Setter Target="NoteCell.(Grid.Row)" Value="4" />
+
+                        <Setter Target="IdCell.(Grid.Row)" Value="5" />
+                        <Setter Target="IdCell.(Grid.ColumnSpan)" Value="2" />
+
+                        <Setter Target="CreatedCell.(Grid.Column)" Value="0" />
+                        <Setter Target="CreatedCell.(Grid.Row)" Value="6" />
+                        <Setter Target="CreatedCell.(Grid.ColumnSpan)" Value="2" />
+
                         <Setter Target="Card.Margin" Value="12" />
                     </VisualState.Setters>
                 </VisualState>

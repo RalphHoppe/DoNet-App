@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using DoNet.Models;
@@ -42,6 +43,16 @@ public enum FieldInputKind
 
     /// <summary>A list that can still be typed into.</summary>
     Country,
+
+    /// <summary>
+    /// A fixed list the host supplies through <see cref="FieldCell.Options"/>.
+    /// </summary>
+    /// <remarks>
+    /// Gender and Country read static catalogs. This one is for a list that is data -
+    /// the saved websites an account can belong to - which is not known until the
+    /// store has been read and changes while the app is running.
+    /// </remarks>
+    Choice,
 }
 
 /// <summary>
@@ -107,6 +118,13 @@ public sealed partial class FieldCell : UserControl
     public static readonly DependencyProperty ShowGenerateProperty = DependencyProperty.Register(
         nameof(ShowGenerate), typeof(bool), typeof(FieldCell),
         new PropertyMetadata(false, OnAnyPropertyChanged));
+
+    /// <summary>The list offered when <see cref="InputKind"/> is Choice.</summary>
+    public static readonly DependencyProperty OptionsProperty = DependencyProperty.Register(
+        nameof(Options),
+        typeof(IReadOnlyList<string>),
+        typeof(FieldCell),
+        new PropertyMetadata(null, OnAnyChanged));
 
     public static readonly DependencyProperty TabOrderProperty = DependencyProperty.Register(
         nameof(TabOrder), typeof(int), typeof(FieldCell),
@@ -183,6 +201,16 @@ public sealed partial class FieldCell : UserControl
     {
         get => (int)GetValue(TabOrderProperty);
         set => SetValue(TabOrderProperty, value);
+    }
+
+    /// <summary>
+    /// The list offered when <see cref="InputKind"/> is
+    /// <see cref="FieldInputKind.Choice"/>. Ignored for every other kind.
+    /// </summary>
+    public IReadOnlyList<string>? Options
+    {
+        get => (IReadOnlyList<string>?)GetValue(OptionsProperty);
+        set => SetValue(OptionsProperty, value);
     }
 
     /// <summary>
@@ -289,6 +317,10 @@ public sealed partial class FieldCell : UserControl
                 case FieldInputKind.Country:
                     ShowChoice(value, Catalogs.Countries, editableText: true);
                     break;
+
+                case FieldInputKind.Choice:
+                    ShowChoice(value, Options ?? Array.Empty<string>(), editableText: false);
+                    break;
                 case FieldInputKind.Date:
                     ShowDate(value);
                     break;
@@ -367,13 +399,17 @@ public sealed partial class FieldCell : UserControl
     }
 
     private void ShowChoice(
-        string value, System.Collections.Generic.IReadOnlyList<string> options, bool editableText)
+        string value, IReadOnlyList<string> options, bool editableText)
     {
         ChoiceInput.Visibility = Visibility.Visible;
         ChoiceInput.PlaceholderText = Placeholder;
         ChoiceInput.IsEditable = editableText;
 
-        if (ChoiceInput.ItemsSource is null)
+        // Reassign whenever the list itself changed. The original guard set the
+        // source once, which is right for the static catalogs and wrong for a list
+        // that is data: a website added after this cell was first shown would never
+        // appear in the picker.
+        if (!ReferenceEquals(ChoiceInput.ItemsSource, options))
         {
             ChoiceInput.ItemsSource = options;
         }

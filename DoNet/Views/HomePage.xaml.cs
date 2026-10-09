@@ -19,6 +19,7 @@ public sealed partial class HomePage : Page
 {
     private readonly PersonsViewModel _persons;
     private readonly WebsitesViewModel _websites;
+    private readonly AccountsViewModel _accounts;
     private bool _warmUpScheduled;
 
     public HomePage()
@@ -30,6 +31,7 @@ public sealed partial class HomePage : Page
 
         _persons = App.Current.Services.GetRequiredService<PersonsViewModel>();
         _websites = App.Current.Services.GetRequiredService<WebsitesViewModel>();
+        _accounts = App.Current.Services.GetRequiredService<AccountsViewModel>();
 
         InitializeComponent();
 
@@ -37,6 +39,7 @@ public sealed partial class HomePage : Page
         // until they exist. This page watches on their behalf and realises them.
         _persons.PropertyChanged += OnPersonsPropertyChanged;
         _websites.PropertyChanged += OnWebsitesPropertyChanged;
+        _accounts.PropertyChanged += OnAccountsPropertyChanged;
         ViewModel.PropertyChanged += OnSectionChanged;
 
         Loaded += OnLoaded;
@@ -82,6 +85,7 @@ public sealed partial class HomePage : Page
             {
                 Realize("PersonModal");
                 Realize("WebsiteModal");
+                Realize("AccountModal");
                 Realize("ConfirmModal");
 
                 // The Persons page was preloaded on the welcome screen; this is the
@@ -89,14 +93,37 @@ public sealed partial class HomePage : Page
                 // to Sites finds its records already there. Cheap when it is not
                 // needed - the store is open by now, so it is one query.
                 _websites.PreloadAsync().Observe("Preloading the websites directory");
+                _accounts.PreloadAsync().Observe("Preloading the accounts directory");
             });
 
-    /// <summary>Builds the Websites grid the first time the rail switches to it.</summary>
+    /// <summary>Builds a deferred grid the first time the rail switches to it.</summary>
     private void OnSectionChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (args.PropertyName == nameof(HomeViewModel.SelectedSection) && ViewModel.IsSitesSelected)
+        if (args.PropertyName != nameof(HomeViewModel.SelectedSection))
+        {
+            return;
+        }
+
+        if (ViewModel.IsSitesSelected)
         {
             Realize("SitesView");
+        }
+        else if (ViewModel.IsAccountsSelected)
+        {
+            Realize("AccountsGrid");
+        }
+    }
+
+    private void OnAccountsPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(AccountsViewModel.IsDialogOpen) && _accounts.IsDialogOpen)
+        {
+            Realize("AccountModal");
+        }
+        else if (args.PropertyName == nameof(AccountsViewModel.IsConfirmingDelete)
+                 && _accounts.IsConfirmingDelete)
+        {
+            Realize("ConfirmModal");
         }
     }
 
@@ -169,6 +196,7 @@ public sealed partial class HomePage : Page
 
         _persons.PropertyChanged -= OnPersonsPropertyChanged;
         _websites.PropertyChanged -= OnWebsitesPropertyChanged;
+        _accounts.PropertyChanged -= OnAccountsPropertyChanged;
         ViewModel.PropertyChanged -= OnSectionChanged;
 
         DirectoryView.ReleaseBindings();
@@ -176,6 +204,10 @@ public sealed partial class HomePage : Page
         // Null when the rail never reached Websites and the idle warm-up had not run.
         SitesView?.ReleaseBindings();
         WebsiteModal?.ReleaseBindings();
+
+        // Likewise for Accounts.
+        AccountsGrid?.ReleaseBindings();
+        AccountModal?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();

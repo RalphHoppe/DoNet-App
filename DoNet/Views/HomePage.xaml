@@ -141,6 +141,19 @@
                             IsSelected="{x:Bind ViewModel.IsSitesSelected, Mode=OneWay}"
                             Command="{x:Bind ViewModel.SelectSitesCommand}"
                             IconData="M23 11.5C23 18 14 25 14 25C14 25 5 18 5 11.5C5 10.3181 5.23279 9.14778 5.68508 8.05585C6.13738 6.96392 6.80031 5.97177 7.63604 5.13604C8.47177 4.30031 9.46392 3.63738 10.5558 3.18508C11.6478 2.73279 12.8181 2.5 14 2.5C15.1819 2.5 16.3522 2.73279 17.4442 3.18508C18.5361 3.63738 19.5282 4.30031 20.364 5.13604C21.1997 5.97177 21.8626 6.96392 22.3149 8.05585C22.7672 9.14778 23 10.3181 23 11.5Z M14 14.75C15.7949 14.75 17.25 13.2949 17.25 11.5C17.25 9.70507 15.7949 8.25 14 8.25C12.2051 8.25 10.75 9.70507 10.75 11.5C10.75 13.2949 12.2051 14.75 14 14.75Z" />
+
+                        <!--
+                            Filled, unlike the three above: the supplied artwork is an
+                            outer contour and an inner one filled even-odd, which the
+                            F0 prefix selects. Stroking it would trace both edges.
+                        -->
+                        <controls:NavRailButton
+                            Label="Accounts"
+                            AccentBrush="{StaticResource NavSelectedBrush}"
+                            IsSelected="{x:Bind ViewModel.IsAccountsSelected, Mode=OneWay}"
+                            Command="{x:Bind ViewModel.SelectAccountsCommand}"
+                            IconFilled="True"
+                            IconData="F0 M8.577 8.577 C8.577 5.635 11.005 3.25 14.0 3.25 C16.995 3.25 19.423 5.635 19.423 8.577 C19.423 11.519 16.995 13.903 14.0 13.903 C11.005 13.903 8.577 11.519 8.577 8.577 Z M14.0 5.13 C12.062 5.13 10.491 6.673 10.491 8.577 C10.491 10.48 12.062 12.024 14.0 12.024 C15.938 12.024 17.51 10.48 17.51 8.577 C17.51 6.673 15.938 5.13 14.0 5.13 Z M8.896 17.664 C7.31 17.664 6.025 18.927 6.025 20.483 V21.973 C6.025 21.996 6.041 22.015 6.063 22.018 C11.32 22.862 16.68 22.862 21.937 22.018 C21.959 22.015 21.975 21.996 21.975 21.973 V20.483 C21.975 18.927 20.69 17.664 19.104 17.664 H18.67 C18.635 17.664 18.602 17.669 18.571 17.68 L17.466 18.033 C15.214 18.756 12.786 18.756 10.534 18.033 L9.429 17.68 C9.398 17.669 9.365 17.664 9.33 17.664 H8.896 Z M4.11 20.483 C4.11 17.888 6.252 15.783 8.896 15.783 H9.33 C9.566 15.783 9.8 15.82 10.024 15.892 L11.129 16.247 C12.994 16.844 15.006 16.844 16.871 16.247 L17.976 15.892 C18.2 15.82 18.434 15.783 18.67 15.783 H19.104 C21.748 15.783 23.89 17.888 23.89 20.483 V21.973 C23.89 22.917 23.193 23.722 22.244 23.874 C16.784 24.75 11.216 24.75 5.756 23.874 C4.807 23.722 4.11 22.917 4.11 21.973 V20.483 Z" />
                     </StackPanel>
 
                     <!--
@@ -188,6 +201,11 @@
                     x:Name="SitesView"
                     x:Load="False"
                     Visibility="{x:Bind ViewModel.IsSitesSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                <views:AccountsView
+                    x:Name="AccountsGrid"
+                    x:Load="False"
+                    Visibility="{x:Bind ViewModel.IsAccountsSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
             </Grid>
             </Grid>
 
@@ -209,6 +227,7 @@
             -->
             <views:PersonDialog x:Name="PersonModal" x:Load="False" />
             <views:WebsiteDialog x:Name="WebsiteModal" x:Load="False" />
+            <views:AccountDialog x:Name="AccountModal" x:Load="False" />
             <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
         </Grid>
     </Page>

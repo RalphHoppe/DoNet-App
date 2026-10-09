@@ -5,12 +5,13 @@ using DoNet.Views;
 
 namespace DoNet.ViewModels;
 
-/// <summary>The three destinations in the home screen's navigation rail.</summary>
+/// <summary>The four destinations in the home screen's navigation rail.</summary>
 public enum HomeSection
 {
     Services,
     Persons,
     Sites,
+    Accounts,
 }
 
 /// <summary>
@@ -28,9 +29,11 @@ public partial class HomeViewModel : ObservableObject
     private readonly IVaultService _vault;
     private readonly PersonsViewModel _persons;
     private readonly WebsitesViewModel _websites;
+    private readonly AccountsViewModel _accounts;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsServicesSelected))]
+    [NotifyPropertyChangedFor(nameof(IsAccountsSelected))]
     [NotifyPropertyChangedFor(nameof(IsPersonsSelected))]
     [NotifyPropertyChangedFor(nameof(IsSitesSelected))]
     // Persons, not Services: it is the only section with a design, and the supplied
@@ -39,12 +42,17 @@ public partial class HomeViewModel : ObservableObject
     private HomeSection _selectedSection = HomeSection.Persons;
 
     public HomeViewModel(
-        INavigationService navigation, IVaultService vault, PersonsViewModel persons, WebsitesViewModel websites)
+        INavigationService navigation,
+        IVaultService vault,
+        PersonsViewModel persons,
+        WebsitesViewModel websites,
+        AccountsViewModel accounts)
     {
         _navigation = navigation;
         _vault = vault;
         _persons = persons;
         _websites = websites;
+        _accounts = accounts;
     }
 
     public bool IsServicesSelected => SelectedSection == HomeSection.Services;
@@ -52,6 +60,8 @@ public partial class HomeViewModel : ObservableObject
     public bool IsPersonsSelected => SelectedSection == HomeSection.Persons;
 
     public bool IsSitesSelected => SelectedSection == HomeSection.Sites;
+
+    public bool IsAccountsSelected => SelectedSection == HomeSection.Accounts;
 
     [RelayCommand]
     private void SelectServices() => SelectedSection = HomeSection.Services;
@@ -61,6 +71,9 @@ public partial class HomeViewModel : ObservableObject
 
     [RelayCommand]
     private void SelectSites() => SelectedSection = HomeSection.Sites;
+
+    [RelayCommand]
+    private void SelectAccounts() => SelectedSection = HomeSection.Accounts;
 
     /// <summary>
     /// Returns to the lock screen. The back stack is cleared so Back cannot walk back
@@ -75,6 +88,7 @@ public partial class HomeViewModel : ObservableObject
         // every record on screen behind the lock screen, in memory and one Back away.
         _persons.Reset();
         _websites.Reset();
+        _accounts.Reset();
         _vault.Lock();
 
         _navigation.NavigateTo(typeof(LockPage), clearBackStack: true);

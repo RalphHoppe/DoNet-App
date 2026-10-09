@@ -113,6 +113,7 @@ public partial class App : Application
         // is the whole of that change - nothing above this line needs to move.
         services.AddSingleton<IPersonDirectory, PersonDirectoryService>();
         services.AddSingleton<IWebsiteDirectory, WebsiteDirectoryService>();
+        services.AddSingleton<IAccountDirectory, AccountDirectoryService>();
 
         services.AddTransient<CreatePasswordViewModel>();
         services.AddTransient<LockViewModel>();
@@ -122,6 +123,7 @@ public partial class App : Application
         // are three views onto one screen and must share its state.
         services.AddSingleton<PersonsViewModel>();
         services.AddSingleton<WebsitesViewModel>();
+        services.AddSingleton<AccountsViewModel>();
 
         return services.BuildServiceProvider();
     }

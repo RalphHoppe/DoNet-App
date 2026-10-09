@@ -37,6 +37,9 @@ public sealed class DoNetDbContext : DbContext
 
     public DbSet<Website> Websites => Set<Website>();
 
+    /// <summary>Logins held on the saved websites.</summary>
+    public DbSet<Account> Accounts => Set<Account>();
+
     /// <summary>Payment methods the user added themselves. The six built-ins are in code.</summary>
     public DbSet<PaymentMethodOption> PaymentMethodOptions => Set<PaymentMethodOption>();
 
@@ -69,6 +72,30 @@ public sealed class DoNetDbContext : DbContext
             // The selected methods are one delimited column; see Website for why a
             // join table would be the wrong trade here.
             entity.Property(w => w.PaymentMethodsRaw);
+        });
+
+        model.Entity<Account>(entity =>
+        {
+            entity.ToTable("Accounts");
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.Id).ValueGeneratedOnAdd();
+
+            // The app's first real relationship. Required rather than optional: an
+            // account is a login *on a site*, and one with no site is not a weaker
+            // record, it is a meaningless one.
+            //
+            // Cascade, so deleting a website takes its accounts with it. The
+            // alternative - refusing the delete - turns a confirmed destructive
+            // action into an error the user cannot act on without first hunting down
+            // records the Websites screen never mentions.
+            entity.HasOne(a => a.Website)
+                  .WithMany()
+                  .HasForeignKey(a => a.WebsiteId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Unlike the record tables, this column is both joined and filtered on
+            // every page read, so the index earns its keep.
+            entity.HasIndex(a => a.WebsiteId);
         });
 
         model.Entity<PaymentMethodOption>(entity =>

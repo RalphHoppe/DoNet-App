@@ -28,6 +28,20 @@ public sealed partial class NavRailButton : UserControl
     public static readonly DependencyProperty IconDataProperty = DependencyProperty.Register(
         nameof(IconData), typeof(Geometry), typeof(NavRailButton), new PropertyMetadata(null));
 
+    /// <summary>
+    /// True when <see cref="IconData"/> is an even-odd filled outline rather than a
+    /// stroked path.
+    /// </summary>
+    /// <remarks>
+    /// Three of the rail's four icons are centre-line paths the design supplied as
+    /// strokes. The accounts icon is drawn the other way - an outer contour and an
+    /// inner one, filled even-odd - so stroking it would trace both edges and double
+    /// its weight.
+    /// </remarks>
+    public static readonly DependencyProperty IconFilledProperty = DependencyProperty.Register(
+        nameof(IconFilled), typeof(bool), typeof(NavRailButton),
+        new PropertyMetadata(false, OnIconFilledChanged));
+
     public static readonly DependencyProperty IconStrokeThicknessProperty =
         DependencyProperty.Register(
             nameof(IconStrokeThickness), typeof(double), typeof(NavRailButton),
@@ -72,10 +86,41 @@ public sealed partial class NavRailButton : UserControl
     }
 
     /// <summary>Icon stroke weight. The design draws the lock slightly heavier.</summary>
+    /// <summary>Whether the icon is filled rather than stroked.</summary>
+    public bool IconFilled
+    {
+        get => (bool)GetValue(IconFilledProperty);
+        set => SetValue(IconFilledProperty, value);
+    }
+
     public double IconStrokeThickness
     {
         get => (double)GetValue(IconStrokeThicknessProperty);
         set => SetValue(IconStrokeThicknessProperty, value);
+    }
+
+    /// <summary>
+    /// Swaps the icon between stroked and filled.
+    /// </summary>
+    /// <remarks>
+    /// Fill is set to the identical brush object the stroke uses, not a copy, so the
+    /// selection colour animation - which writes IconStroke.Color - keeps driving the
+    /// icon without needing a second animation or a second storyboard.
+    /// </remarks>
+    private static void OnIconFilledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        NavRailButton button = (NavRailButton)d;
+
+        if ((bool)e.NewValue)
+        {
+            button.Icon.Fill = button.IconStroke;
+            button.Icon.Stroke = null;
+        }
+        else
+        {
+            button.Icon.Fill = null;
+            button.Icon.Stroke = button.IconStroke;
+        }
     }
 
     /// <summary>Tooltip text, and the control's accessible name.</summary>

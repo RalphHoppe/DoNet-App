@@ -215,7 +215,15 @@ def main():
         offx = (idx % cols) * cell * ss + (cell * ss - size * ss) / 2
         offy = (idx // cols) * cell * ss + pad * ss
         width = max(1, int(round(2 * scale)))
-        for poly in flatten(v["data"]):
+        # Filled icons carry an "F0 " marker so the control knows to use even-odd
+        # fill rather than a stroke. The path tokenizer only knows MLHVCZ, so the
+        # marker has to come off before flattening or the leading 0 arrives with no
+        # command in front of it.
+        outline = v["data"]
+        if outline.startswith("F0 "):
+            outline = outline[3:]
+
+        for poly in flatten(outline):
             pts = [(offx + x * scale, offy + y * scale) for x, y in poly]
             if len(pts) > 1:
                 dr.line(pts, fill=(43, 47, 51), width=width, joint="curve")
