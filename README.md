@@ -371,7 +371,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/preview_animation.py` | Renders `docs/splash-animation.gif` |
 | `tools/preview_screens.py` | Renders a pixel reconstruction of the four screens for comparing against the design |
 | `tools/gen_nav_icons.py` | Parses the design's icon SVG, checks it fits, emits the XAML path data |
-| `tools/validate_xaml.py` | Checks resource keys, `x:Name`s and event handlers without a Windows build |
+| `tools/validate_xaml.py` | Checks resource keys, `x:Name`s, event handlers and Grid row/column indices without a Windows build |
 | `tools/validate_handlers.py` | Resolves every XAML event attribute and `+=`/`-=` subscription against the methods that exist |
 | `tools/validate_control_usage.py` | Resolves every custom-control property set in XAML against the properties the controls declare |
 | `tools/validate_csharp_docs.py` | Checks every documentation comment block is well formed |

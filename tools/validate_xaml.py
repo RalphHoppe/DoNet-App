@@ -7,6 +7,7 @@ Checks:
   2. every {StaticResource}/{ThemeResource} key is defined somewhere in the project
   3. every event-handler attribute names a method that exists in the code-behind
   4. every x:Name referenced from code-behind is actually declared in the markup
+  5. every Grid.Row / Grid.Column sits inside the rows and columns its Grid defines
 
 Run from the repository root:   python3 tools/validate_xaml.py
 """
@@ -201,6 +202,63 @@ for path, text in xaml_text.items():
                 f"{os.path.relpath(base, ROOT)} references '{ident}' which has no x:Name in the markup")
 
     notes.append(f"{os.path.relpath(path, ROOT)}: names = {', '.join(sorted(names)) or '(none)'}")
+
+# ---- 5. Grid.Row / Grid.Column inside what the Grid defines ----------------
+# A child placed in a row or column its Grid never declared is not an error the
+# parser reports - the grid simply drops it into the implicit single row (or the
+# last defined one), where it draws on top of whatever is already there. That is
+# how a NOTE field once landed on top of a NAME field, and why this exists.
+import xml.etree.ElementTree as ET
+
+
+def local(tag):
+    return tag.rsplit("}", 1)[-1] if isinstance(tag, str) else ""
+
+
+def describe(element):
+    name = element.get("x:Name")
+    return f"<{local(element.tag)}>" + (f" {name}" if name else "")
+
+
+def check_grid_indices(path, problems):
+    rel = os.path.relpath(path, ROOT)
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as error:
+        problems.append(f"{rel}: not well-formed XML ({error})")
+        return
+
+    for grid in tree.iter():
+        if local(grid.tag) != "Grid":
+            continue
+
+        rows = cols = 0
+        for child in grid:
+            if local(child.tag) == "Grid.RowDefinitions":
+                rows = sum(1 for row in child if local(row.tag) == "RowDefinition")
+            elif local(child.tag) == "Grid.ColumnDefinitions":
+                cols = sum(1 for col in child if local(col.tag) == "ColumnDefinition")
+
+        for child in grid:
+            tag = local(child.tag)
+            if tag in ("Grid.RowDefinitions", "Grid.ColumnDefinitions"):
+                continue
+
+            row = child.get("Grid.Row")
+            if row is not None and row.isdigit() and int(row) >= max(rows, 1):
+                problems.append(
+                    f"{rel}: {describe(child)} Grid.Row={row} but its Grid defines "
+                    + (f"{rows} row(s)" if rows else "no RowDefinitions"))
+
+            column = child.get("Grid.Column")
+            if column is not None and column.isdigit() and int(column) >= max(cols, 1):
+                problems.append(
+                    f"{rel}: {describe(child)} Grid.Column={column} but its Grid defines "
+                    + (f"{cols} column(s)" if cols else "no ColumnDefinitions"))
+
+
+for path in XAML:
+    check_grid_indices(path, problems)
 
 print("\n".join(notes))
 print()
