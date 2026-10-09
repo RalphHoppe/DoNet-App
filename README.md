@@ -376,6 +376,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/validate_control_usage.py` | Resolves every custom-control property set in XAML against the properties the controls declare |
 | `tools/validate_csharp_docs.py` | Checks every documentation comment block is well formed |
 | `tools/validate_visual_states.py` | Checks every visual-state `Setter Target` and storyboard target resolves |
+| `tools/validate_attributes.py` | Checks every attribute sits on a declaration kind it is valid on (`[NotMapped]` on a method is CS0592, not a hint) - the attributes this app uses, by hand, like the usings map |
 | `tools/validate_usings.py` | Checks every type a C# file names can be seen from it — framework types against a curated namespace map, app types against their declaring namespaces |
 | `tools/build_icons.py` | Normalises the icon paths and regenerates `Controls/LineIconData.cs` plus the proof sheet |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |

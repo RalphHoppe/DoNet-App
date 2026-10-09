@@ -70,8 +70,14 @@ public sealed class ServiceRecord
         }
     }
 
-    /// <summary>One field's value, or empty when the record never had one.</summary>
-    [NotMapped]
+    /// <summary>
+    /// One field's value, or empty when the record never had one.
+    /// </summary>
+    /// <remarks>
+    /// A method, deliberately unmarked: EF maps members, not methods, so there is
+    /// nothing to opt out of - and NotMapped on a method is a compile error, not a
+    /// hint (it is valid on classes, properties, indexers and fields only).
+    /// </remarks>
     public string Value(string key) => Data.TryGetValue(key, out string? value) ? value : string.Empty;
 
     /// <summary>The record number, as the card's caption reads it.</summary>
