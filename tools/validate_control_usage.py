@@ -56,6 +56,23 @@ def declared_members(name: str) -> set[str] | None:
     return None
 
 
+def check_gridlength_assignments(problems):
+    """Height and Width on row/column definitions are GridLength, not GridUnitType.
+
+    new RowDefinition { Height = GridUnitType.Auto } reads as if it should work
+    and is CS0266 ("cannot implicitly convert GridUnitType to GridLength"). The
+    auto case is the one written by reflex; every unit needs the GridLength
+    wrapper, even the unit-less Auto.
+    """
+    for cs in sorted(ROOT.rglob("*.cs")):
+        text = cs.read_text(encoding="utf-8-sig")
+        for m in re.finditer(r"\b(Height|Width)\s*=\s*(?:\w+\.)*GridUnitType\.\w+", text):
+            line = text[: m.start()].count("\n") + 1
+            problems.append(
+                f"  {cs.relative_to(ROOT.parent)}:{line}: {m.group(0)} - "
+                f"these are GridLength properties; use new GridLength(1, GridUnitType.Auto)")
+
+
 def main() -> int:
     problems = []
     checked = 0
@@ -78,6 +95,8 @@ def main() -> int:
                 if attr not in members:
                     rel = xaml.relative_to(ROOT.parent)
                     problems.append(f"  {rel}: <{control} {attr}=...> - {control} has no '{attr}'")
+
+    check_gridlength_assignments(problems)
 
     if problems:
         print("Properties set on our controls that do not exist:\n")

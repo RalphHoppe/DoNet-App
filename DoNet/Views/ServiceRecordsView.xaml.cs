@@ -4,6 +4,7 @@ using DoNet.Controls;
 using DoNet.Models;
 using DoNet.Services;
 using DoNet.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 

@@ -342,8 +342,8 @@ public sealed partial class ServiceRecordDialog : UserControl
 
         Grid face = new() { ColumnSpacing = 10 };
         face.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        face.ColumnDefinitions.Add(new ColumnDefinition { Width = GridUnitType.Auto });
-        face.ColumnDefinitions.Add(new ColumnDefinition { Width = GridUnitType.Auto });
+        face.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });
+        face.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });
 
         Grid.SetColumn(summary, 0);
         face.Children.Add(summary);

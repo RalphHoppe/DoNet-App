@@ -36,7 +36,7 @@ public sealed partial class DesignerFieldDraft : ObservableObject
     [ObservableProperty] private string _kindName;
 
     /// <summary>Whether this row names every record - the first text field is.</summary>
-    public bool IsName => KindName == KindNames[0];
+    public bool IsName => KindName == ServiceDesignerViewModel.KindNames[0];
 
     /// <summary>
     /// Raised when the label or the kind changed, for the designer to re-evaluate
@@ -106,6 +106,14 @@ public sealed partial class ServiceDesignerViewModel : ObservableObject
     {
         "Text", "Long text", "Number", "Date", "Password", "Person", "Website", "Account",
     };
+
+    /// <summary>
+    /// The kinds as the picker's ItemsSource binds them. An x:Bind path starts
+    /// from the page or view model it is written on - it cannot reach through a
+    /// class name to a static - so the list rides on the instance the dialog
+    /// already binds to.
+    /// </summary>
+    public IReadOnlyList<string> KindChoices => KindNames;
 
     private static readonly IReadOnlyList<ServiceFieldKind> KindValues = new[]
     {

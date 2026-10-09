@@ -161,13 +161,25 @@ QUALIFIER_MEMBERS: dict[str, list[str]] = {
 # in page)" - reads as the contextual keyword followed by a lowercase word, and
 # without the case gate that word gets filed as a declared type.
 TYPE_DECLARATION = re.compile(r"\b(?:class|enum|interface|record|struct)\s+([A-Z]\w+)")
-NAMESPACE = re.compile(r"^namespace\s+([\w.]+);", re.M)
+# File-scoped ("namespace X;") and block ("namespace X {") forms both name a
+# file the checks apply to; only the semicolon form used to be recognised, which
+# silently skipped any block-scoped file altogether.
+NAMESPACE = re.compile(r"^namespace\s+([\w.]+)\s*[;{]", re.M)
 USING = re.compile(r"^using\s+(?:static\s+)?([\w.]+);", re.M)
 
 CHAR_LITERAL = r"'(?:\\.|[^\\'])'"
 LINE_COMMENT = r"//[^\n]*"
 BLOCK_COMMENT = r"/\*.*?\*/"
 STRING_LITERAL = r'"(?:\\.|[^"\\])*"'
+
+
+# Extension methods this app calls as if they were instance methods. The
+# extension class arrives with a using directive; without it the call is CS1061
+# ("no accessible extension method could be found") pointing at the receiver,
+# which reads like the receiver is broken when it is the using that is missing.
+EXTENSION_METHODS = {
+    "GetRequiredService": "Microsoft.Extensions.DependencyInjection",
+}
 
 
 def strip_noise(source: str) -> str:
@@ -254,6 +266,13 @@ def main() -> int:
             if only_qualifier_members(name) or declares_member(name):
                 continue
             problems.append(f"{path.relative_to(ROOT)}: uses {name} without using {ns}")
+
+        for method, ns in EXTENSION_METHODS.items():
+            if (re.search(rf"\.{method}\s*[<(]", code) is not None
+                    and not has_namespace(ns)):
+                problems.append(
+                    f"{path.relative_to(ROOT)}: calls .{method}() without using {ns} "
+                    f"- it is an extension method and arrives with that using")
 
         for name, namespaces in app_types.items():
             if name in declared_here or not uses_bare(name):

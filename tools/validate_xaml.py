@@ -318,8 +318,48 @@ def check_content_splits(path, problems):
 for path in XAML:
     check_grid_indices(path, problems)
 
+def check_static_bind_paths(path, problems):
+    """x:Bind paths must start from the page; class-qualified statics are not paths.
+
+    {x:Bind vm:ServiceDesignerViewModel.KindNames} looks like it should reach the
+    static, but the generated code ends up naming it bare and the build fails
+    with CS0103 in the .g.cs. Function bindings are the exception - the first
+    token of a call may be a class-qualified method - so paths with a top-level
+    '(' are left alone, as are casts.
+    """
+    rel = os.path.relpath(path, ROOT)
+    src = read(path)
+    for m in re.finditer(r"\{x:Bind\s+([^{}]+)", src):
+        raw = m.group(1)
+        # The path ends at the first comma outside any parens of the whole
+        # markup extension (Mode=, Converter=, FallbackValue= follow it).
+        depth = 0
+        end = len(raw)
+        for i, ch in enumerate(raw):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+            elif ch == "," and depth == 0:
+                end = i
+                break
+        bind_path = raw[:end].strip()
+        if bind_path.lower().startswith("path="):
+            bind_path = bind_path[5:].strip()
+
+        if "(" not in bind_path and ":" in bind_path:
+            line = src[: m.start()].count("\n") + 1
+            problems.append(
+                f"{rel}:{line}: x:Bind path '{bind_path}' starts from the page or "
+                f"view model it is written on; it cannot reach a class-qualified "
+                f"static. Bind through a property on the view, or use a function binding")
+
+
 for path in XAML:
     check_content_splits(path, problems)
+
+for path in XAML:
+    check_static_bind_paths(path, problems)
 
 print("\n".join(notes))
 print()
