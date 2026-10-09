@@ -30,15 +30,16 @@ public partial class HomeViewModel : ObservableObject
     private readonly PersonsViewModel _persons;
     private readonly WebsitesViewModel _websites;
     private readonly AccountsViewModel _accounts;
+    private readonly ServicesViewModel _services;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsServicesSelected))]
     [NotifyPropertyChangedFor(nameof(IsAccountsSelected))]
     [NotifyPropertyChangedFor(nameof(IsPersonsSelected))]
     [NotifyPropertyChangedFor(nameof(IsSitesSelected))]
-    // Persons, not Services: it is the only section with a design, and the supplied
-    // artwork shows it as the selected one. Opening on an empty Services surface would
-    // look like a failure to load.
+    // Persons, not Services: the supplied artwork shows Persons as the selected
+    // destination, and the home screen is built to that artwork. Services has a
+    // surface now, but it stays one rail stop away.
     private HomeSection _selectedSection = HomeSection.Persons;
 
     public HomeViewModel(
@@ -46,13 +47,15 @@ public partial class HomeViewModel : ObservableObject
         IVaultService vault,
         PersonsViewModel persons,
         WebsitesViewModel websites,
-        AccountsViewModel accounts)
+        AccountsViewModel accounts,
+        ServicesViewModel services)
     {
         _navigation = navigation;
         _vault = vault;
         _persons = persons;
         _websites = websites;
         _accounts = accounts;
+        _services = services;
     }
 
     public bool IsServicesSelected => SelectedSection == HomeSection.Services;
@@ -89,6 +92,7 @@ public partial class HomeViewModel : ObservableObject
         _persons.Reset();
         _websites.Reset();
         _accounts.Reset();
+        _services.Reset();
         _vault.Lock();
 
         _navigation.NavigateTo(typeof(LockPage), clearBackStack: true);

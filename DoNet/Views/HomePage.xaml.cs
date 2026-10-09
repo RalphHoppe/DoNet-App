@@ -33,6 +33,7 @@ public sealed partial class HomePage : Page
     private readonly PersonsViewModel _persons;
     private readonly WebsitesViewModel _websites;
     private readonly AccountsViewModel _accounts;
+    private readonly ServicesViewModel _services;
 
     // Opacity is linear and movement is eased, which is how the rail and the entrance
     // animation already behave. Out is short enough to read as the old section getting
@@ -83,6 +84,7 @@ public sealed partial class HomePage : Page
         _persons = App.Current.Services.GetRequiredService<PersonsViewModel>();
         _websites = App.Current.Services.GetRequiredService<WebsitesViewModel>();
         _accounts = App.Current.Services.GetRequiredService<AccountsViewModel>();
+        _services = App.Current.Services.GetRequiredService<ServicesViewModel>();
 
         InitializeComponent();
 
@@ -91,6 +93,7 @@ public sealed partial class HomePage : Page
         _persons.PropertyChanged += OnPersonsPropertyChanged;
         _websites.PropertyChanged += OnWebsitesPropertyChanged;
         _accounts.PropertyChanged += OnAccountsPropertyChanged;
+        _services.PropertyChanged += OnServicesPropertyChanged;
         ViewModel.PropertyChanged += OnSectionChanged;
 
         WireSectionTransition();
@@ -156,14 +159,16 @@ public sealed partial class HomePage : Page
                 Realize("PersonModal");
                 Realize("WebsiteModal");
                 Realize("AccountModal");
+                Realize("ServiceModal");
                 Realize("ConfirmModal");
 
                 // The Persons page was preloaded on the welcome screen; this is the
-                // matching window for the other directory, so the rail's first trip
-                // to Sites finds its records already there. Cheap when it is not
-                // needed - the store is open by now, so it is one query.
+                // matching window for the other directories, so the rail's first trip
+                // to any of them finds its records already there. Cheap when it is
+                // not needed - the store is open by now, so it is one query.
                 _websites.PreloadAsync().Observe("Preloading the websites directory");
                 _accounts.PreloadAsync().Observe("Preloading the accounts directory");
+                _services.PreloadAsync().Observe("Preloading the services directory");
             });
 
     private void OnSectionChanged(object? sender, PropertyChangedEventArgs args)
@@ -315,6 +320,14 @@ public sealed partial class HomePage : Page
     {
         switch (section)
         {
+            case HomeSection.Services:
+                if (create && ServicesGrid is null)
+                {
+                    Realize("ServicesGrid");
+                }
+
+                return ServicesGrid;
+
             case HomeSection.Persons:
                 return DirectoryView;
 
@@ -335,7 +348,6 @@ public sealed partial class HomePage : Page
                 return AccountsGrid;
 
             default:
-                // Services has no surface yet, so the layer fades to the bare plate.
                 return null;
         }
     }
@@ -364,6 +376,19 @@ public sealed partial class HomePage : Page
         {
             element.Opacity = 0;
             element.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void OnServicesPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(ServicesViewModel.IsDialogOpen) && _services.IsDialogOpen)
+        {
+            Realize("ServiceModal");
+        }
+        else if (args.PropertyName == nameof(ServicesViewModel.IsConfirmingDelete)
+                 && _services.IsConfirmingDelete)
+        {
+            Realize("ConfirmModal");
         }
     }
 
@@ -450,6 +475,7 @@ public sealed partial class HomePage : Page
         _persons.PropertyChanged -= OnPersonsPropertyChanged;
         _websites.PropertyChanged -= OnWebsitesPropertyChanged;
         _accounts.PropertyChanged -= OnAccountsPropertyChanged;
+        _services.PropertyChanged -= OnServicesPropertyChanged;
         ViewModel.PropertyChanged -= OnSectionChanged;
 
         // Unsubscribe before stopping, so a transition caught in flight by the lock
@@ -469,6 +495,10 @@ public sealed partial class HomePage : Page
         // Likewise for Accounts.
         AccountsGrid?.ReleaseBindings();
         AccountModal?.ReleaseBindings();
+
+        // And Services.
+        ServicesGrid?.ReleaseBindings();
+        ServiceModal?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();

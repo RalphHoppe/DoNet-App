@@ -1237,6 +1237,40 @@ re-fetched from the store rather than patched, the picker's own state is replace
 without touching anything else the user may have typed, and the new label is chosen.
 Enter in the filter box takes the add row when nothing matches, so it is not mouse-only.
 
+### The Services tab arrives: the vocabulary, before the records
+
+The last empty stop on the rail. Services was the one section that faded to the bare
+plate when clicked, because it was the one with nothing behind it - and it is also
+the hardest thing in the app to design, for the reason the whole directory has been
+waiting on: a service record can be almost anything, with its own columns and its
+own relationships. So the tab starts where the workbook starts: not with records but
+with the *vocabulary* they will be filed under. The six types the workbook names -
+VPS, Domain, SMS, Proxy, Phone, Cloud - with a description and a note each, as cards.
+
+It is the same screen as the other three directories - the header with the disc, the
+search, the card surface, the four states - because a fifth thing that behaved like a
+fourth thing would not be simpler, it would be broken. The briefcase the rail button
+already drew was promoted into the icon set so the section header carries the same
+mark as the button that opens it. The dialog is the account dialog's shape: one
+column, three fields, `# · RECORD ID` in preview, EDIT RECORD turning the preview
+into the form in place. A blank name holds the form open rather than saving a
+nameless type, and so does a name another type already has - checked against the
+store with a case-insensitive LIKE rather than the loaded page, because the page is
+a page.
+
+**The six are seeded once, and only once.** The payment methods keep their built-ins
+in code and merge them into every read, which is right for them: they are names with
+brand marks, matched by name. A service type carries a description and a note of its
+own, so it has to be a row the moment it exists at all - and rows the user can edit
+and delete cannot also be immortal code constants. So the table *is* the catalog, and
+the seed runs at exactly one moment: when the Services table has just been created.
+`SchemaGuard` now returns the tables it created, and "this table did not exist a
+moment ago" is the one honest signal for "this database has never had a catalog".
+Seeding an empty table instead would resurrect a deleted VPS on every unlock, which
+is not a seed, that is a haunting.
+
+`SchemaGuard` creating the table on an existing vault means no vault has to be
+rebuilt to get the catalog - it appears, seeded, at the next unlock.
 ### Still worth doing
 
 A test project. The logic worth covering is pure .NET and does not need a UI:

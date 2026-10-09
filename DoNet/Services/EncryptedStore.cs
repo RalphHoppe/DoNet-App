@@ -282,13 +282,22 @@ public sealed class EncryptedStore : IEncryptedStore, IDisposable
         // when it already exists, so on its own it cannot add a table to a database
         // written by an older build. That is exactly what happened the first time the
         // Websites directory ran against an existing vault. SchemaGuard fills the gap:
-        // it compares the model against sqlite_master and creates whatever is missing.
+        // it compares the model against sqlite_master and creates whatever is missing,
+        // and reports what it created - because a table that has just come into
+        // existence is the one moment first-run data belongs in it.
         await Task.Run(
             async () =>
             {
                 await using DoNetDbContext db = new(connection);
                 await db.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
-                await SchemaGuard.EnsureTablesAsync(db, cancellationToken).ConfigureAwait(false);
+
+                List<string> created = await SchemaGuard.EnsureTablesAsync(db, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (created.Contains("Services"))
+                {
+                    await ServiceCatalogSeed.SeedAsync(db, cancellationToken).ConfigureAwait(false);
+                }
             },
             cancellationToken).ConfigureAwait(false);
 

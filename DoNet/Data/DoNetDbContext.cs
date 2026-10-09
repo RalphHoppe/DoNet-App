@@ -46,6 +46,12 @@ public sealed class DoNetDbContext : DbContext
     /// <summary>Built-in payment methods the user has deleted. The list in code stays.</summary>
     public DbSet<HiddenPaymentMethod> HiddenPaymentMethods => Set<HiddenPaymentMethod>();
 
+    /// <summary>
+    /// The service-type catalog behind the Services tab. Seeded once, when the table
+    /// is created; from then on entirely the user's.
+    /// </summary>
+    public DbSet<Service> Services => Set<Service>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         options.UseSqlite(_connection);
@@ -123,6 +129,19 @@ public sealed class DoNetDbContext : DbContext
             // Read on every catalog load, and written only when a built-in is
             // deleted or revived.
             entity.HasIndex(h => h.Name);
+        });
+
+        model.Entity<Service>(entity =>
+        {
+            entity.ToTable("Services");
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.Id).ValueGeneratedOnAdd();
+
+            // No explicit index on Id - an INTEGER PRIMARY KEY is the rowid, the same
+            // reasoning as the record tables. The name index is for the duplicate
+            // check every save makes; the catalog is small enough that this is
+            // politeness rather than need.
+            entity.HasIndex(s => s.Name);
         });
     }
 }

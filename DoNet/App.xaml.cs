@@ -114,6 +114,7 @@ public partial class App : Application
         services.AddSingleton<IPersonDirectory, PersonDirectoryService>();
         services.AddSingleton<IWebsiteDirectory, WebsiteDirectoryService>();
         services.AddSingleton<IAccountDirectory, AccountDirectoryService>();
+        services.AddSingleton<IServiceDirectory, ServiceDirectoryService>();
 
         services.AddTransient<CreatePasswordViewModel>();
         services.AddTransient<LockViewModel>();
@@ -124,6 +125,7 @@ public partial class App : Application
         services.AddSingleton<PersonsViewModel>();
         services.AddSingleton<WebsitesViewModel>();
         services.AddSingleton<AccountsViewModel>();
+        services.AddSingleton<ServicesViewModel>();
 
         return services.BuildServiceProvider();
     }

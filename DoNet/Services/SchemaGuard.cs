@@ -36,7 +36,14 @@ internal static class SchemaGuard
     /// </summary>
     /// <param name="db">A context over an already open, already keyed connection.</param>
     /// <param name="cancellationToken">Cancels the work.</param>
-    internal static async Task EnsureTablesAsync(DoNetDbContext db, CancellationToken cancellationToken)
+    /// <returns>The names of the tables this call created, in model order.</returns>
+    /// <remarks>
+    /// The return value is the only trustworthy "this database has never had this
+    /// table" signal, which is what first-run seeding keys off. An empty table
+    /// afterwards is ambiguous - the user may have emptied it on purpose.
+    /// </remarks>
+    internal static async Task<List<string>> EnsureTablesAsync(
+        DoNetDbContext db, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(db);
 
@@ -53,7 +60,7 @@ internal static class SchemaGuard
         if (missing.Count == 0)
         {
             // The common path, and it costs one cheap read against sqlite_master.
-            return;
+            return missing;
         }
 
         AppLog.Info(
@@ -62,6 +69,7 @@ internal static class SchemaGuard
 
         string script = db.Database.GenerateCreateScript();
         int applied = 0;
+        List<string> created = new();
 
         // The generated DDL for this model contains no string literals, so splitting
         // on the statement terminator is safe here. Anything that is not a CREATE is
@@ -80,6 +88,17 @@ internal static class SchemaGuard
                 continue;
             }
 
+            // A created table is a table the database has never had, which is what
+            // the caller's first-run seeding keys off. The name is read back out of
+            // the statement rather than assumed, so the two can never disagree about
+            // which table a CREATE was for.
+            if (TableNameOf(statement) is { } table
+                && missing.Contains(table)
+                && !created.Contains(table))
+            {
+                created.Add(table);
+            }
+
             await db.Database
                 .ExecuteSqlRawAsync(MakeIdempotent(statement), cancellationToken)
                 .ConfigureAwait(false);
@@ -87,6 +106,39 @@ internal static class SchemaGuard
         }
 
         AppLog.Info($"Schema guard applied {applied} statement(s).");
+
+        return created;
+    }
+
+    /// <summary>Reads the table name out of a CREATE TABLE statement, or null.</summary>
+    private static string? TableNameOf(string statement)
+    {
+        // The shape is "CREATE TABLE [IF NOT EXISTS] \"Name\" (". The quoted form is
+        // what GenerateCreateScript emits; the bare form is accepted in case that
+        // ever changes, and anything else is somebody else's statement.
+        string body = statement;
+
+        int table = body.IndexOf("TABLE ", StringComparison.OrdinalIgnoreCase);
+        if (table < 0)
+        {
+            return null;
+        }
+
+        body = body[(table + "TABLE ".Length)..].TrimStart();
+
+        if (body.StartsWith("IF NOT EXISTS", StringComparison.OrdinalIgnoreCase))
+        {
+            body = body["IF NOT EXISTS".Length..].TrimStart();
+        }
+
+        if (body.StartsWith('"'))
+        {
+            int close = body.IndexOf('"', 1);
+            return close > 1 ? body[1..close] : null;
+        }
+
+        int end = body.IndexOfAny(new[] { ' ', '(' });
+        return end > 0 ? body[..end] : null;
     }
 
     private static async Task<HashSet<string>> ReadTableNamesAsync(

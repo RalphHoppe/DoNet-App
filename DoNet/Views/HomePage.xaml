@@ -174,9 +174,9 @@
             </Grid>
 
             <!--
-                Content surface. The plate is the shared background for all three sections;
-                each section's content sits on top of it. Services and Sites have not been
-                designed yet, so only Persons has anything to show.
+                Content surface. The plate is the shared background for all four
+                sections; each section's content sits on top of it. All four have a
+                directory; nothing else sits on the plate directly.
             -->
             <Grid x:Name="ContentHost" Grid.Column="2" RenderTransformOrigin="0.5,0.5">
                 <Grid.RenderTransform>
@@ -206,6 +206,8 @@
                     <Grid.RenderTransform>
                         <TranslateTransform x:Name="SectionShift" />
                     </Grid.RenderTransform>
+
+                    <views:ServicesView x:Name="ServicesGrid" x:Load="False" />
 
                     <views:PersonsView x:Name="DirectoryView" />
 
@@ -247,6 +249,7 @@
             <views:PersonDialog x:Name="PersonModal" x:Load="False" />
             <views:AccountDialog x:Name="AccountModal" x:Load="False" />
             <views:WebsiteDialog x:Name="WebsiteModal" x:Load="False" />
+            <views:ServiceDialog x:Name="ServiceModal" x:Load="False" />
             <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
         </Grid>
     </Page>
