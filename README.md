@@ -734,6 +734,25 @@ names the cells it moves and has the seven rows a single column needs.
 `Storyboard.TargetName` against the names declared in the same file. 156 targets, all
 resolving. It would have caught this the day it was written.
 
+### A handler that was never there
+
+The `Options` property added to `FieldCell` for the account dialog's website picker
+registered its change callback as `OnAnyChanged`. The method is called
+`OnAnyPropertyChanged`, which the other nine properties on that control all name
+correctly. One property, one wrong name, and the first real build said:
+
+> The name 'OnAnyChanged' does not exist in the current context
+
+That is the cheapest kind of bug to fix and the most annoying kind to find, because a
+method group passed by name has nothing near it to check it against. The same shape
+appears in two other places: a XAML event attribute (`Click="OnSave"`) and an event
+subscription (`thing.Changed += OnChanged`). All three are a bare identifier that the
+compiler resolves and nothing else does.
+
+`tools/validate_handlers.py` resolves all three against the methods the type actually
+has, following base classes so an inherited handler still counts. 161 references, all
+resolving.
+
 ### Arriving with the data already there
 
 The home screen used to appear empty for a beat after every unlock, then fill in. The

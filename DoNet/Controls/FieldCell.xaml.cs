@@ -124,7 +124,7 @@ public sealed partial class FieldCell : UserControl
         nameof(Options),
         typeof(IReadOnlyList<string>),
         typeof(FieldCell),
-        new PropertyMetadata(null, OnAnyChanged));
+        new PropertyMetadata(null, OnAnyPropertyChanged));
 
     public static readonly DependencyProperty TabOrderProperty = DependencyProperty.Register(
         nameof(TabOrder), typeof(int), typeof(FieldCell),
