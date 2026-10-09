@@ -89,6 +89,33 @@
                              From="0" To="1" Duration="0:0:0.28" />
         </Storyboard>
 
+        <!--
+            The rename popup's entrance: the same rise-and-settle the confirm dialog
+            uses, so every small card that appears over a dialog arrives the same way.
+        -->
+        <Storyboard x:Key="RenameOpenStoryboard">
+            <DoubleAnimation Storyboard.TargetName="RenameScrim"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="RenameScale"
+                             Storyboard.TargetProperty="ScaleX"
+                             From="0.96" To="1" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="RenameScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="0.96" To="1" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="RenameCard"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.18" />
+        </Storyboard>
+
         <Storyboard x:Key="CloseStoryboard" Completed="OnCloseCompleted">
             <DoubleAnimation Storyboard.TargetName="Scrim"
                              Storyboard.TargetProperty="Opacity"
@@ -264,15 +291,77 @@
                                 BorderBrush="{StaticResource SearchBorderBrush}"
                                 BorderThickness="1">
                             <StackPanel Spacing="12">
-                                <controls:FieldLabel Text="AVAILABLE PAYMENT METHODS" IconKind="CreditCard" />
+                                <!--
+                                    The panel's heading and, while editing, the two
+                                    things this round added: renaming a method and
+                                    deleting one. Small discs rather than labelled
+                                    buttons - the caption already says what the panel
+                                    is, and two more full-width pills under it would
+                                    say the same thing twice.
+                                -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <controls:FieldLabel Text="AVAILABLE PAYMENT METHODS"
+                                                         IconKind="CreditCard"
+                                                         VerticalAlignment="Center" />
+
+                                    <StackPanel x:Name="MethodActionButtons"
+                                                Grid.Column="1"
+                                                Orientation="Horizontal"
+                                                Spacing="8">
+                                        <Button Style="{StaticResource BareButtonStyle}"
+                                                ToolTipService.ToolTip="Edit a payment method"
+                                                Click="OnEditMethodsClick">
+                                            <Border Width="32"
+                                                    Height="32"
+                                                    CornerRadius="16"
+                                                    Background="{StaticResource CardBackgroundBrush}"
+                                                    BorderBrush="{StaticResource SearchBorderBrush}"
+                                                    BorderThickness="1">
+                                                <controls:LineIcon Kind="Pencil"
+                                                                   Width="14"
+                                                                   Height="14"
+                                                                   Foreground="{StaticResource BrandPrimaryBrush}" />
+                                            </Border>
+                                        </Button>
+
+                                        <Button Style="{StaticResource BareButtonStyle}"
+                                                ToolTipService.ToolTip="Delete payment methods"
+                                                Click="OnDeleteMethodsClick">
+                                            <Border Width="32"
+                                                    Height="32"
+                                                    CornerRadius="16"
+                                                    Background="{StaticResource CardBackgroundBrush}"
+                                                    BorderBrush="{StaticResource SearchBorderBrush}"
+                                                    BorderThickness="1">
+                                                <controls:LineIcon Kind="Trash"
+                                                                   Width="14"
+                                                                   Height="14"
+                                                                   Foreground="{StaticResource DangerBrush}" />
+                                            </Border>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!--
+                                    Everything the form normally shows between the
+                                    heading and the tap modes. Visibility is owned by
+                                    the code behind, because it depends on two things
+                                    - the dialog's mode and whether a tap mode is
+                                    running - and a binding can only see one.
+                                -->
+                                <StackPanel x:Name="NormalMethods" Spacing="12">
 
                                 <!-- Editing: every option, three across. -->
                                 <!--
                                     ItemsSource is attached from code-behind, not bound.
                                     See WebsiteDialog.SyncMethodOptionsSource.
                                 -->
-                                <ItemsRepeater x:Name="MethodOptions"
-                                               Visibility="{x:Bind ViewModel.IsEditing, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                <ItemsRepeater x:Name="MethodOptions">
                                     <ItemsRepeater.Layout>
                                         <UniformGridLayout MinItemWidth="210"
                                                            MinItemHeight="34"
@@ -312,8 +401,7 @@
 
                                 <!-- Adding one of your own. -->
                                 <Grid x:Name="AddMethodRow"
-                                      ColumnSpacing="12"
-                                      Visibility="{x:Bind ViewModel.IsEditing, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                      ColumnSpacing="12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
@@ -354,6 +442,73 @@
                                         </Border>
                                     </Button>
                                 </Grid>
+                                </StackPanel>
+
+                                <!--
+                                    A tap mode replaces the form's own contents while
+                                    it runs. Pills rather than tick boxes: a tick box
+                                    edits a selection that will be saved with the
+                                    record, while a tap here is choosing what to point
+                                    an edit or a delete at - a different question that
+                                    deserves a different control.
+                                -->
+                                <StackPanel x:Name="TapModePanel"
+                                            Spacing="12"
+                                            Visibility="Collapsed">
+                                    <TextBlock x:Name="TapModeBanner"
+                                               FontFamily="{StaticResource BalooFont}"
+                                               FontSize="{StaticResource FieldValueFontSize}"
+                                               Foreground="{StaticResource CardMetaBrush}"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               LineHeight="20" />
+
+                                    <controls:WrapPanel x:Name="TapItems"
+                                                        ItemSpacing="8"
+                                                        LineSpacing="8" />
+
+                                    <StackPanel Orientation="Horizontal"
+                                                Spacing="12"
+                                                HorizontalAlignment="Right">
+                                        <Button Style="{StaticResource BareButtonStyle}"
+                                                Click="OnTapCancelClick">
+                                            <Border Height="40"
+                                                    MinWidth="96"
+                                                    CornerRadius="20"
+                                                    Padding="16,0"
+                                                    Background="{StaticResource CardBackgroundBrush}"
+                                                    BorderBrush="{StaticResource SearchBorderBrush}"
+                                                    BorderThickness="1">
+                                                <TextBlock Text="CANCEL"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           FontFamily="{StaticResource JerseyFont}"
+                                                           FontSize="{StaticResource ButtonFontSize}"
+                                                           Foreground="{StaticResource CardMetaBrush}"
+                                                           CharacterSpacing="40" />
+                                            </Border>
+                                        </Button>
+
+                                        <Button x:Name="TapDeleteButton"
+                                                Style="{StaticResource BareButtonStyle}"
+                                                Click="OnTapDeleteClick">
+                                            <Border x:Name="TapDeleteShell"
+                                                    Height="40"
+                                                    MinWidth="96"
+                                                    CornerRadius="20"
+                                                    Padding="16,0"
+                                                    Background="{StaticResource DangerBrush}">
+                                                <TextBlock x:Name="TapDeleteLabel"
+                                                           Text="DELETE"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           FontFamily="{StaticResource JerseyFont}"
+                                                           FontSize="{StaticResource ButtonFontSize}"
+                                                           Foreground="#FFFFFF"
+                                                           CharacterSpacing="40" />
+                                            </Border>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
 
@@ -463,6 +618,110 @@
                 </Grid>
             </Grid>
         </Border>
+
+        <!--
+            The rename popup. Its own scrim over the whole dialog, so what is behind
+            it - the form, the tap pills - reads as paused rather than gone. One
+            field, because the only thing a payment method has is its name.
+        -->
+        <Grid x:Name="RenameOverlay"
+              Visibility="Collapsed"
+              VerticalAlignment="Center">
+            <Rectangle x:Name="RenameScrim"
+                       Fill="#59000000"
+                       Tapped="OnRenameScrimTapped" />
+
+            <Border x:Name="RenameCard"
+                    Width="440"
+                    MaxWidth="480"
+                    Margin="24"
+                    CornerRadius="20"
+                    Padding="28"
+                    HorizontalAlignment="Center"
+                    Background="{StaticResource CardBackgroundBrush}"
+                    RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="RenameScale" ScaleX="1" ScaleY="1" />
+                </Border.RenderTransform>
+
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Rename this payment method"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="20"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="26" />
+
+                    <TextBlock x:Name="RenameBody"
+                               FontFamily="{StaticResource BalooFont}"
+                               FontSize="{StaticResource FieldValueFontSize}"
+                               Foreground="{StaticResource CardMetaBrush}"
+                               TextWrapping="Wrap"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="20" />
+
+                    <Border x:Name="RenameFieldShell"
+                            Margin="0,8,0,0"
+                            Height="48"
+                            CornerRadius="16"
+                            Padding="14,0"
+                            Background="{StaticResource CardAvatarBrush}"
+                            BorderBrush="{StaticResource SearchBorderBrush}"
+                            BorderThickness="1">
+                        <TextBox x:Name="RenameBox"
+                                 Style="{StaticResource BareTextBoxStyle}"
+                                 VerticalAlignment="Center"
+                                 FontFamily="{StaticResource BalooFont}"
+                                 FontSize="{StaticResource FieldValueFontSize}"
+                                 PlaceholderText="Enter the new name"
+                                 PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
+                                 TextChanged="OnRenameTextChanged"
+                                 KeyDown="OnRenameKeyDown" />
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="12"
+                                Margin="0,14,0,0"
+                                HorizontalAlignment="Right">
+                        <Button Style="{StaticResource BareButtonStyle}"
+                                Click="OnRenameCancelClick">
+                            <Border Height="44"
+                                    MinWidth="110"
+                                    CornerRadius="22"
+                                    Background="{StaticResource CardBackgroundBrush}"
+                                    BorderBrush="{StaticResource SearchBorderBrush}"
+                                    BorderThickness="1">
+                                <TextBlock Text="CANCEL"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource JerseyFont}"
+                                           FontSize="{StaticResource ButtonFontSize}"
+                                           Foreground="{StaticResource CardMetaBrush}"
+                                           CharacterSpacing="40" />
+                            </Border>
+                        </Button>
+
+                        <Button x:Name="RenameSaveButton"
+                                Style="{StaticResource BareButtonStyle}"
+                                Click="OnRenameSaveClick">
+                            <Border x:Name="RenameSaveShell"
+                                    Height="44"
+                                    MinWidth="110"
+                                    CornerRadius="22"
+                                    Background="{StaticResource BrandPrimaryBrush}">
+                                <TextBlock Text="SAVE"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource JerseyFont}"
+                                           FontSize="{StaticResource ButtonFontSize}"
+                                           Foreground="#FFFFFF"
+                                           CharacterSpacing="40" />
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
 
         <!--
             Below 1000 the three columns cannot hold a readable field box, so they

@@ -119,9 +119,259 @@ public sealed class WebsiteDirectoryService : IWebsiteDirectory
                     .ToListAsync(token)
                     .ConfigureAwait(false);
 
-                return PaymentMethodCatalog.Merge(saved);
+                List<string> hidden = await db.HiddenPaymentMethods
+                    .AsNoTracking()
+                    .Select(h => h.Name)
+                    .ToListAsync(token)
+                    .ConfigureAwait(false);
+
+                IReadOnlyList<string> offered = PaymentMethodCatalog.Merge(saved);
+
+                // The built-ins are in code and always offered, so a deleted one comes
+                // back unless its hiding is remembered here.
+                return hidden.Count == 0
+                    ? offered
+                    : offered.Where(m => !hidden.Any(h => PaymentMethodCatalog.Matches(h, m))).ToList();
             },
             cancellationToken);
+
+    public Task<int> CountWebsitesUsingAsync(
+        IReadOnlyList<string> methods, CancellationToken cancellationToken = default)
+        => _store.RunAsync(
+            async (db, token) =>
+            {
+                string[] wanted = NormalisedNames(methods);
+                if (wanted.Length == 0)
+                {
+                    return 0;
+                }
+
+                // The methods are one delimited column, so SQL can only pre-filter;
+                // the exact test - split the column, compare the tokens - happens
+                // here. What is filtered out by the LIKE never reaches the loop.
+                List<string> raws = await db.Websites
+                    .AsNoTracking()
+                    .Where(w => w.PaymentMethodsRaw != string.Empty)
+                    .Select(w => w.PaymentMethodsRaw)
+                    .ToListAsync(token)
+                    .ConfigureAwait(false);
+
+                int count = 0;
+
+                foreach (string raw in raws)
+                {
+                    if (raw.Split(Website.MethodSeparator, StringSplitOptions.RemoveEmptyEntries)
+                        .Any(part => wanted.Contains(part, StringComparer.OrdinalIgnoreCase)))
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            },
+            cancellationToken);
+
+    public Task RenamePaymentMethodAsync(
+        string oldName, string newName, CancellationToken cancellationToken = default)
+    {
+        string oldMethod = oldName?.Trim() ?? string.Empty;
+        string newMethod = newName?.Trim() ?? string.Empty;
+
+        if (oldMethod.Length == 0 || newMethod.Length == 0
+            || PaymentMethodCatalog.Matches(oldMethod, newMethod))
+        {
+            return Task.CompletedTask;
+        }
+
+        return _store.RunAsync(
+            async (db, token) =>
+            {
+                await RewriteRecordsAsync(
+                    db,
+                    raw => RenameTokens(raw, oldMethod, newMethod),
+                    token).ConfigureAwait(false);
+
+                List<PaymentMethodOption> options = await db.PaymentMethodOptions
+                    .ToListAsync(token).ConfigureAwait(false);
+                List<HiddenPaymentMethod> hidden = await db.HiddenPaymentMethods
+                    .ToListAsync(token).ConfigureAwait(false);
+
+                bool oldIsBuiltIn = PaymentMethodCatalog.IsBuiltIn(oldMethod);
+                bool newIsBuiltIn = PaymentMethodCatalog.IsBuiltIn(newMethod);
+
+                // The new name is offered from now on, unless it is a built-in - the
+                // catalog always offers those, and the line below revives this one if
+                // it had been deleted.
+                if (!newIsBuiltIn)
+                {
+                    PaymentMethodOption? row = options.FirstOrDefault(
+                        o => PaymentMethodCatalog.Matches(o.Name, newMethod));
+
+                    if (row is null)
+                    {
+                        db.PaymentMethodOptions.Add(new PaymentMethodOption { Name = newMethod });
+                    }
+                }
+
+                // Naming a method after a deleted built-in brings that built-in back.
+                HiddenPaymentMethod? revived = hidden.FirstOrDefault(
+                    h => PaymentMethodCatalog.Matches(h.Name, newMethod));
+                if (revived is not null)
+                {
+                    db.HiddenPaymentMethods.Remove(revived);
+                }
+
+                // Renaming a built-in off its shipped name hides the shipped name,
+                // exactly as deleting it would.
+                if (oldIsBuiltIn && hidden.All(h => !PaymentMethodCatalog.Matches(h.Name, oldMethod)))
+                {
+                    db.HiddenPaymentMethods.Add(new HiddenPaymentMethod { Name = oldMethod });
+                }
+                else if (!oldIsBuiltIn)
+                {
+                    PaymentMethodOption? oldRow = options.FirstOrDefault(
+                        o => PaymentMethodCatalog.Matches(o.Name, oldMethod));
+
+                    if (oldRow is not null)
+                    {
+                        // Another row may already offer the new name, in which case
+                        // keeping both would list it twice.
+                        bool covered = newIsBuiltIn || options.Any(
+                            o => o != oldRow && PaymentMethodCatalog.Matches(o.Name, newMethod));
+
+                        if (covered)
+                        {
+                            db.PaymentMethodOptions.Remove(oldRow);
+                        }
+                        else
+                        {
+                            oldRow.Name = newMethod;
+                        }
+                    }
+                }
+
+                await db.SaveChangesAsync(token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken);
+    }
+
+    public Task DeletePaymentMethodsAsync(
+        IReadOnlyList<string> names, CancellationToken cancellationToken = default)
+    {
+        string[] wanted = NormalisedNames(names);
+
+        if (wanted.Length == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        return _store.RunAsync(
+            async (db, token) =>
+            {
+                await RewriteRecordsAsync(
+                    db,
+                    raw => string.Join(
+                        Website.MethodSeparator,
+                        raw.Split(Website.MethodSeparator, StringSplitOptions.RemoveEmptyEntries)
+                            .Where(part => !wanted.Contains(part, StringComparer.OrdinalIgnoreCase))),
+                    token).ConfigureAwait(false);
+
+                List<PaymentMethodOption> options = await db.PaymentMethodOptions
+                    .ToListAsync(token).ConfigureAwait(false);
+                List<HiddenPaymentMethod> hidden = await db.HiddenPaymentMethods
+                    .ToListAsync(token).ConfigureAwait(false);
+
+                foreach (PaymentMethodOption row in options.Where(
+                             o => wanted.Contains(o.Name, StringComparer.OrdinalIgnoreCase)).ToList())
+                {
+                    db.PaymentMethodOptions.Remove(row);
+                }
+
+                // A built-in cannot be removed from the code it lives in; deleting it
+                // means hiding it from every catalog read from now on.
+                foreach (string name in wanted.Where(PaymentMethodCatalog.IsBuiltIn))
+                {
+                    if (hidden.All(h => !PaymentMethodCatalog.Matches(h.Name, name)))
+                    {
+                        db.HiddenPaymentMethods.Add(new HiddenPaymentMethod { Name = name });
+                    }
+                }
+
+                await db.SaveChangesAsync(token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Applies a rewrite to every website whose method column changes under it, in
+    /// one save.
+    /// </summary>
+    /// <remarks>
+    /// The rewriter is given the raw column and returns the new one; a result that
+    /// equals the input leaves that record untouched, which keeps the change tracker
+    /// from writing rows that did not change.
+    /// </remarks>
+    private static async Task RewriteRecordsAsync(
+        DoNetDbContext db,
+        Func<string, string> rewrite,
+        CancellationToken token)
+    {
+        List<Website> rows = await db.Websites
+            .Where(w => w.PaymentMethodsRaw != string.Empty)
+            .ToListAsync(token).ConfigureAwait(false);
+
+        foreach (Website row in rows)
+        {
+            string rewritten = rewrite(row.PaymentMethodsRaw);
+
+            if (!string.Equals(rewritten, row.PaymentMethodsRaw, StringComparison.Ordinal))
+            {
+                row.PaymentMethodsRaw = rewritten;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Replaces one method name inside a raw column, without ever producing a
+    /// duplicate of the name it was replaced with.
+    /// </summary>
+    private static string RenameTokens(string raw, string oldMethod, string newMethod)
+    {
+        string[] parts = raw.Split(Website.MethodSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+        List<string> rebuilt = new(parts.Length);
+
+        foreach (string part in parts)
+        {
+            if (PaymentMethodCatalog.Matches(part, oldMethod))
+            {
+                // The same record may already list the new name - "PayPal" being
+                // renamed to a second "PayPal" row, essentially - and keeping both
+                // would offer the method twice on that record.
+                if (!rebuilt.Any(p => PaymentMethodCatalog.Matches(p, newMethod)))
+                {
+                    rebuilt.Add(newMethod);
+                }
+            }
+            else
+            {
+                rebuilt.Add(part);
+            }
+        }
+
+        return string.Join(Website.MethodSeparator, rebuilt);
+    }
+
+    /// <summary>Trimmed, non-blank, case-insensitively distinct.</summary>
+    private static string[] NormalisedNames(IReadOnlyList<string>? names)
+        => (names ?? Array.Empty<string>())
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Select(n => n.Trim())
+            .GroupBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToArray();
 
     public async Task RememberPaymentMethodAsync(
         string method, CancellationToken cancellationToken = default)
@@ -129,8 +379,36 @@ public sealed class WebsiteDirectoryService : IWebsiteDirectory
         string trimmed = method?.Trim() ?? string.Empty;
 
         // Nothing to remember, and the six built-ins are already always offered.
-        if (trimmed.Length == 0 || PaymentMethodCatalog.IsBuiltIn(trimmed))
+        if (trimmed.Length == 0)
         {
+            return;
+        }
+
+        // A built-in that was deleted is being asked for by name again. Its hidden
+        // row is the only thing standing between it and being offered, so remembering
+        // it means removing that row - otherwise the method would be ticked, saved on
+        // records, and then quietly gone from the list at the next catalog read.
+        if (PaymentMethodCatalog.IsBuiltIn(trimmed))
+        {
+            await _store.RunAsync(
+                async (db, token) =>
+                {
+                    List<HiddenPaymentMethod> hidden = await db.HiddenPaymentMethods
+                        .ToListAsync(token).ConfigureAwait(false);
+
+                    HiddenPaymentMethod? match = hidden.FirstOrDefault(
+                        h => PaymentMethodCatalog.Matches(h.Name, trimmed));
+
+                    if (match is not null)
+                    {
+                        db.HiddenPaymentMethods.Remove(match);
+                        await db.SaveChangesAsync(token).ConfigureAwait(false);
+                    }
+
+                    return true;
+                },
+                cancellationToken).ConfigureAwait(false);
+
             return;
         }
 

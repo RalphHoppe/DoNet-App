@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -35,6 +36,7 @@ public sealed partial class AccountsViewModel : ObservableObject, IDeleteConfirm
 
     private readonly IAccountDirectory _directory;
     private readonly IEncryptedStore _store;
+    private readonly WebsitesViewModel _websites;
     private readonly DispatcherQueue? _dispatcher;
 
     /// <summary>
@@ -65,11 +67,20 @@ public sealed partial class AccountsViewModel : ObservableObject, IDeleteConfirm
     [ObservableProperty] private Account? _pendingDelete;
     [ObservableProperty] private bool _hasMore;
 
-    public AccountsViewModel(IAccountDirectory directory, IEncryptedStore store)
+    public AccountsViewModel(
+        IAccountDirectory directory,
+        IEncryptedStore store,
+        WebsitesViewModel websites)
     {
         _directory = directory;
         _store = store;
+        _websites = websites;
         Dialog = new AccountDialogViewModel();
+
+        // The account dialog can send the user off to add a website, and has to
+        // notice when they come back with one. Both are singletons that live for the
+        // process, so this subscription is never detached and never duplicates.
+        _websites.PropertyChanged += OnWebsitesPropertyChanged;
 
         // Constructed on the UI thread; null if that ever stops being true, which
         // IdleWork treats as "do not schedule".
@@ -300,6 +311,49 @@ public sealed partial class AccountsViewModel : ObservableObject, IDeleteConfirm
     }
 
     public void CloseDialog() => IsDialogOpen = false;
+
+    /// <summary>
+    /// Opens the add-website form over this dialog, from the site picker's "add" row.
+    /// </summary>
+    /// <remarks>
+    /// An account whose website does not exist yet used to mean cancelling the whole
+    /// form, finding the Websites tab, creating the site, and starting the account
+    /// over. The picker's add row hands the problem to the website dialog instead,
+    /// which opens over this one and closes back onto it.
+    /// </remarks>
+    public void AddWebsiteFromAccount() => _websites.AddWebsite();
+
+    /// <summary>
+    /// Brings a website created over this dialog into the picker, selected.
+    /// </summary>
+    /// <remarks>
+    /// Fires when the website dialog closes while this one is still open. The
+    /// website was saved a moment before it closed, so the options are fetched again
+    /// rather than patched - the store is the authority on what a label resolves to,
+    /// and the round trip is one small query on an already-open connection.
+    /// </remarks>
+    private async void OnWebsitesPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName != nameof(WebsitesViewModel.IsDialogOpen)
+            || _websites.IsDialogOpen
+            || !IsDialogOpen
+            || _websites.LastAddedWebsite is not { } added)
+        {
+            return;
+        }
+
+        try
+        {
+            _websiteOptions = await _directory.GetWebsiteOptionsAsync().ConfigureAwait(true);
+            Dialog.OfferWebsites(_websiteOptions, added.PickerLabel);
+        }
+        catch (Exception error)
+        {
+            // The account form still works with the options it had; a failed refresh
+            // must not take the dialog down with it.
+            AppLog.Error("Refreshing the website picker after an add failed", error);
+        }
+    }
 
     /// <summary>Preview turns into edit in place; add and edit commit and close.</summary>
     public async Task CommitDialogAsync()

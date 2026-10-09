@@ -238,9 +238,15 @@
                 otherwise during idle time once the entrance animation has finished, so
                 the first click is not the one that pays.
             -->
+            <!--
+                Later children sit on top. The website dialog is above the account
+                dialog because the account form can open it - from its site picker's
+                "add" row - as a layer over itself, and the confirmation sits above
+                everything because anything can ask.
+            -->
             <views:PersonDialog x:Name="PersonModal" x:Load="False" />
-            <views:WebsiteDialog x:Name="WebsiteModal" x:Load="False" />
             <views:AccountDialog x:Name="AccountModal" x:Load="False" />
+            <views:WebsiteDialog x:Name="WebsiteModal" x:Load="False" />
             <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
         </Grid>
     </Page>

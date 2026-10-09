@@ -41,6 +41,18 @@
     <Content Include="Assets\Fonts\Baumans-OFL.txt" />
   </ItemGroup>
 
+  <!--
+    Country flags, from the flag-icons pack by Yammadev (MIT). One file per country,
+    named by two-letter code; FlagData maps catalog names onto them. Each PNG is the
+    pack's 63x45 render, three times the 21x15 the UI draws it at, which covers 200
+    percent scaling without per-scale variants. The licence file ships alongside them
+    to satisfy MIT's attribution requirement.
+  -->
+  <ItemGroup>
+    <Content Include="Assets\Flags\**\*.png" />
+    <Content Include="Assets\Flags\LICENSE.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>

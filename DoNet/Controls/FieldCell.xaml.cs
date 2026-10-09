@@ -213,6 +213,32 @@ public sealed partial class FieldCell : UserControl
     }
 
     /// <summary>
+    /// Identifies the <see cref="AddChoiceLabel"/> property.
+    /// </summary>
+    public static readonly DependencyProperty AddChoiceLabelProperty = DependencyProperty.Register(
+        nameof(AddChoiceLabel),
+        typeof(string),
+        typeof(FieldCell),
+        new PropertyMetadata(null, OnAnyPropertyChanged));
+
+    /// <summary>
+    /// The label of the "add" row in the choice drawer, or null for none.
+    /// </summary>
+    /// <remarks>
+    /// Only meaningful with <see cref="FieldInputKind.Choice"/>. This is the escape
+    /// hatch for a picker that points at records - the website an account belongs
+    /// to - where the thing to pick might not exist yet.
+    /// </remarks>
+    public string? AddChoiceLabel
+    {
+        get => (string?)GetValue(AddChoiceLabelProperty);
+        set => SetValue(AddChoiceLabelProperty, value);
+    }
+
+    /// <summary>Raised when the drawer's "add" row is picked. Carries nothing.</summary>
+    public event EventHandler? AddChoiceRequested;
+
+    /// <summary>
     /// The input this cell is currently showing, or null if it is showing none -
     /// a display cell, or an automatic one like the record number.
     /// </summary>
@@ -404,6 +430,7 @@ public sealed partial class FieldCell : UserControl
         ChoiceInput.Placeholder = Placeholder;
         ChoiceInput.AllowCustom = allowCustom;
         ChoiceInput.ShowFlags = flags;
+        ChoiceInput.AddLabel = AddChoiceLabel;
 
         // Each row carries the field's own icon, which is the rule the rest of the
         // app already follows: one mark per field, the same on the card and in the
@@ -579,6 +606,9 @@ public sealed partial class FieldCell : UserControl
             Commit(picked);
         }
     }
+
+    private void OnChoiceAddRequested(object? sender, EventArgs args)
+        => AddChoiceRequested?.Invoke(this, EventArgs.Empty);
 
     private void OnDateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
     {

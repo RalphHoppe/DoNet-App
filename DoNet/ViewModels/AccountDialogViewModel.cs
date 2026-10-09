@@ -107,6 +107,42 @@ public sealed partial class AccountDialogViewModel : ObservableObject
     public void SwitchToEdit() => Mode = AccountDialogMode.Edit;
 
     /// <summary>
+    /// Re-offers the websites without disturbing anything else on the form.
+    /// </summary>
+    /// <param name="websites">The sites to offer, freshly read.</param>
+    /// <param name="selectLabel">
+    /// A label to select as well, or null to leave the current value alone. Used
+    /// when a website was just created from this form's own picker, so the record
+    /// the user went away to make is the one they come back to find chosen.
+    /// </param>
+    /// <remarks>
+    /// Not a refill: the user may have typed a username and a password by the time
+    /// this runs, and rebuilding the form from the record would silently drop them.
+    /// Only the picker's own state is replaced.
+    /// </remarks>
+    public void OfferWebsites(IReadOnlyList<Website> websites, string? selectLabel)
+    {
+        _websiteIds.Clear();
+
+        List<string> labels = new(websites.Count);
+
+        foreach (Website website in websites)
+        {
+            if (_websiteIds.TryAdd(website.PickerLabel, website.Id))
+            {
+                labels.Add(website.PickerLabel);
+            }
+        }
+
+        WebsiteOptions = labels;
+
+        if (selectLabel is not null && _websiteIds.ContainsKey(selectLabel))
+        {
+            WebsiteLabel = selectLabel;
+        }
+    }
+
+    /// <summary>
     /// The form as a record, ready for the store.
     /// </summary>
     /// <remarks>

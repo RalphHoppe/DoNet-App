@@ -43,6 +43,9 @@ public sealed class DoNetDbContext : DbContext
     /// <summary>Payment methods the user added themselves. The six built-ins are in code.</summary>
     public DbSet<PaymentMethodOption> PaymentMethodOptions => Set<PaymentMethodOption>();
 
+    /// <summary>Built-in payment methods the user has deleted. The list in code stays.</summary>
+    public DbSet<HiddenPaymentMethod> HiddenPaymentMethods => Set<HiddenPaymentMethod>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         options.UseSqlite(_connection);
@@ -108,6 +111,18 @@ public sealed class DoNetDbContext : DbContext
             // Unlike the record tables, this one is looked up by name on every save,
             // so the index earns its keep.
             entity.HasIndex(o => o.Name);
+        });
+
+        model.Entity<HiddenPaymentMethod>(entity =>
+        {
+            entity.ToTable("HiddenPaymentMethods");
+            entity.HasKey(h => h.Id);
+            entity.Property(h => h.Id).ValueGeneratedOnAdd();
+            entity.Property(h => h.Name).IsRequired();
+
+            // Read on every catalog load, and written only when a built-in is
+            // deleted or revived.
+            entity.HasIndex(h => h.Name);
         });
     }
 }

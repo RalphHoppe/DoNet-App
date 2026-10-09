@@ -1116,8 +1116,8 @@ drawer opens and back when it closes - the same cubic ease as the rail and the s
 transition, because a control that animates on its own curve reads as a control from
 somewhere else.
 
-The drawer is a `Flyout` with the app's own geometry: 20px corners, the field border
-colour, no padding of its own. Rows are 42px tall with 13px corners and inset 8px from
+The drawer is a `Flyout` with the app's own geometry: 20px corners, the field's own
+white, no padding of its own. Rows are 42px tall with 13px corners and inset 8px from
 the edge, so the highlight is a pill inside the surface rather than a bar across it.
 Thirteen `ListViewItem` brush keys are overridden in the flyout's own resources - hover
 `#F0F7F5`, selected `#E4F0EC`, and the two pressed variants - which is what it takes to
@@ -1125,14 +1125,35 @@ get the system list to stop painting itself blue. The selection indicator, the v
 bar WinUI draws down the left edge of a selected row, is switched off outright; the tick
 on the right says the same thing more quietly.
 
-**Countries get flags.** `FlagIcon` draws 196 of them from `FlagData`, a generated table
-of rectangles, ellipses and paths in a 3x2 box. They are drawn rather than shipped as
-art: the sandbox this was built in cannot reach a CDN, Windows has no flag font, and
-regional-indicator emoji render as boxed letters. They are schematic - correct colours,
-correct proportions, recognisable at 24x16, which is the only size they are ever drawn
-at - and `FlagIcon` is a sealed surface with one `Country` property, so licensed SVG art
-can replace the table later without touching anything that uses it. A flag that is not
-in the table draws nothing rather than a placeholder.
+The row corners have their own story, because the first version of them did not work.
+`DrawerRowStyle` set the `ListViewItem`'s `CornerRadius` property to 13 and the rows
+stayed square, and the reason is worth writing down: the stock `ListViewItem` template
+draws its states inside a `ListViewItemPresenter` whose `CornerRadius` is bound to the
+`ListViewItemCornerRadius` **theme resource**, not to the control's property, which the
+template never reads. Setting the property rounds nothing. Overriding the resource the
+presenter actually consults - one `<CornerRadius>` element in the drawer's scoped
+resources - is the only way in. The brush overrides worked first time because those the
+template *does* take from resources; the corner was the one that didn't.
+
+**Countries get flags.** Real ones now: the 196 flags in `Assets/Flags` are from
+[flag-icons](https://github.com/yammadev/flag-icons) by Yammadev, MIT licensed, with the
+licence shipped beside them. (The first version drew all 196 by hand as vector
+primitives - the sandbox cannot reach a CDN and Windows has no flag font - and the
+first "flag pack" uploaded here turned out to be 191 identical grey placeholder cards
+reading NL, US, GB. The real pack came from the project's GitHub tarball.) `FlagData`
+maps each catalog name to a two-letter code, which is the file name; each PNG is the
+pack's 63x45 render, three times the 21x15 the UI draws it at, so it stays sharp at
+200 percent scaling with no per-scale variants to ship. Every flag in the pack shares
+one 7:5 frame, which is why `FlagIcon` can be a fixed size with `Stretch=UniformToFill`
+and never crop or letterbox.
+
+The flag is a rounded `Rectangle` with an `ImageBrush` fill, not an `Image` inside a
+round corner: nothing in this framework clips children to a `CornerRadius`, so a
+square-cornered bitmap would poke out behind any stroke drawn on top of it. Filling a
+rounded shape *is* the clip - the picture only exists inside the geometry. The brush is
+handed a fresh `BitmapImage` per country because bitmaps decode asynchronously and a
+recycled row would otherwise show the previous country's flag for a frame. A country
+with no file draws nothing rather than a placeholder.
 
 Every other list gets the field's own icon on each row - `Globe` for websites, `Users`
 for gender - which keeps the rule the rest of the app follows: one mark per field, the
@@ -1154,6 +1175,64 @@ not held live, so nothing is mutating a collection the list has not measured - t
 this app has hit three times. And neither the presenter nor the row template uses
 `ColumnSpacing`: a `Grid` spaces around a collapsed column exactly as it does a visible
 one, and the flag, the icon and the tick are each collapsed most of the time.
+
+### Payment methods you can change, not just add
+
+The methods panel on the website form grew two small discs beside its heading: a pencil
+and a trash, 32px, matching the card hover actions' colouring - teal edit, red delete.
+Each opens a *tap mode*: the form's contents step aside, a banner says what is being
+asked - "Tap the payment method you want to edit", "Tap the payment methods you want to
+delete" - and every method becomes a pill.
+
+Edit takes one tap. The pill opens a small popup over the dialog - one field, because a
+payment method's only attribute is its name - seeded with the current name and selected.
+SAVE stays quiet (disabled, on the disabled teal) until what is typed is a real rename:
+not blank, not the same name, not a name that already exists. The rename is applied
+everywhere in one transaction - the catalog, and the delimited methods column of every
+website that lists it - so no record is left stranded on the old name. Naming a method
+after a deleted built-in revives that built-in; renaming a built-in off its shipped name
+hides the shipped name, exactly as deleting it would.
+
+Delete takes as many taps as you like. Picked pills turn red with a white tick, and the
+action button counts them: `DELETE (3)`. Confirming opens the same confirmation dialog
+the directories use, and the confirmation carries the warning that makes the whole flow
+honest: *"PayPal is used by 4 websites. It will be removed from those records and no
+longer offered."* The count is gathered before the dialog opens, not after it closes.
+Confirming strips the methods from every record, removes them from the catalog, and
+takes them off the open form - saving that form unchanged would otherwise write them
+straight back.
+
+The six built-ins are editable and deletable like everything else, which is why there
+is now a `HiddenPaymentMethods` table. The built-ins live in code so they are always
+offered, which is the right default and the wrong behaviour once the user deletes one:
+a delete that quietly undoes itself on the next catalog read is not a delete. The table
+is the memory of that decision, and `SchemaGuard` creates it on existing databases, so
+no vault has to be rebuilt to get it.
+
+One rule of the form's plumbing got stricter at the same time. The options list is an
+`ItemsRepeater`, and a collapsed repeater that has never been measured throws on any
+collection change - this app has hit that three times. A tap mode hides that repeater,
+and the host's rename and delete rewrite the method list from under it, so
+`SyncMethodOptionsSource` now detaches whenever a tap mode is running and reattaches
+when it ends. The crash window closed before it ever opened.
+
+### Adding a website without leaving the account form
+
+The website field on the account form is a picker, and a picker can only offer what
+exists. An account for a site that is not in the vault yet used to mean cancelling the
+form, finding the Websites tab, creating the site, and starting the account over.
+
+The site drawer now ends in an "Add a website" row when the form is the account form -
+`ChoicePicker` takes an `AddLabel` and raises `AddRequested`; `FieldCell` passes both
+through; `AccountDialog` is the only host that sets one. Picking it opens the add
+website dialog *over* the account form - the modals at the HomePage root are stacked
+account-then-website for exactly this reason - and when it closes, the account form is
+still there with the new site already selected in the picker. The hand-off is a single
+`LastAddedWebsite` property on the websites view model, read by the accounts view model
+when it sees the website dialog close while its own is still open: the options are
+re-fetched from the store rather than patched, the picker's own state is replaced
+without touching anything else the user may have typed, and the new label is chosen.
+Enter in the filter box takes the add row when nothing matches, so it is not mouse-only.
 
 ### Still worth doing
 

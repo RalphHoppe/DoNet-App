@@ -168,6 +168,79 @@ public sealed partial class WebsiteDialogViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Removes methods from the form outright - the tick box and the selection.
+    /// </summary>
+    /// <remarks>
+    /// Called after a confirmed delete, which has already stripped the methods from
+    /// every stored record; the form's own selection is the last place they live,
+    /// and saving it unchanged would write them straight back.
+    /// </remarks>
+    public void RemoveMethods(IReadOnlyList<string> methods)
+    {
+        for (int i = Choices.Count - 1; i >= 0; i--)
+        {
+            if (methods.Any(m => PaymentMethodCatalog.Matches(m, Choices[i].Name)))
+            {
+                Choices.RemoveAt(i);
+            }
+        }
+
+        Sync();
+    }
+
+    /// <summary>
+    /// Renames a method on the form: its tick box, and its selection if it had one.
+    /// </summary>
+    /// <remarks>
+    /// The new name may already be offered - renaming "Visa" to "PayPal", say - in
+    /// which case the two become one: the existing row keeps its tick, and the
+    /// renamed row goes.
+    /// </remarks>
+    public void RenameMethod(string oldName, string newName)
+    {
+        PaymentMethodChoice? existing =
+            Choices.FirstOrDefault(c => PaymentMethodCatalog.Matches(c.Name, newName));
+
+        if (existing is not null)
+        {
+            // Nothing to merge with; the rename is a plain relabel.
+            if (PaymentMethodCatalog.Matches(existing.Name, oldName))
+            {
+                return;
+            }
+
+            existing.IsSelected = Choices
+                .Where(c => PaymentMethodCatalog.Matches(c.Name, oldName))
+                .Any(c => c.IsSelected) || existing.IsSelected;
+        }
+
+        for (int i = Choices.Count - 1; i >= 0; i--)
+        {
+            if (!PaymentMethodCatalog.Matches(oldName, Choices[i].Name))
+            {
+                continue;
+            }
+
+            if (existing is not null)
+            {
+                Choices.RemoveAt(i);
+            }
+            else
+            {
+                bool wasSelected = Choices[i].IsSelected;
+
+                Choices.RemoveAt(i);
+
+                PaymentMethodChoice renamed = new(newName, wasSelected);
+                renamed.PropertyChanged += (_, _) => Sync();
+                Choices.Insert(i, renamed);
+            }
+        }
+
+        Sync();
+    }
+
     public Website ToWebsite()
     {
         Website website = _original?.Clone() ?? new Website();

@@ -163,7 +163,8 @@
                                        Visibility="Collapsed"
                                        HorizontalAlignment="Stretch"
                                        VerticalAlignment="Center"
-                                       ValueChosen="OnChoiceChanged" />
+                                       ValueChosen="OnChoiceChanged"
+                                       AddRequested="OnChoiceAddRequested" />
 
                 <!-- Date of birth. -->
                 <CalendarDatePicker x:Name="DateInput"

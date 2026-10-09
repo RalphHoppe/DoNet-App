@@ -85,7 +85,13 @@
 
                 <Flyout.FlyoutPresenterStyle>
                     <Style TargetType="FlyoutPresenter">
-                        <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                        <!--
+                            The field's own white, not a softer surface grey: a drawer
+                            that drops out of a white field and arrives grey reads as
+                            a system surface that was tinted, not a surface that
+                            belongs to the field.
+                        -->
+                        <Setter Property="Background" Value="{StaticResource FieldBackgroundBrush}" />
                         <Setter Property="BorderBrush" Value="{StaticResource SearchBorderBrush}" />
                         <Setter Property="BorderThickness" Value="1" />
                         <Setter Property="CornerRadius" Value="20" />
@@ -130,12 +136,22 @@
                         <!-- The left accent bar WinUI draws beside a selected row. -->
                         <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
 
+                        <!--
+                            The row's rounded corners. The stock ListViewItem template
+                            draws its hover and selection fills inside a
+                            ListViewItemPresenter, whose CornerRadius is bound to this
+                            theme resource - not to the row's own CornerRadius
+                            property, which the template never reads. Setting the
+                            property rounds nothing; overriding the resource the
+                            presenter actually consults is the one way in.
+                        -->
+                        <CornerRadius x:Key="ListViewItemCornerRadius">13</CornerRadius>
+
                         <Style x:Key="DrawerRowStyle" TargetType="ListViewItem">
                             <Setter Property="MinHeight" Value="42" />
                             <Setter Property="Height" Value="42" />
                             <Setter Property="Padding" Value="12,0" />
                             <Setter Property="Margin" Value="8,1" />
-                            <Setter Property="CornerRadius" Value="13" />
 
                             <!-- Control defaults this to Center, which would centre
                                  every row's content instead of filling the row. -->
@@ -146,6 +162,7 @@
                     </Grid.Resources>
 
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -259,6 +276,47 @@
                                Foreground="{StaticResource SearchPlaceholderBrush}"
                                LineStackingStrategy="BlockLineHeight"
                                LineHeight="22" />
+
+                    <!--
+                        The way out of a picker that does not have the thing you need.
+                        Set AddLabel and this appears under the list: the account form
+                        puts "Add a website" here, so a record that needs a site the
+                        picker cannot offer is one tap away from the form that creates
+                        it, rather than a cancelled dialog and a detour through the
+                        Websites tab.
+                    -->
+                    <Button x:Name="AddRow"
+                            Grid.Row="3"
+                            Margin="12,4,12,12"
+                            Padding="0"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource BareButtonStyle}"
+                            Click="OnAddRowClick">
+                        <Border Height="42"
+                                CornerRadius="13"
+                                Background="{StaticResource FieldBackgroundBrush}"
+                                BorderBrush="{StaticResource AddActionBorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="9"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <controls:LineIcon Kind="Plus"
+                                                   Width="15"
+                                                   Height="15"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource BrandPrimaryBrush}" />
+
+                                <TextBlock x:Name="AddRowLabel"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource BalooFont}"
+                                           FontSize="{StaticResource FieldValueFontSize}"
+                                           Foreground="{StaticResource BrandPrimaryBrush}"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           LineHeight="22" />
+                            </StackPanel>
+                        </Border>
+                    </Button>
                 </Grid>
             </Flyout>
         </FlyoutBase.AttachedFlyout>

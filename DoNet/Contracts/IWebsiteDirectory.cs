@@ -40,4 +40,35 @@ public interface IWebsiteDirectory
     /// blank, and anything that already exists under any casing.
     /// </summary>
     Task RememberPaymentMethodAsync(string method, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How many saved websites list any of these methods among their own.
+    /// </summary>
+    /// <param name="methods">Method names, matched case-insensitively and trimmed.</param>
+    Task<int> CountWebsitesUsingAsync(
+        IReadOnlyList<string> methods, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Renames a payment method everywhere it exists: the offered catalog, and every
+    /// website that lists it.
+    /// </summary>
+    /// <remarks>
+    /// A method is one string on each record, so a rename that touched only the
+    /// catalog would strand every record on the old name. Both halves are rewritten
+    /// in one transaction; a website left half-renamed is worse than either outcome
+    /// alone.
+    /// </remarks>
+    Task RenamePaymentMethodAsync(
+        string oldName, string newName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes payment methods everywhere they exist: the offered catalog, and every
+    /// website that lists them.
+    /// </summary>
+    /// <remarks>
+    /// Deleting a built-in hides it rather than editing the code it lives in; see
+    /// <see cref="HiddenPaymentMethod"/> for why that distinction matters.
+    /// </remarks>
+    Task DeletePaymentMethodsAsync(
+        IReadOnlyList<string> names, CancellationToken cancellationToken = default);
 }

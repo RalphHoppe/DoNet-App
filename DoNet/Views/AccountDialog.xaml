@@ -212,6 +212,8 @@
                                             Placeholder="Select a saved website"
                                             TabOrder="1"
                                             InputKind="Choice"
+                                            AddChoiceLabel="Add a website"
+                                            AddChoiceRequested="OnAddWebsiteRequested"
                                             Options="{x:Bind ViewModel.WebsiteOptions, Mode=OneWay}"
                                             Value="{x:Bind ViewModel.WebsiteLabel, Mode=TwoWay}"
                                             Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"

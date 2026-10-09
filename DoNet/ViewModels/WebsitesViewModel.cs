@@ -64,6 +64,17 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
     [ObservableProperty] private Website? _pendingDelete;
     [ObservableProperty] private bool _hasMore;
 
+    /// <summary>
+    /// The payment methods a delete confirmation is currently about, if any. The
+    /// same confirmation dialog serves websites and methods, so this and
+    /// <see cref="PendingDelete"/> are mutually exclusive by construction: asking
+    /// for one clears the other.
+    /// </summary>
+    private IReadOnlyList<string>? _pendingMethodDelete;
+
+    /// <summary>The confirmation body for the pending method delete, composed when it was asked for.</summary>
+    private string _pendingMethodDeleteBody = string.Empty;
+
     public WebsitesViewModel(IWebsiteDirectory directory, IEncryptedStore store)
     {
         _directory = directory;
@@ -79,6 +90,19 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
 
     public WebsiteDialogViewModel Dialog { get; }
 
+    /// <summary>
+    /// The website the dialog most recently created, or null if the last dialog
+    /// session did not add one.
+    /// </summary>
+    /// <remarks>
+    /// Read by the account dialog, which offers to create a website from its own
+    /// site picker and needs to know, when the website dialog closes back onto it,
+    /// which record to select. It is a hand-off between two singletons rather than
+    /// an event because exactly one consumer cares, once, at a moment it already
+    /// knows to look.
+    /// </remarks>
+    public Website? LastAddedWebsite { get; private set; }
+
     public bool IsLoading => State == DirectoryState.Loading;
 
     public bool IsError => State == DirectoryState.Error;
@@ -87,10 +111,13 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
 
     public bool HasNoMatches => State == DirectoryState.Ready && Websites.Count == 0;
 
-    public string ConfirmDeleteTitle => "Delete this website?";
+    public string ConfirmDeleteTitle => _pendingMethodDelete is { Count: > 0 }
+        ? "Delete these payment methods?"
+        : "Delete this website?";
 
     public string ConfirmDeleteBody =>
-        PendingDelete is null
+        _pendingMethodDelete is { Count: > 0 } ? _pendingMethodDeleteBody
+        : PendingDelete is null
             ? string.Empty
             : $"{PendingDelete.DisplayName} and every field on the record will be removed. "
               + "This cannot be undone.";
@@ -110,6 +137,8 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
         IsDialogOpen = false;
         IsConfirmingDelete = false;
         PendingDelete = null;
+        _pendingMethodDelete = null;
+        LastAddedWebsite = null;
         State = DirectoryState.Loading;
 
         OnPropertyChanged(nameof(HasNoMatches));
@@ -315,11 +344,16 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
 
         Website website = Dialog.ToWebsite();
 
+        // Cleared before the save so a failure leaves no ghost: a consumer that
+        // watches for the dialog closing would otherwise find a record that was
+        // never stored.
+        LastAddedWebsite = null;
+
         try
         {
             if (Dialog.Mode == WebsiteDialogMode.Add)
             {
-                await _directory.AddAsync(website).ConfigureAwait(true);
+                LastAddedWebsite = await _directory.AddAsync(website).ConfigureAwait(true);
             }
             else
             {
@@ -356,24 +390,132 @@ public sealed partial class WebsitesViewModel : ObservableObject, IDeleteConfirm
 
     public void RequestDelete(Website website)
     {
+        _pendingMethodDelete = null;
         PendingDelete = website;
         OnPropertyChanged(nameof(ConfirmDeleteTitle));
         OnPropertyChanged(nameof(ConfirmDeleteBody));
         IsConfirmingDelete = true;
     }
 
+    /// <summary>
+    /// Asks for confirmation before deleting payment methods from the catalog.
+    /// </summary>
+    /// <remarks>
+    /// The count of websites using them is part of the question, so it is gathered
+    /// before the dialog opens; the confirmation is the one place the user gets to
+    /// see how far a delete reaches, and it cannot say "used by 4 websites" after
+    /// they have already clicked yes.
+    /// </remarks>
+    public async Task RequestMethodDeleteAsync(IReadOnlyList<string> methods)
+    {
+        int usingCount;
+        try
+        {
+            usingCount = await _directory.CountWebsitesUsingAsync(methods).ConfigureAwait(true);
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Counting the websites using a payment method failed", error);
+            return;
+        }
+
+        int count = methods.Count;
+        string websites = usingCount == 1 ? "1 website" : $"{usingCount} websites";
+
+        _pendingMethodDeleteBody = count switch
+        {
+            1 when usingCount == 0 =>
+                $"\u201C{methods[0]}\u201D will no longer be offered as a payment method. "
+                + "This cannot be undone.",
+            1 =>
+                $"\u201C{methods[0]}\u201D is used by {websites}. It will be removed from "
+                + "those records and no longer offered. This cannot be undone.",
+            _ when usingCount == 0 =>
+                $"{count} payment methods will no longer be offered. This cannot be undone.",
+            _ =>
+                $"{count} payment methods are used by {websites}. They will be removed "
+                + "from those records and no longer offered. This cannot be undone.",
+        };
+
+        PendingDelete = null;
+        _pendingMethodDelete = methods;
+        OnPropertyChanged(nameof(ConfirmDeleteTitle));
+        OnPropertyChanged(nameof(ConfirmDeleteBody));
+        IsConfirmingDelete = true;
+    }
+
+    /// <summary>
+    /// Renames a payment method everywhere: the catalog, every website that lists
+    /// it, and the open dialog.
+    /// </summary>
+    public async Task RenamePaymentMethodAsync(string oldName, string newName)
+    {
+        try
+        {
+            await _directory.RenamePaymentMethodAsync(oldName, newName).ConfigureAwait(true);
+        }
+        catch (Exception error)
+        {
+            AppLog.Error($"Renaming the payment method '{oldName}' failed", error);
+            State = DirectoryState.Error;
+            return;
+        }
+
+        _methodOptions = await _directory.GetPaymentMethodsAsync().ConfigureAwait(true);
+        Dialog.RenameMethod(oldName, newName);
+        PaymentMethodsChanged?.Invoke();
+
+        // The cards behind the dialog still show the old name on their chips.
+        await LoadAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Raised after the payment catalog changes through a rename or a confirmed
+    /// delete - not through the add box, which the dialog already knows about.
+    /// </summary>
+    /// <remarks>
+    /// The website dialog has states of its own around these actions (the tap
+    /// targets, the rename popup) that belong to the view, not the view model. This
+    /// is how it learns the action went through.
+    /// </remarks>
+    public event Action? PaymentMethodsChanged;
+
     public void CancelDelete()
     {
         IsConfirmingDelete = false;
         PendingDelete = null;
+        _pendingMethodDelete = null;
     }
 
     public async Task ConfirmDeleteAsync()
     {
         Website? target = PendingDelete;
+        IReadOnlyList<string>? methods = _pendingMethodDelete;
 
         IsConfirmingDelete = false;
         PendingDelete = null;
+        _pendingMethodDelete = null;
+
+        if (methods is { Count: > 0 })
+        {
+            try
+            {
+                await _directory.DeletePaymentMethodsAsync(methods).ConfigureAwait(true);
+            }
+            catch (Exception error)
+            {
+                AppLog.Error("Deleting payment methods failed", error);
+                State = DirectoryState.Error;
+                return;
+            }
+
+            _methodOptions = await _directory.GetPaymentMethodsAsync().ConfigureAwait(true);
+            Dialog.RemoveMethods(methods);
+            PaymentMethodsChanged?.Invoke();
+
+            await LoadAsync().ConfigureAwait(true);
+            return;
+        }
 
         if (target is null)
         {

@@ -77,6 +77,11 @@ public sealed partial class ChoicePicker : UserControl
         nameof(AllowCustom), typeof(bool), typeof(ChoicePicker),
         new PropertyMetadata(false));
 
+    /// <summary>Identifies the <see cref="AddLabel"/> property.</summary>
+    public static readonly DependencyProperty AddLabelProperty = DependencyProperty.Register(
+        nameof(AddLabel), typeof(string), typeof(ChoicePicker),
+        new PropertyMetadata(null));
+
     /// <summary>Creates the control.</summary>
     public ChoicePicker()
     {
@@ -136,6 +141,25 @@ public sealed partial class ChoicePicker : UserControl
         set => SetValue(AllowCustomProperty, value);
     }
 
+    /// <summary>
+    /// The label of the "add" row under the list, or null for no such row.
+    /// </summary>
+    /// <remarks>
+    /// For lists that point at records rather than values - the website an account
+    /// belongs to - the drawer can offer to go and create one instead of making the
+    /// user cancel out and find the right screen. The label is the whole contract:
+    /// what the new record's form should be is the host's business, raised as
+    /// <see cref="AddRequested"/>.
+    /// </remarks>
+    public string? AddLabel
+    {
+        get => (string?)GetValue(AddLabelProperty);
+        set => SetValue(AddLabelProperty, value);
+    }
+
+    /// <summary>Raised when the user picks the "add" row. Carries nothing.</summary>
+    public event EventHandler? AddRequested;
+
     private static void OnSurfaceChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
         => ((ChoicePicker)sender).Apply();
 
@@ -191,6 +215,13 @@ public sealed partial class ChoicePicker : UserControl
 
         FilterShell.Visibility = filtered ? Visibility.Visible : Visibility.Collapsed;
         FilterBox.PlaceholderText = ShowFlags ? "Search countries" : "Search";
+
+        // The add row belongs to the hosts that asked for it and to nobody else;
+        // the country and gender lists have nothing to add.
+        AddRow.Visibility = string.IsNullOrWhiteSpace(AddLabel)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        AddRowLabel.Text = AddLabel;
 
         _syncing = true;
         FilterBox.Text = string.Empty;
@@ -256,6 +287,14 @@ public sealed partial class ChoicePicker : UserControl
             case VirtualKey.Enter when _rows.Count > 0:
                 args.Handled = true;
                 Commit(_rows[0]);
+                break;
+
+            // Nothing left to commit and a way to add one: Enter should take it,
+            // or the row is mouse-only.
+            case VirtualKey.Enter when AddRow.Visibility == Visibility.Visible:
+                args.Handled = true;
+                Drawer.Hide();
+                AddRequested?.Invoke(this, EventArgs.Empty);
                 break;
 
             case VirtualKey.Escape:
@@ -346,6 +385,16 @@ public sealed partial class ChoicePicker : UserControl
 
         Value = option.Result;
         ValueChosen?.Invoke(this, option.Result);
+    }
+
+    /// <summary>
+    /// The "add" row: close first, then hand over, so the form that opens next never
+    /// has to share the screen with a drawer belonging to a dialog behind it.
+    /// </summary>
+    private void OnAddRowClick(object sender, RoutedEventArgs args)
+    {
+        Drawer.Hide();
+        AddRequested?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>

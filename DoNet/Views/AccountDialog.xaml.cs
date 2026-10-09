@@ -139,6 +139,13 @@ public sealed partial class AccountDialog : UserControl
 
     private void OnCloseClick(object sender, RoutedEventArgs args) => _host.CloseDialog();
 
+    /// <summary>
+    /// The site picker's "add" row. The website dialog opens over this one; when it
+    /// closes, the account form is still here and the new site is selected in it.
+    /// </summary>
+    private void OnAddWebsiteRequested(object sender, EventArgs args)
+        => _host.AddWebsiteFromAccount();
+
     private void OnCancelClick(object sender, RoutedEventArgs args) => _host.CloseDialog();
 
     /// <summary>
