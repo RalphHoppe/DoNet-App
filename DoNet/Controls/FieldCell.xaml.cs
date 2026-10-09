@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using DoNet.Models;
 using DoNet.Services;
 using Microsoft.UI.Xaml;
@@ -312,14 +311,14 @@ public sealed partial class FieldCell : UserControl
             switch (InputKind)
             {
                 case FieldInputKind.Gender:
-                    ShowChoice(value, Catalogs.Genders, editableText: false);
+                    ShowChoice(value, Catalogs.Genders, allowCustom: false, flags: false);
                     break;
                 case FieldInputKind.Country:
-                    ShowChoice(value, Catalogs.Countries, editableText: true);
+                    ShowChoice(value, Catalogs.Countries, allowCustom: true, flags: true);
                     break;
 
                 case FieldInputKind.Choice:
-                    ShowChoice(value, Options ?? Array.Empty<string>(), editableText: false);
+                    ShowChoice(value, Options ?? Array.Empty<string>(), allowCustom: false, flags: false);
                     break;
                 case FieldInputKind.Date:
                     ShowDate(value);
@@ -399,37 +398,32 @@ public sealed partial class FieldCell : UserControl
     }
 
     private void ShowChoice(
-        string value, IReadOnlyList<string> options, bool editableText)
+        string value, IReadOnlyList<string> options, bool allowCustom, bool flags)
     {
         ChoiceInput.Visibility = Visibility.Visible;
-        ChoiceInput.PlaceholderText = Placeholder;
-        ChoiceInput.IsEditable = editableText;
+        ChoiceInput.Placeholder = Placeholder;
+        ChoiceInput.AllowCustom = allowCustom;
+        ChoiceInput.ShowFlags = flags;
+
+        // Each row carries the field's own icon, which is the rule the rest of the
+        // app already follows: one mark per field, the same on the card and in the
+        // dialog. Countries are the exception, because a flag says more.
+        ChoiceInput.ItemIconKind = flags ? null : IconKind;
 
         // Reassign whenever the list itself changed. The original guard set the
         // source once, which is right for the static catalogs and wrong for a list
         // that is data: a website added after this cell was first shown would never
         // appear in the picker.
-        if (!ReferenceEquals(ChoiceInput.ItemsSource, options))
+        if (!ReferenceEquals(ChoiceInput.Options, options))
         {
-            ChoiceInput.ItemsSource = options;
+            ChoiceInput.Options = options;
         }
 
+        // A stored value that is not in the list still shows, as its own text. The
+        // picker treats the value as display text and only writes one back when a
+        // row is actually chosen, so nothing is quietly rewritten on the way in.
         _syncing = true;
-
-        // A stored value that is not in the list still has to show. For the editable
-        // country box that is just its text; for the fixed gender list, selecting
-        // nothing leaves the placeholder visible rather than silently rewriting the
-        // record to something it never said.
-        string? match = options.FirstOrDefault(
-            o => string.Equals(o, value, StringComparison.OrdinalIgnoreCase));
-
-        ChoiceInput.SelectedItem = match;
-
-        if (editableText && ChoiceInput.Text != value)
-        {
-            ChoiceInput.Text = value;
-        }
-
+        ChoiceInput.Value = value;
         _syncing = false;
     }
 
@@ -578,24 +572,11 @@ public sealed partial class FieldCell : UserControl
         }
     }
 
-    private void OnChoiceChanged(object sender, SelectionChangedEventArgs args)
-    {
-        if (!_syncing && ChoiceInput.SelectedItem is string picked)
-        {
-            Commit(picked);
-        }
-    }
-
-    /// <summary>A country typed by hand rather than picked from the list.</summary>
-    private void OnChoiceTextSubmitted(ComboBox sender, ComboBoxTextSubmittedEventArgs args)
+    private void OnChoiceChanged(object? sender, string picked)
     {
         if (!_syncing)
         {
-            Commit(args.Text);
-
-            // Tells the ComboBox we handled it, so it does not try to add the text to
-            // the items source.
-            args.Handled = true;
+            Commit(picked);
         }
     }
 

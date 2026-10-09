@@ -19,7 +19,8 @@ public static class Catalogs
 
     public static IReadOnlyList<string> Countries { get; } = new[]
     {
-        "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia",
+        "Afghanistan", "Albania", "Algeria", "Andorra", "Angola",
+        "Antigua and Barbuda", "Argentina", "Armenia",
         "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh",
         "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
         "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria",

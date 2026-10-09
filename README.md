@@ -1100,6 +1100,61 @@ Worth recording so it is not re-investigated:
   initialisers, not properties rebuilding an array per call.
 - **No `JsonSerializerOptions` churn** in the vault's read/write path.
 
+### The picker, and why it is not a ComboBox
+
+Three fields drop a list open: gender, country, and the website an account belongs to.
+All three used a `ComboBox`, which is the one control in the app that never looked like
+the app. Its popup is grey, square-ish and lands wherever the system decides; the rows
+highlight in the system accent, not the teal everything else uses; and the country list
+is 196 entries of unbroken text with no way to narrow it.
+
+It is now one control, `ChoicePicker`, that all three fields share.
+
+The closed state is just the value and a chevron, drawn into the field cell it already
+lived in, so nothing about the dialogs moved. The chevron turns over in 0.18s when the
+drawer opens and back when it closes - the same cubic ease as the rail and the section
+transition, because a control that animates on its own curve reads as a control from
+somewhere else.
+
+The drawer is a `Flyout` with the app's own geometry: 20px corners, the field border
+colour, no padding of its own. Rows are 42px tall with 13px corners and inset 8px from
+the edge, so the highlight is a pill inside the surface rather than a bar across it.
+Thirteen `ListViewItem` brush keys are overridden in the flyout's own resources - hover
+`#F0F7F5`, selected `#E4F0EC`, and the two pressed variants - which is what it takes to
+get the system list to stop painting itself blue. The selection indicator, the vertical
+bar WinUI draws down the left edge of a selected row, is switched off outright; the tick
+on the right says the same thing more quietly.
+
+**Countries get flags.** `FlagIcon` draws 196 of them from `FlagData`, a generated table
+of rectangles, ellipses and paths in a 3x2 box. They are drawn rather than shipped as
+art: the sandbox this was built in cannot reach a CDN, Windows has no flag font, and
+regional-indicator emoji render as boxed letters. They are schematic - correct colours,
+correct proportions, recognisable at 24x16, which is the only size they are ever drawn
+at - and `FlagIcon` is a sealed surface with one `Country` property, so licensed SVG art
+can replace the table later without touching anything that uses it. A flag that is not
+in the table draws nothing rather than a placeholder.
+
+Every other list gets the field's own icon on each row - `Globe` for websites, `Users`
+for gender - which keeps the rule the rest of the app follows: one mark per field, the
+same mark on the card, in the dialog, and now in the drawer.
+
+**The filter appears at twelve options and not before.** Five genders do not need a
+search box; 196 countries are unusable without one. Matches are substring, but ones that
+*start* with what was typed sort first, so typing "ni" offers Nicaragua and Nigeria
+before Bosnia and Herzegovina. Down moves from the box into the list, Enter takes the
+first row, Escape closes without choosing.
+
+Country also still accepts anything typed, because a residence this app has never heard
+of is the user's problem to state and not ours to refuse. It arrives as a `Use "..."` row
+at the top of the list rather than as a silent commit on focus loss, which is what the
+editable `ComboBox` did.
+
+Two details are defensive rather than cosmetic. The drawer's rows are built on `Opening`,
+not held live, so nothing is mutating a collection the list has not measured - the fault
+this app has hit three times. And neither the presenter nor the row template uses
+`ColumnSpacing`: a `Grid` spaces around a collapsed column exactly as it does a visible
+one, and the flag, the icon and the tick are each collapsed most of the time.
+
 ### Still worth doing
 
 A test project. The logic worth covering is pure .NET and does not need a UI:

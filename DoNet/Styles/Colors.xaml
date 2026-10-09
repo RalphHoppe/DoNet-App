@@ -116,6 +116,12 @@
     <SolidColorBrush x:Key="CardMetaBrush" Color="#6B7280" />
     <SolidColorBrush x:Key="SectionSubtitleBrush" Color="#6B7280" />
     <SolidColorBrush x:Key="SearchBorderBrush" Color="#E6EBF0" />
+
+    <!--
+        The hairline around a flag. Black at 15% rather than a grey, so it reads as an
+        edge on a dark flag and still separates a white one from a white row.
+    -->
+    <SolidColorBrush x:Key="FlagEdgeBrush" Color="#26000000" />
     <SolidColorBrush x:Key="SearchPlaceholderBrush" Color="#7B8491" />
 
     <!--

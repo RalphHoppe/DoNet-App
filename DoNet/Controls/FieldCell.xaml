@@ -69,28 +69,6 @@
             <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#7B8491" />
             <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#7B8491" />
 
-            <!-- The same treatment for the combo box, which uses its own key family. -->
-            <SolidColorBrush x:Key="ComboBoxBackground" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxBackgroundUnfocused" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxBorderBrushDisabled" Color="Transparent" />
-            <SolidColorBrush x:Key="ComboBoxForeground" Color="#2B2F33" />
-            <SolidColorBrush x:Key="ComboBoxForegroundPointerOver" Color="#2B2F33" />
-            <SolidColorBrush x:Key="ComboBoxForegroundPressed" Color="#2B2F33" />
-            <SolidColorBrush x:Key="ComboBoxForegroundFocused" Color="#2B2F33" />
-            <SolidColorBrush x:Key="ComboBoxForegroundFocusedPressed" Color="#2B2F33" />
-            <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#7B8491" />
-            <SolidColorBrush x:Key="ComboBoxPlaceHolderForegroundFocusedPressed" Color="#7B8491" />
-            <Thickness x:Key="ComboBoxBorderThemeThickness">0</Thickness>
-            <Thickness x:Key="ComboBoxPadding">0</Thickness>
-            <Thickness x:Key="ComboBoxEditableTextPadding">0</Thickness>
-            <x:Double x:Key="ComboBoxMinHeight">0</x:Double>
-
             <!-- And for the calendar picker. -->
             <SolidColorBrush x:Key="CalendarDatePickerBackground" Color="Transparent" />
             <SolidColorBrush x:Key="CalendarDatePickerBackgroundPointerOver" Color="Transparent" />
@@ -179,22 +157,13 @@
                              PasswordRevealMode="Hidden"
                              PasswordChanged="OnSecretChanged" />
 
-                <!-- Gender and country. -->
-                <ComboBox x:Name="ChoiceInput"
-                          Grid.Column="0"
-                          Visibility="Collapsed"
-                          HorizontalAlignment="Stretch"
-                          VerticalAlignment="Center"
-                          FontFamily="{StaticResource BalooFont}"
-                          FontSize="{StaticResource FieldValueFontSize}"
-                          Foreground="{StaticResource TextPrimaryBrush}"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          Padding="0"
-                          MinHeight="0"
-                          MinWidth="0"
-                          SelectionChanged="OnChoiceChanged"
-                          TextSubmitted="OnChoiceTextSubmitted" />
+                <!-- Gender, country and the website picker. -->
+                <controls:ChoicePicker x:Name="ChoiceInput"
+                                       Grid.Column="0"
+                                       Visibility="Collapsed"
+                                       HorizontalAlignment="Stretch"
+                                       VerticalAlignment="Center"
+                                       ValueChosen="OnChoiceChanged" />
 
                 <!-- Date of birth. -->
                 <CalendarDatePicker x:Name="DateInput"
