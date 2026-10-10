@@ -111,6 +111,15 @@ def main():
         ring(size, share).save(path)
         print(f"{path.relative_to(ROOT)}: {size[0]}x{size[1]} ring drawn")
 
+    # The setup executable's own icon: the same ring, rendered once at 256 and
+    # downscaled by the ICO writer through every size a shortcut or taskbar asks
+    # for. Under 44px the dashes dissolve, and those sizes draw the solid ring.
+    ico = ring((256, 256), 0.74)
+    ico.save(ASSETS / "DoNet.ico",
+             sizes=[(16, 16), (24, 24), (32, 32), (48, 48),
+                    (64, 64), (128, 128), (256, 256)])
+    print(f"{(ASSETS / 'DoNet.ico').relative_to(ROOT)}: 256px master, 7 sizes")
+
     print("Done. The manifest needs no new names - every file kept its own.")
 
 

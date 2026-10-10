@@ -65,10 +65,32 @@ that takes the vault with it.
    `DoNet/AppPackages/DoNet_1.0.0.0_x64_Test/`: the `.msix` (the installer),
    the `.cer` (the certificate to trust on the target machine), and
    `Add-AppDevPackage.ps1` (the install script).
-7. Copy **`Setup-DoNet.cmd`** from the repository root into that folder. It is
-   the setup the recipient double-clicks; it wraps the script so they never
-   have to know PowerShell exists. Then zip the folder - that zip is the
-   hand-over.
+7. Copy **`Setup-DoNet.cmd`** from the repository root into that folder, then
+   zip the folder. That zip is the no-extra-tools hand-over - but there is a
+   better one:
+
+### The single setup.exe (recommended)
+
+The classic internet-download experience - one file, double-click, it installs
+everything - is one more step on top of the wizard:
+
+1. Once, install **Inno Setup 6** from [jrsoftware.org](https://jrsoftware.org/isinfo.php)
+   - free, and the tool behind a large share of the setup.exe files you have
+   ever downloaded.
+2. Each release: run the packaging wizard as above, then open
+   **`installer/DoNet.iss`** in Inno Setup (double-clicking the file does it)
+   and press **Compile** (Ctrl+F9). Bump `AppVersion` at the top of the script
+   whenever the manifest's version moves.
+3. The output is **`installer/Output/DoNet-Setup.exe`** - one executable with
+   the app, the certificate and the whole install inside it. That single file
+   is the hand-over.
+
+What the recipient sees: double-click, one Windows permission prompt (the same
+UAC every installer raises), a progress bar, and DoNet on the Start menu - with
+an optional "Launch DoNet" at the end. Re-running the setup over an existing
+install reinstalls it rather than erroring. Windows owns the app's entry and
+its uninstall (Settings &rarr; Apps &rarr; DoNet); the setup.exe deliberately
+leaves no second entry behind.
 
 Release packages are self-contained - see `DoNet.csproj` - so the one `.msix`
 carries the .NET and Windows App SDK runtimes and installs on any Windows 10
@@ -76,8 +98,11 @@ carries the .NET and Windows App SDK runtimes and installs on any Windows 10
 
 ### Installing it on another machine
 
-Unzip, double-click **`Setup-DoNet.cmd`**, accept the PowerShell and
-administrator prompts. That is the whole install: it trusts the certificate and
+With **`DoNet-Setup.exe`**: double-click it, say yes to the Windows prompt,
+wait for the progress bar. That is the whole install.
+
+With the folder zip instead: unzip, double-click **`Setup-DoNet.cmd`**, accept
+the PowerShell and administrator prompts. It trusts the certificate and
 installs the app.
 
 Without the script, by hand: right-click `Add-AppDevPackage.ps1` &rarr;
@@ -453,7 +478,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/validate_csharp_docs.py` | Checks every documentation comment block is well formed |
 | `tools/validate_visual_states.py` | Checks every visual-state `Setter Target` and storyboard target resolves |
 | `tools/validate_attributes.py` | Checks every attribute sits on a declaration kind it is valid on (`[NotMapped]` on a method is CS0592, not a hint) - the attributes this app uses, by hand, like the usings map |
-| `tools/make_app_icons.py` | Draws every package icon (tiles, store, splash) as the title bar's own mark - the segmented gradient ring, from the lockup's exact geometry - re-run it whenever the mark moves |
+| `tools/make_app_icons.py` | Draws every package icon (tiles, store, splash, and the setup's `.ico`) as the title bar's own mark - the segmented gradient ring, from the lockup's exact geometry - re-run it whenever the mark moves |
 | `tools/validate_usings.py` | Checks framework and app type uses against their carrying usings, and extension-method calls (`.GetRequiredService()`) against the using that imports the extension class |
 | `tools/build_icons.py` | Normalises the icon paths and regenerates `Controls/LineIconData.cs` plus the proof sheet |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |
