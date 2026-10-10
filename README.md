@@ -64,7 +64,11 @@ that takes the vault with it.
    two runtimes folded in. The kit lands in
    `DoNet/AppPackages/DoNet_1.0.0.0_x64_Test/`: the `.msix` (the installer),
    the `.cer` (the certificate to trust on the target machine), and
-   `Add-AppDevPackage.ps1` (the one-click installer script).
+   `Add-AppDevPackage.ps1` (the install script).
+7. Copy **`Setup-DoNet.cmd`** from the repository root into that folder. It is
+   the setup the recipient double-clicks; it wraps the script so they never
+   have to know PowerShell exists. Then zip the folder - that zip is the
+   hand-over.
 
 Release packages are self-contained - see `DoNet.csproj` - so the one `.msix`
 carries the .NET and Windows App SDK runtimes and installs on any Windows 10
@@ -72,13 +76,15 @@ carries the .NET and Windows App SDK runtimes and installs on any Windows 10
 
 ### Installing it on another machine
 
-Unzip, then either:
+Unzip, double-click **`Setup-DoNet.cmd`**, accept the PowerShell and
+administrator prompts. That is the whole install: it trusts the certificate and
+installs the app.
 
-- Right-click `Add-AppDevPackage.ps1` &rarr; **Run with PowerShell**, and accept
-  the prompts - it trusts the certificate (an administrator consent) and then
-  installs the app; or
-- by hand: double-click the `.cer`, **Install Certificate** into **Local
-  Machine** &rarr; **Trusted People**, then double-click the `.msix`.
+Without the script, by hand: right-click `Add-AppDevPackage.ps1` &rarr;
+**Run with PowerShell**; or double-click the `.cer`, **Install Certificate**
+into **Local Machine** &rarr; **Trusted People**, then double-click the `.msix`
+(which opens Windows' own installer window - the `.msix` *is* an installer,
+double-clickable, once the certificate is trusted).
 
 The certificate is self-signed, so Windows calls the publisher unknown - that is
 what a hand-made certificate looks like, not a fault. If the machine refuses the
@@ -95,6 +101,12 @@ the sideloading switch.
 - **Upgrades need three things unchanged**: the same certificate, the same
   Identity in `Package.appxmanifest`, and a higher Version. Bump the Version for
   each hand-over that should install over the previous one.
+- **The Start menu entry is "DoNet"**, under All apps (Windows 11 also lists it
+  under Recently added right after installing), carrying the title bar's ring as
+  its icon. A freshly reinstalled app can show a stale or missing icon for a
+  while - Windows caches these per user; signing out and back in, or restarting
+  Explorer, refreshes it. An install over a Visual Studio-deployed copy should
+  be preceded by uninstalling that copy first, so nothing old is left to show.
 
 ## Running it
 
@@ -441,7 +453,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/validate_csharp_docs.py` | Checks every documentation comment block is well formed |
 | `tools/validate_visual_states.py` | Checks every visual-state `Setter Target` and storyboard target resolves |
 | `tools/validate_attributes.py` | Checks every attribute sits on a declaration kind it is valid on (`[NotMapped]` on a method is CS0592, not a hint) - the attributes this app uses, by hand, like the usings map |
-| `tools/make_app_icons.py` | Draws every package icon (tiles, store, splash) from the brand teal and the Pacifico D - re-run it whenever the mark or the palette moves |
+| `tools/make_app_icons.py` | Draws every package icon (tiles, store, splash) as the title bar's own mark - the segmented gradient ring, from the lockup's exact geometry - re-run it whenever the mark moves |
 | `tools/validate_usings.py` | Checks framework and app type uses against their carrying usings, and extension-method calls (`.GetRequiredService()`) against the using that imports the extension class |
 | `tools/build_icons.py` | Normalises the icon paths and regenerates `Controls/LineIconData.cs` plus the proof sheet |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |
