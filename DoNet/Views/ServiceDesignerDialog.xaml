@@ -71,7 +71,13 @@
             </DoubleAnimation>
         </Storyboard>
 
-        <!-- The bare input the field rows' labels and the table names share. -->
+        <!--
+            The bare input the field rows' labels and the table names share.
+            Centered the way FieldCell centres its inputs: the box carries the
+            height and the input centres itself in it. A stretched TextBox parks
+            its text at the top of the box - VerticalContentAlignment does not
+            move it - which is exactly the look this style shipped with.
+        -->
         <Style x:Key="DraftBoxStyle" TargetType="TextBox" BasedOn="{StaticResource BareTextBoxStyle}">
             <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
             <Setter Property="FontSize" Value="{StaticResource FieldValueFontSize}" />
@@ -81,8 +87,7 @@
             <Setter Property="Padding" Value="14,0,14,0" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="MinWidth" Value="0" />
-            <Setter Property="VerticalAlignment" Value="Stretch" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
         <!-- One field row: the label, the kind, and the row's own controls. -->
@@ -113,15 +118,27 @@
                                  Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Border>
 
-                    <!-- What the field holds. -->
-                    <ComboBox Grid.Column="1"
-                              Height="40"
-                              FontFamily="{StaticResource BalooFont}"
-                              FontSize="{StaticResource FieldValueFontSize}"
-                              Foreground="{StaticResource TextPrimaryBrush}"
-                              HorizontalAlignment="Stretch"
-                              ItemsSource="{x:Bind KindChoices, Mode=OneTime}"
-                              SelectedItem="{Binding KindName, Mode=TwoWay}" />
+                    <!--
+                        What the field holds, in the app's own dropdown. The stock
+                        ComboBox is banned here for the reasons ChoicePicker's own
+                        header records: its list is a system surface, grey where
+                        the app is white, system type where the app is Baloo. The
+                        eight kinds sit under the filter threshold, so the drawer
+                        opens as a plain list of rows.
+                    -->
+                    <Border Grid.Column="1"
+                            Height="40"
+                            VerticalAlignment="Center"
+                            CornerRadius="16"
+                            Background="{StaticResource CardBackgroundBrush}"
+                            BorderBrush="{StaticResource FieldBorderBrush}"
+                            BorderThickness="1"
+                            Padding="16,0,12,0">
+                        <controls:ChoicePicker Value="{Binding KindName, Mode=TwoWay}"
+                                               Options="{x:Bind KindChoices, Mode=OneTime}"
+                                               Placeholder="Kind"
+                                               ItemIconKind="Tag" />
+                    </Border>
 
                     <!-- Order and remove. The order is the structure: the card
                          previews the first fields, and the first text field
@@ -209,12 +226,12 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Grid.Column="0"
+                                Height="40"
                                 CornerRadius="12"
                                 Background="{StaticResource CardAvatarBrush}"
                                 BorderBrush="{StaticResource FieldBorderBrush}"
                                 BorderThickness="1">
                             <TextBox Style="{StaticResource DraftBoxStyle}"
-                                     Height="40"
                                      PlaceholderText="Table name - e.g. System information"
                                      Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                         </Border>
