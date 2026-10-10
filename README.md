@@ -371,7 +371,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/preview_animation.py` | Renders `docs/splash-animation.gif` |
 | `tools/preview_screens.py` | Renders a pixel reconstruction of the four screens for comparing against the design |
 | `tools/gen_nav_icons.py` | Parses the design's icon SVG, checks it fits, emits the XAML path data |
-| `tools/validate_xaml.py` | Checks resource keys, `x:Name`s, event handlers, Grid row/column indices, content children split by a property element (the duplicate-`Children` error), `IsEnabled` on non-Controls, and `x:Bind` paths that try to reach a class-qualified static (CS0103 in the generated code) without a Windows build |
+| `tools/validate_xaml.py` | Checks resource keys, `x:Name`s, event handlers, Grid row/column indices, content children split by a property element (the duplicate-`Children` error), `IsEnabled` on non-Controls, class-qualified static `x:Bind` paths, and `x:Bind` paths inside typed templates that the `x:DataType` cannot answer (XLS0432) without a Windows build |
 | `tools/validate_handlers.py` | Resolves every XAML event attribute and `+=`/`-=` subscription against the methods that exist |
 | `tools/validate_control_usage.py` | Checks properties set on our own controls exist, and that row/column `Height`/`Width` are `GridLength`, not bare `GridUnitType` (CS0266) |
 | `tools/validate_csharp_docs.py` | Checks every documentation comment block is well formed |

@@ -39,6 +39,17 @@ public sealed partial class DesignerFieldDraft : ObservableObject
     public bool IsName => KindName == ServiceDesignerViewModel.KindNames[0];
 
     /// <summary>
+    /// The kinds this row can become, as its picker offers them.
+    /// </summary>
+    /// <remarks>
+    /// An x:Bind path inside a DataTemplate resolves against the template's
+    /// x:DataType - this draft, not the page or its view model - so the list the
+    /// picker binds has to live here. It is the designer's canonical list behind
+    /// the same reference, not a second copy of it.
+    /// </remarks>
+    public IReadOnlyList<string> KindChoices => ServiceDesignerViewModel.KindNames;
+
+    /// <summary>
     /// Raised when the label or the kind changed, for the designer to re-evaluate
     /// its save button with.
     /// </summary>
@@ -107,13 +118,7 @@ public sealed partial class ServiceDesignerViewModel : ObservableObject
         "Text", "Long text", "Number", "Date", "Password", "Person", "Website", "Account",
     };
 
-    /// <summary>
-    /// The kinds as the picker's ItemsSource binds them. An x:Bind path starts
-    /// from the page or view model it is written on - it cannot reach through a
-    /// class name to a static - so the list rides on the instance the dialog
-    /// already binds to.
-    /// </summary>
-    public IReadOnlyList<string> KindChoices => KindNames;
+
 
     private static readonly IReadOnlyList<ServiceFieldKind> KindValues = new[]
     {
