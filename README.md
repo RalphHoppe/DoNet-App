@@ -40,18 +40,31 @@ that takes the vault with it.
 
 ### Building the installer
 
-1. Configuration **Release**, platform **x64**.
-2. Right-click the **DoNet** project in Solution Explorer, then
-   **Package &rarr; Create App Packages...** - the single-project MSIX tooling,
-   no separate packaging project.
-3. Choose **sideloading**; this build is not going to the Store.
-4. Signing: let the wizard create a self-signed certificate, and give it a
-   password you keep. The same certificate has to sign every later update, or
-   Windows refuses to install it over the existing app - so it is a thing to
-   keep, not a thing to re-roll each time.
-5. The kit lands in `DoNet/AppPackages/DoNet_1.0.0.0_x64_Test/`:
-   the `.msix` (the installer), the `.cer` (the certificate), and
-   `Add-AppDevPackage.ps1`.
+1. Configuration **Release**, platform **x64**. Both are the two dropdowns in
+   the main toolbar, right of the green Start button - the left one says
+   `Debug`, the right one `x64` (or `Any CPU`); set the left one to `Release`.
+   (Or **Build &rarr; Configuration Manager**, and set both there.) This matters
+   before anything else: the self-contained settings in `DoNet.csproj` are
+   conditioned on Release, so the wizard only bakes the runtimes into the
+   installer if it runs under Release.
+2. Right-click the **DoNet** project in Solution Explorer (the project, not the
+   solution), then **Package and Publish &rarr; Create App Packages...** - in
+   older Visual Studio versions the menu is named **Publish** instead.
+3. First wizard page: choose **sideloading**; this build is not going to the
+   Store. No automatic updates.
+4. Signing page: **Create...** a certificate, leave the publisher name as
+   pre-filled and the password blank, OK. The wizard drops a `.pfx` into the
+   project folder - keep it: the same certificate has to sign every later
+   update, or Windows refuses to install it over the existing app. (It is
+   gitignored on purpose; back it up privately.)
+5. Packages page: tick **x64 only** and untick x86/ARM64 - every extra
+   architecture is another full copy of the runtimes - and leave version and
+   output location as they are.
+6. **Create**. This build is the slow one: it is producing a Release build with
+   two runtimes folded in. The kit lands in
+   `DoNet/AppPackages/DoNet_1.0.0.0_x64_Test/`: the `.msix` (the installer),
+   the `.cer` (the certificate to trust on the target machine), and
+   `Add-AppDevPackage.ps1` (the one-click installer script).
 
 Release packages are self-contained - see `DoNet.csproj` - so the one `.msix`
 carries the .NET and Windows App SDK runtimes and installs on any Windows 10
