@@ -32,6 +32,57 @@ is true once a vault exists on disk.
 
 ![splash animation](docs/splash-animation.gif)
 
+## Handing it over
+
+The app ships as one MSIX: a setup file Windows installs natively - a Start-menu
+entry with the app's own mark, an Add/Remove Programs entry, and an uninstall
+that takes the vault with it.
+
+### Building the installer
+
+1. Configuration **Release**, platform **x64**.
+2. Right-click the **DoNet** project in Solution Explorer, then
+   **Package &rarr; Create App Packages...** - the single-project MSIX tooling,
+   no separate packaging project.
+3. Choose **sideloading**; this build is not going to the Store.
+4. Signing: let the wizard create a self-signed certificate, and give it a
+   password you keep. The same certificate has to sign every later update, or
+   Windows refuses to install it over the existing app - so it is a thing to
+   keep, not a thing to re-roll each time.
+5. The kit lands in `DoNet/AppPackages/DoNet_1.0.0.0_x64_Test/`:
+   the `.msix` (the installer), the `.cer` (the certificate), and
+   `Add-AppDevPackage.ps1`.
+
+Release packages are self-contained - see `DoNet.csproj` - so the one `.msix`
+carries the .NET and Windows App SDK runtimes and installs on any Windows 10
+1809+ machine with nothing else present. That is the whole point of the size.
+
+### Installing it on another machine
+
+Unzip, then either:
+
+- Right-click `Add-AppDevPackage.ps1` &rarr; **Run with PowerShell**, and accept
+  the prompts - it trusts the certificate (an administrator consent) and then
+  installs the app; or
+- by hand: double-click the `.cer`, **Install Certificate** into **Local
+  Machine** &rarr; **Trusted People**, then double-click the `.msix`.
+
+The certificate is self-signed, so Windows calls the publisher unknown - that is
+what a hand-made certificate looks like, not a fault. If the machine refuses the
+install outright, Settings &rarr; Privacy & security &rarr; For developers has
+the sideloading switch.
+
+### Worth knowing before you send it
+
+- **The vault is per machine.** The installer carries no data; the recipient
+  gets the create-password screen on first run. Uninstalling removes the vault
+  with the app.
+- **The password is not recoverable.** Forgot-password resets the vault - the
+  file is encrypted under a key derived from the password, which is the design.
+- **Upgrades need three things unchanged**: the same certificate, the same
+  Identity in `Package.appxmanifest`, and a higher Version. Bump the Version for
+  each hand-over that should install over the previous one.
+
 ## Running it
 
 This is a Windows-only project. Open `DoNet.sln` in Visual Studio 2022 (workload:
@@ -377,6 +428,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/validate_csharp_docs.py` | Checks every documentation comment block is well formed |
 | `tools/validate_visual_states.py` | Checks every visual-state `Setter Target` and storyboard target resolves |
 | `tools/validate_attributes.py` | Checks every attribute sits on a declaration kind it is valid on (`[NotMapped]` on a method is CS0592, not a hint) - the attributes this app uses, by hand, like the usings map |
+| `tools/make_app_icons.py` | Draws every package icon (tiles, store, splash) from the brand teal and the Pacifico D - re-run it whenever the mark or the palette moves |
 | `tools/validate_usings.py` | Checks framework and app type uses against their carrying usings, and extension-method calls (`.GetRequiredService()`) against the using that imports the extension class |
 | `tools/build_icons.py` | Normalises the icon paths and regenerates `Controls/LineIconData.cs` plus the proof sheet |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |

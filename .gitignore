@@ -5,6 +5,9 @@
 bin/
 obj/
 
+# The MSIX packaging wizard's output; the installer is a build artefact, not source.
+AppPackages/
+
 # User-specific files
 *.user
 *.suo

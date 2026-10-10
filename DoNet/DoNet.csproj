@@ -13,6 +13,19 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!--
+    Hand-over packaging. A Release package carries both runtimes the app needs -
+    the .NET one and the Windows App SDK one - so the single .msix installs on
+    any Windows 10 1809+ machine with nothing else present: no Dependencies
+    folder, no runtime downloads, no internet. It is what makes the installer a
+    file you can hand over rather than a folder of prerequisites. Debug builds
+    stay framework-dependent, which keeps the inner loop fast.
+  -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+  </PropertyGroup>
+
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
