@@ -125,7 +125,8 @@ public sealed partial class ServiceRecordCard : UserControl
         {
             if (i % 2 == 0)
             {
-                FieldsHost.RowDefinitions.Add(new RowDefinition { Height = GridUnitType.Auto });
+                FieldsHost.RowDefinitions.Add(
+                    new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
                 row++;
             }
 

@@ -120,7 +120,7 @@
                               FontSize="{StaticResource FieldValueFontSize}"
                               Foreground="{StaticResource TextPrimaryBrush}"
                               HorizontalAlignment="Stretch"
-                              ItemsSource="{x:Bind vm:ServiceDesignerViewModel.KindNames, Mode=OneTime}"
+                              ItemsSource="{x:Bind ViewModel.KindChoices, Mode=OneTime}"
                               SelectedItem="{Binding KindName, Mode=TwoWay}" />
 
                     <!-- Order and remove. The order is the structure: the card
