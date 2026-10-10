@@ -184,6 +184,70 @@ for path, text in xaml_text.items():
         check_viewmodel_bindings(
             os.path.relpath(path, ROOT), text, cs_text.get(base, ""), cs_text, problems)
 
+def check_datatemplate_binds(path, xaml_src, all_cs, problems):
+    """x:Bind paths inside a typed DataTemplate resolve against the x:DataType.
+
+    {x:Bind ViewModel.X} inside a DataTemplate asks the template's own data type
+    for a ViewModel property it does not have (XLS0432 at design time, an error
+    in the generated code at build time), because the path's root is the
+    x:DataType, not the page. Every first segment is checked against the members
+    of that type; the whole-object bind ({x:Bind}), function bindings and casts
+    are left alone.
+    """
+    rel = os.path.relpath(path, ROOT)
+    for m in re.finditer(r"<DataTemplate\b[^>]*x:DataType=\"([\w:.]+)\"", xaml_src):
+        type_name = m.group(1).rsplit(":", 1)[-1]
+        end = xaml_src.find("</DataTemplate>", m.end())
+        if end == -1:
+            continue
+        body = xaml_src[m.end():end]
+
+        members = None
+        for src in all_cs.values():
+            if re.search(rf"\b(?:class|record)\s+{type_name}\b", src):
+                members = viewmodel_members(src)
+                break
+        if not members:
+            continue
+
+        for b in re.finditer(r"\{x:Bind\s+([^{}]+)", body):
+            raw = b.group(1)
+            depth = 0
+            stop = len(raw)
+            for i, ch in enumerate(raw):
+                if ch == "(":
+                    depth += 1
+                elif ch == ")":
+                    depth -= 1
+                elif ch == "," and depth == 0:
+                    stop = i
+                    break
+            bind_path = raw[:stop].strip()
+            if bind_path.lower().startswith("path="):
+                bind_path = bind_path[5:].strip()
+
+            if not bind_path or "(" in bind_path:
+                # The whole-object bind, a function binding or a cast: not a
+                # property path the compiler resolves against the type.
+                continue
+
+            first = bind_path.split(".")[0]
+            if first in members or not first[0].isupper():
+                # A lowercase first segment is an attached-property-style path,
+                # not a member lookup; leave it to the compiler.
+                continue
+
+            line = xaml_src[: m.end() + b.start()].count("\n") + 1
+            problems.append(
+                f"{rel}:{line}: x:Bind path '{bind_path}' inside the {type_name} "
+                f"template - {type_name} has no member '{first}'. A path in a "
+                f"DataTemplate starts from the x:DataType, not from the page.")
+
+
+# ---- 2d. x:Bind paths inside typed templates resolve against the DataType --
+for path, text in xaml_text.items():
+    check_datatemplate_binds(path, text, cs_text, problems)
+
 # ---- 3. event handlers exist ----------------------------------------------
 for path, text in xaml_text.items():
     base = path[: -len(".xaml")] + ".xaml.cs"
