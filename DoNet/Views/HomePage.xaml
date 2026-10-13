@@ -210,13 +210,18 @@
 
                     <views:ServicesView x:Name="ServicesGrid" x:Load="False" />
 
-                    <views:PersonsView x:Name="DirectoryView" />
+                    <!--
+                        Deferred with the rest: the home screen opens on Services, so
+                        the Persons grid is built the first time the rail switches to
+                        it. Its records are preloaded on the welcome screen, so the
+                        arrival is instant anyway.
+                    -->
+                    <views:PersonsView x:Name="DirectoryView" x:Load="False" />
 
                     <!--
-                        Deferred: the home screen opens on Persons, so the Websites grid
-                        is built the first time the rail switches to it rather than
-                        behind the screen nobody asked for. The transition builds it
-                        before the animation starts, never during it.
+                        Deferred likewise: built the first time the rail switches to it
+                        rather than behind the screen nobody asked for. The transition
+                        builds it before the animation starts, never during it.
                     -->
                     <views:WebsitesView x:Name="SitesView" x:Load="False" />
 

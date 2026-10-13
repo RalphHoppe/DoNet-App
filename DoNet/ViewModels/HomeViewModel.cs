@@ -38,10 +38,11 @@ public partial class HomeViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsAccountsSelected))]
     [NotifyPropertyChangedFor(nameof(IsPersonsSelected))]
     [NotifyPropertyChangedFor(nameof(IsSitesSelected))]
-    // Persons, not Services: the supplied artwork shows Persons as the selected
-    // destination, and the home screen is built to that artwork. Services has a
-    // surface now, but it stays one rail stop away.
-    private HomeSection _selectedSection = HomeSection.Persons;
+    // Services, not Persons: the artwork's opening tab was Persons, but the
+    // app's centre of gravity moved when the primary types arrived, and the
+    // user asked for Services to be the tab waiting after every unlock. The
+    // home screen follows the view model, so this field is the whole switch.
+    private HomeSection _selectedSection = HomeSection.Services;
 
     public HomeViewModel(
         INavigationService navigation,

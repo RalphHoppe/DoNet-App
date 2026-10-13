@@ -74,7 +74,7 @@ public sealed partial class HomePage : Page
     private readonly Storyboard _sectionOut = new();
     private readonly Storyboard _sectionIn = new();
 
-    private HomeSection _shownSection = HomeSection.Persons;
+    private HomeSection _shownSection = HomeSection.Services;
     private bool _sectionBusy;
     private bool _introDone;
     private bool _warmUpScheduled;
@@ -106,8 +106,8 @@ public sealed partial class HomePage : Page
         WireSectionTransition();
 
         // Match the surface to the view model rather than trusting the two to agree.
-        // They do today - both open on Persons - but the grids' visibility is no longer
-        // bound to anything, so nothing else would correct it if that ever changed.
+        // They do today - both open on Services - but the grids' visibility is no
+        // longer bound to anything, so nothing else would correct it if that changed.
         ApplySection();
 
         Loaded += OnLoaded;
@@ -171,10 +171,10 @@ public sealed partial class HomePage : Page
                 Realize("ServiceRecordModal");
                 Realize("ConfirmModal");
 
-                // The Persons page was preloaded on the welcome screen; this is the
-                // matching window for the other directories, so the rail's first trip
-                // to any of them finds its records already there. Cheap when it is
-                // not needed - the store is open by now, so it is one query.
+                // Services and Persons are preloaded on the welcome screen; this is
+                // the matching window for the other directories, so the rail's first
+                // trip to any of them finds its records already there. Cheap when it
+                // is not needed - the store is open by now, so it is one query.
                 _websites.PreloadAsync().Observe("Preloading the websites directory");
                 _accounts.PreloadAsync().Observe("Preloading the accounts directory");
                 _services.PreloadAsync().Observe("Preloading the services directory");
@@ -319,11 +319,11 @@ public sealed partial class HomePage : Page
     /// The grid behind a rail destination, built on request and never otherwise.
     /// </summary>
     /// <remarks>
-    /// Only the section being shown is ever passed <paramref name="create"/>. The two
-    /// deferred grids must not be built ahead of time: their records are preloaded
-    /// during idle, and an ItemsRepeater whose collection changes while it sits in a
-    /// subtree that has never been measured throws. Built on the way in, it is measured
-    /// moments later.
+    /// Only the section being shown is ever passed <paramref name="create"/>. Every
+    /// grid is deferred and must not be built ahead of time: their records are
+    /// preloaded during idle or the welcome screen, and an ItemsRepeater whose
+    /// collection changes while it sits in a subtree that has never been measured
+    /// throws. Built on the way in, it is measured moments later.
     /// </remarks>
     private UIElement? SectionElement(HomeSection section, bool create)
     {
@@ -338,6 +338,11 @@ public sealed partial class HomePage : Page
                 return ServicesGrid;
 
             case HomeSection.Persons:
+                if (create && DirectoryView is null)
+                {
+                    Realize("DirectoryView");
+                }
+
                 return DirectoryView;
 
             case HomeSection.Sites:
@@ -563,7 +568,8 @@ public sealed partial class HomePage : Page
         _sectionOut.Stop();
         _sectionIn.Stop();
 
-        DirectoryView.ReleaseBindings();
+        // Null when the rail never reached Persons and no dialog needed it.
+        DirectoryView?.ReleaseBindings();
 
         // Null when the rail never reached Websites and the idle warm-up had not run.
         SitesView?.ReleaseBindings();

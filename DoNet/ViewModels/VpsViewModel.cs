@@ -371,9 +371,14 @@ public sealed partial class VpsViewModel : ObservableObject, IDeleteConfirmHost
             {
                 await _directory.AddAsync(record, system).ConfigureAwait(true);
             }
-            else
+            else if (!await _directory.UpdateAsync(record, system).ConfigureAwait(true))
             {
-                await _directory.UpdateAsync(record, system).ConfigureAwait(true);
+                // The record was deleted while the form was open, so there is
+                // nothing to save into. The form closes and the list shows the
+                // store's truth rather than a save that silently did nothing.
+                IsDialogOpen = false;
+                await LoadAsync().ConfigureAwait(true);
+                return;
             }
         }
         catch (Exception error)

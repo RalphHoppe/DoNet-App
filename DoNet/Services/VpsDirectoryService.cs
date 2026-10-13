@@ -101,13 +101,13 @@ public sealed class VpsDirectoryService : IVpsDirectory
     }
 
     /// <inheritdoc />
-    public async Task UpdateAsync(
+    public async Task<bool> UpdateAsync(
         VpsRecord record, VpsSystemInfo system, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(record);
         ArgumentNullException.ThrowIfNull(system);
 
-        await _store.RunAsync(
+        return await _store.RunAsync(
             async (db, token) =>
             {
                 VpsRecord? existing = await db.VpsRecords

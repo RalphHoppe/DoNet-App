@@ -54,11 +54,17 @@ public sealed partial class WelcomePage : Page
 
         _started = true;
 
-        // Open the person store now, while the wordmark is drawing. This screen runs
+        // Open the stores now, while the wordmark is drawing. This screen runs
         // for roughly 2.65 seconds of animation the user is already watching, which is
-        // ample cover for an encrypted file open - so the directory has its first page
-        // ready instead of showing a spinner the moment it appears. Deliberately not
-        // awaited: the welcome animation must never wait on storage.
+        // ample cover for an encrypted file open - so the directories have their first
+        // page ready instead of showing a spinner the moment they appear. Services
+        // because the home screen opens on it, Persons because it is the rail's first
+        // stop away. Deliberately not awaited: the welcome animation must never wait
+        // on storage.
+        App.Current.Services
+            .GetRequiredService<ServicesViewModel>()
+            .PreloadAsync()
+            .Observe("Opening the services store during the welcome screen");
         App.Current.Services
             .GetRequiredService<PersonsViewModel>()
             .PreloadAsync()
