@@ -171,6 +171,8 @@ public sealed class VpsDirectoryService : IVpsDirectory
                 }
 
                 await db.SaveChangesAsync(token).ConfigureAwait(false);
+
+                return true;
             },
             cancellationToken);
 
