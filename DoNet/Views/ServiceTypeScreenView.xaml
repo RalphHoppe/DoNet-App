@@ -5,14 +5,15 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:controls="using:DoNet.Controls"
     mc:Ignorable="d">
 
     <!--
         One primary service type's screen: the directory skeleton with the
         type's own colours. The title, the ADD button's accents and the rail's
-        back button all wear the type's gradient; the records that will fill
-        the surface arrive with the fields, and the surface says so until then.
+        back button all wear the type's gradient. The records that will fill
+        the surface arrive with the fields, and until then the surface is
+        empty - as the reference draws it: no placeholder art, nothing
+        centred in the tab, just the header over the open space.
     -->
 
     <UserControl.Resources>
@@ -27,28 +28,6 @@
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-
-        <Style x:Key="StateTitleStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
-            <Setter Property="FontSize" Value="{StaticResource CardTitleFontSize}" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="22" />
-        </Style>
-
-        <Style x:Key="StateBodyStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
-            <Setter Property="FontSize" Value="{StaticResource SectionSubtitleFontSize}" />
-            <Setter Property="Foreground" Value="{StaticResource CardMetaBrush}" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="TextAlignment" Value="Center" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="MaxWidth" Value="360" />
-            <Setter Property="Margin" Value="0,6,0,0" />
-            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="22" />
         </Style>
 
     </UserControl.Resources>
@@ -204,19 +183,10 @@
         </Grid>
 
         <!--
-            The records surface. Empty until the fields arrive - the shell is
-            the design's; the content is the next step.
+            The records surface. Empty until the fields arrive - the reference
+            draws the header over open space, with nothing centred in the tab,
+            so this is the finished shape with its content pending.
         -->
-        <Grid Grid.Row="1">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center" Kind="Empty" />
-                <TextBlock x:Name="EmptyTitle"
-                           Text="No records yet"
-                           Style="{StaticResource StateTitleStyle}"
-                           Margin="0,16,0,0" />
-                <TextBlock Text="The records you file under this type will appear here."
-                           Style="{StaticResource StateBodyStyle}" />
-            </StackPanel>
-        </Grid>
+        <Grid x:Name="RecordsSurface" Grid.Row="1" />
     </Grid>
 </UserControl>

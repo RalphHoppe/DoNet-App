@@ -8,17 +8,26 @@
     mc:Ignorable="d">
 
     <!--
-        One primary service type's mark: the supplied SVG shape, filled with the
-        type's own gradient from the top-left corner to the bottom-right.
+        One primary service type's tile: a 64px rounded square carrying the
+        type's gradient from the top-left corner to the bottom-right, with the
+        type's icon in white at its natural size centred inside - the colour
+        lives in the button, the icon stays white, exactly as the reference
+        draws it.
 
-        Built in code rather than XAML because the marks are data - the paths
+        Built in code rather than XAML because the icons are data - the paths
         come from the generated TypeMarkData sheet and each type draws a
         different number of them (the wallet is three paths, the globe nine).
-        This control is the size the caller gives it; the paths scale inside a
-        Viewbox from their native box, so the geometry is never re-authored.
+        The icon is not scaled: the sheet keeps the source box, so the geometry
+        is never re-authored, and the 64px tile holds it at the size the
+        reference measures (roughly 16px of gradient on every side).
     -->
 
-    <Viewbox Stretch="Uniform">
-        <Canvas x:Name="Sheet" />
-    </Viewbox>
+    <Border x:Name="Tile"
+            Width="64"
+            Height="64"
+            CornerRadius="28">
+        <Canvas x:Name="Sheet"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center" />
+    </Border>
 </UserControl>

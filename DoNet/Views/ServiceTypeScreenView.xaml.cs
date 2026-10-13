@@ -15,10 +15,10 @@ namespace DoNet.Views;
 /// </summary>
 /// <remarks>
 /// The shell of the hand-built directory: the header, the search, the ADD
-/// button, the empty surface. The records that will fill it arrive with the
-/// fields, and until then the surface says so - the buttons that would need
-/// them are asleep rather than absent, so the screen is the finished shape
-/// with its content pending.
+/// button. The records that will fill it arrive with the fields, and until
+/// then the surface is empty, as the reference draws it - the buttons that
+/// would need records are asleep rather than absent, so the screen is the
+/// finished shape with its content pending.
 ///</remarks>
 public sealed partial class ServiceTypeScreenView : UserControl
 {
@@ -81,8 +81,6 @@ public sealed partial class ServiceTypeScreenView : UserControl
         AddText.Foreground = new SolidColorBrush(
             PrimaryServiceTypes.GradientOf(kind).GradientStops[0].Color);
         AddPlusFill.Fill = AddText.Foreground;
-
-        EmptyTitle.Text = $"No {name.ToLowerInvariant()} records yet";
     }
 
     private void OnAddRecordClick(object sender, RoutedEventArgs args)

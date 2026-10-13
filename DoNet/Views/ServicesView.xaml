@@ -10,15 +10,18 @@
     mc:Ignorable="d">
 
     <!--
-        The v2 Services directory: the four primary types as gradient marks,
+        The v2 Services directory: the four primary types as gradient tiles,
         each opening its own hand-built screen.
 
-        The types are buttons, not cards - the mark itself is the affordance,
-        carrying its gradient from the top-left corner to the bottom-right, with
-        its name set beneath in small caps. What the dynamic round put here -
-        the catalog cards, the designer, the generated records - stays in the
-        codebase and comes back for types the user adds; the primaries are code,
-        and this screen is theirs.
+        The types are buttons, not cards - each is a 64px rounded square
+        carrying the type's gradient from the top-left corner to the
+        bottom-right with the type's icon in white inside, and its name set
+        beneath in small caps. The row starts at the content's left edge,
+        level with the title - not centred in the tab, which is where a
+        directory's contents never sit. What the dynamic round put here - the
+        catalog cards, the designer, the generated records - stays in the
+        codebase and comes back for types the user adds; the primaries are
+        code, and this screen is theirs.
     -->
 
     <UserControl.Resources>
@@ -35,16 +38,16 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <!-- The mark's name, set beneath it. -->
+        <!-- The tile's name, set beneath it. -->
         <Style x:Key="TypeLabelStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontSize" Value="15" />
             <Setter Property="Foreground" Value="{StaticResource TypeLabelBrush}" />
             <Setter Property="CharacterSpacing" Value="20" />
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="Margin" Value="0,12,0,0" />
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="18" />
+            <Setter Property="LineHeight" Value="20" />
         </Style>
 
         <!--
@@ -263,19 +266,21 @@
             </Grid>
 
             <!-- The four primary types ..................................... -->
+            <!--
+                Left-aligned at the content edge, level with the title above,
+                72px between tiles - the reference's row, not a centred grid.
+            -->
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         Spacing="72"
-                        Margin="24,8,0,0">
+                        Margin="0,40,0,0">
 
                 <Button x:Name="VpsButton"
                         Style="{StaticResource BareButtonStyle}"
                         AutomationProperties.Name="VPS"
-                        Click="OnVpsClick"
-                        PointerEntered="OnTypePointerEntered"
-                        PointerExited="OnTypePointerExited">
+                        Click="OnVpsClick">
                     <StackPanel>
-                        <controls:TypeMark Kind="Vps" Width="64" Height="64" />
+                        <controls:TypeMark Kind="Vps" />
                         <TextBlock Text="VPS" Style="{StaticResource TypeLabelStyle}" />
                     </StackPanel>
                 </Button>
@@ -283,11 +288,9 @@
                 <Button x:Name="ProxyButton"
                         Style="{StaticResource BareButtonStyle}"
                         AutomationProperties.Name="Proxy"
-                        Click="OnProxyClick"
-                        PointerEntered="OnTypePointerEntered"
-                        PointerExited="OnTypePointerExited">
+                        Click="OnProxyClick">
                     <StackPanel>
-                        <controls:TypeMark Kind="Proxy" Width="64" Height="64" />
+                        <controls:TypeMark Kind="Proxy" />
                         <TextBlock Text="PROXY" Style="{StaticResource TypeLabelStyle}" />
                     </StackPanel>
                 </Button>
@@ -295,11 +298,9 @@
                 <Button x:Name="DomainButton"
                         Style="{StaticResource BareButtonStyle}"
                         AutomationProperties.Name="Domain"
-                        Click="OnDomainClick"
-                        PointerEntered="OnTypePointerEntered"
-                        PointerExited="OnTypePointerExited">
+                        Click="OnDomainClick">
                     <StackPanel>
-                        <controls:TypeMark Kind="Domain" Width="64" Height="64" />
+                        <controls:TypeMark Kind="Domain" />
                         <TextBlock Text="DOMAIN" Style="{StaticResource TypeLabelStyle}" />
                     </StackPanel>
                 </Button>
@@ -307,11 +308,9 @@
                 <Button x:Name="WalletsButton"
                         Style="{StaticResource BareButtonStyle}"
                         AutomationProperties.Name="Wallets"
-                        Click="OnWalletsClick"
-                        PointerEntered="OnTypePointerEntered"
-                        PointerExited="OnTypePointerExited">
+                        Click="OnWalletsClick">
                     <StackPanel>
-                        <controls:TypeMark Kind="Wallets" Width="64" Height="64" />
+                        <controls:TypeMark Kind="Wallets" />
                         <TextBlock Text="WALLETS" Style="{StaticResource TypeLabelStyle}" />
                     </StackPanel>
                 </Button>
@@ -328,7 +327,7 @@
                        FontFamily="{StaticResource BalooFont}"
                        FontSize="{StaticResource SectionSubtitleFontSize}"
                        Foreground="{StaticResource CardMetaBrush}"
-                       Margin="24,28,0,0"
+                       Margin="0,28,0,0"
                        Visibility="Collapsed" />
 
         </Grid>

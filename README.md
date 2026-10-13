@@ -480,6 +480,8 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/validate_attributes.py` | Checks every attribute sits on a declaration kind it is valid on (`[NotMapped]` on a method is CS0592, not a hint) - the attributes this app uses, by hand, like the usings map |
 | `tools/make_app_icons.py` | Draws every package icon (tiles, store, splash, and the setup's `.ico`) as the title bar's own mark - the segmented gradient ring, from the lockup's exact geometry - re-run it whenever the mark moves |
 | `tools/convert_type_icons.py` | Converts the supplied v2 type icons (SVG) into the app's geometry source, `TypeMarkData.cs` - expands scientific notation the mini-language rejects, pins fill rules per path, re-centres the chevron on the rail's 28 grid |
+| `tools/analyze_services_bar.py` | Pixel forensics on the v2 reference mockups - classifies pixels, prints ASCII maps, measures each button's bbox, enclosed-white interior and corner profile - how the tile design (64px, radius 28, white icon at natural size) was read off `services_bar.png` |
+| `tools/fit_button_shape.py` | Fits the reference button's corner curve against circle/rounded-square/squircle profiles (the radius-28 rounded square won) and maps the full layout of `services.png` - button row, labels, header - for the left-aligned rebuild |
 | `tools/validate_usings.py` | Checks framework and app type uses against their carrying usings, and extension-method calls (`.GetRequiredService()`) against the using that imports the extension class |
 | `tools/build_icons.py` | Normalises the icon paths and regenerates `Controls/LineIconData.cs` plus the proof sheet |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |
@@ -1470,19 +1472,22 @@ decorator it knows about, negative-tested both ways.
 ### v2: the four primaries, and the rail that goes back
 
 The services tab is rebuilt around four primary types - VPS, Proxy, Domain,
-Wallets - each with its own mark and its own gradient, top-left to
+Wallets - each with its own icon and its own gradient, top-left to
 bottom-right: red for VPS, green for Proxy, blue for Domain, yellow for
-Wallets. The type list is no longer cards: the marks themselves are the
-buttons, 64px with the type's name set beneath in small caps, the section
-header trimmed to the bare title (no disc - the marks carry the identity now).
-The header's search and ADD sit on a soft grey fill rather than the card's
-white.
+Wallets. The type list is no longer cards: each type is a 64px rounded
+square (corner radius 28) filled with its gradient - the colour is the
+button's - with the type's icon in white at its natural size centred
+inside, and its name set beneath in small caps. The row starts at the
+content's left edge, level with the title, not centred in the tab; the
+section header is trimmed to the bare title (no disc - the tiles carry the
+identity now). The header's search and ADD sit on a soft grey fill rather
+than the card's white.
 
 Each primary opens a hand-built screen in the type's colours: the name as the
 title in the type's gradient, the ADD button's accents in the type's colour,
-the directory skeleton below - the records that fill it arrive with the fields,
-and until then the surface says so and the buttons that would need them are
-asleep rather than absent.
+the header over open space - the records that fill it arrive with the fields,
+and until then the surface is empty, exactly as the reference draws it, and
+the buttons that would need records are asleep rather than absent.
 
 The rail's Services button becomes the back button while a type is on show:
 the disc takes the type's gradient and the chevron slides in over the

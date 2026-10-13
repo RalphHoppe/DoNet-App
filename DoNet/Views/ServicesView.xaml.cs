@@ -97,25 +97,6 @@ public sealed partial class ServicesView : UserControl
     private void OnWalletsClick(object sender, RoutedEventArgs args) => ViewModel.OpenPrimary(PrimaryServiceType.Wallets);
 
     /// <summary>
-    /// A mark brightens under the pointer - an affordance, not a state change.
-    /// </summary>
-    private void OnTypePointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs args)
-    {
-        if (sender is Button button)
-        {
-            button.Opacity = 0.8;
-        }
-    }
-
-    private void OnTypePointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs args)
-    {
-        if (sender is Button button)
-        {
-            button.Opacity = 1;
-        }
-    }
-
-    /// <summary>
     /// Filters the four marks by the search box, over their names.
     /// </summary>
     /// <remarks>

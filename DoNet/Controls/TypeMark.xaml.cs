@@ -5,11 +5,13 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
+using Windows.UI;
 
 namespace DoNet.Controls;
 
 /// <summary>
-/// One primary service type's mark, gradient-filled - see the XAML for why the
+/// One primary service type's tile: the type's gradient on a 64px rounded
+/// square, the type's icon in white centred inside - see the XAML for why the
 /// paths are built in code.
 /// </summary>
 public sealed partial class TypeMark : UserControl
@@ -17,13 +19,17 @@ public sealed partial class TypeMark : UserControl
     public TypeMark()
     {
         InitializeComponent();
+
+        // The default kind never raises the changed callback, so the tile is
+        // drawn once here and redrawn only if the kind actually moves.
+        Build();
     }
 
     public static readonly DependencyProperty KindProperty = DependencyProperty.Register(
         nameof(Kind), typeof(PrimaryServiceType), typeof(TypeMark),
         new PropertyMetadata(PrimaryServiceType.Vps, OnKindChanged));
 
-    /// <summary>Which type's mark this is.</summary>
+    /// <summary>Which type's tile this is.</summary>
     public PrimaryServiceType Kind
     {
         get => (PrimaryServiceType)GetValue(KindProperty);
@@ -34,8 +40,8 @@ public sealed partial class TypeMark : UserControl
         => ((TypeMark)sender).Build();
 
     /// <summary>
-    /// Draws the mark: one path per SVG source shape, all sharing the type's
-    /// gradient.
+    /// Draws the tile: the gradient on the square, one white path per SVG
+    /// source shape at the icon's natural size, centred.
     /// </summary>
     private void Build()
     {
@@ -45,14 +51,17 @@ public sealed partial class TypeMark : UserControl
         Sheet.Width = width;
         Sheet.Height = height;
 
-        Brush fill = PrimaryServiceTypes.GradientOf(Kind);
+        // The colour is the button's, not the icon's.
+        Tile.Background = PrimaryServiceTypes.GradientOf(Kind);
+
+        Brush icon = new SolidColorBrush(Colors.White);
 
         foreach (string data in PrimaryServiceTypes.MarkOf(Kind))
         {
             Sheet.Children.Add(new Path
             {
                 Data = (Geometry)XamlBindingHelper.ConvertValue(typeof(Geometry), data),
-                Fill = fill,
+                Fill = icon,
             });
         }
     }
