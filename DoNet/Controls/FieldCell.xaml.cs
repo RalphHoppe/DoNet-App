@@ -235,6 +235,116 @@ public sealed partial class FieldCell : UserControl
         set => SetValue(AddChoiceLabelProperty, value);
     }
 
+    /// <summary>
+    /// Identifies the <see cref="PrefixText"/> property.
+    /// </summary>
+    public static readonly DependencyProperty PrefixTextProperty = DependencyProperty.Register(
+        nameof(PrefixText),
+        typeof(string),
+        typeof(FieldCell),
+        new PropertyMetadata(string.Empty, OnAnyPropertyChanged));
+
+    /// <summary>
+    /// Text that sits inside the box before the value, stating what the value means.
+    /// </summary>
+    /// <remarks>
+    /// "1 BTC =" on the exchange rate: the number alone does not say what it prices,
+    /// and a label above the box cannot carry an equals sign that reads. Empty on
+    /// every field whose meaning its label already carries.
+    /// </remarks>
+    public string PrefixText
+    {
+        get => (string)GetValue(PrefixTextProperty);
+        set => SetValue(PrefixTextProperty, value);
+    }
+
+    /// <summary>
+    /// Identifies the <see cref="UnitOptions"/> property.
+    /// </summary>
+    public static readonly DependencyProperty UnitOptionsProperty = DependencyProperty.Register(
+        nameof(UnitOptions),
+        typeof(IReadOnlyList<string>),
+        typeof(FieldCell),
+        new PropertyMetadata(null, OnAnyPropertyChanged));
+
+    /// <summary>
+    /// The choices for the unit attached to this field's value, or null for no unit.
+    /// </summary>
+    /// <remarks>
+    /// The currency on a balance, the d/w/m/y on a subscription cycle: a unit that
+    /// is a choice renders as a picker hung off the value's right edge, inside the
+    /// same box, behind a hairline divider - so the unit cannot drift away from the
+    /// field it belongs to. Null on every field without one.
+    /// </remarks>
+    public IReadOnlyList<string>? UnitOptions
+    {
+        get => (IReadOnlyList<string>?)GetValue(UnitOptionsProperty);
+        set => SetValue(UnitOptionsProperty, value);
+    }
+
+    /// <summary>
+    /// Identifies the <see cref="UnitIsText"/> property.
+    /// </summary>
+    public static readonly DependencyProperty UnitIsTextProperty = DependencyProperty.Register(
+        nameof(UnitIsText),
+        typeof(bool),
+        typeof(FieldCell),
+        new PropertyMetadata(false, OnAnyPropertyChanged));
+
+    /// <summary>
+    /// Renders the attached unit as a small text input instead of a picker.
+    /// </summary>
+    /// <remarks>
+    /// For a unit that is typed rather than chosen: the number on a port, whose
+    /// protocol is the value and whose number rides beside it. Ignored when
+    /// <see cref="UnitOptions"/> is set - a unit with choices is always a picker.
+    /// </remarks>
+    public bool UnitIsText
+    {
+        get => (bool)GetValue(UnitIsTextProperty);
+        set => SetValue(UnitIsTextProperty, value);
+    }
+
+    /// <summary>
+    /// Identifies the <see cref="UnitValue"/> property.
+    /// </summary>
+    public static readonly DependencyProperty UnitValueProperty = DependencyProperty.Register(
+        nameof(UnitValue),
+        typeof(string),
+        typeof(FieldCell),
+        new PropertyMetadata(string.Empty, OnAnyPropertyChanged));
+
+    /// <summary>
+    /// The attached unit's value: the chosen row's label, or the typed text.
+    /// </summary>
+    /// <remarks>
+    /// Bind this two ways, as with <see cref="Value"/>. Read-only modes show it as
+    /// plain text after the value, still behind the divider, so the preview says
+    /// "13.7 | USD" rather than a bare number with its currency somewhere else.
+    /// </remarks>
+    public string UnitValue
+    {
+        get => (string)GetValue(UnitValueProperty);
+        set => SetValue(UnitValueProperty, value);
+    }
+
+    /// <summary>
+    /// Identifies the <see cref="UnitPlaceholder"/> property.
+    /// </summary>
+    public static readonly DependencyProperty UnitPlaceholderProperty = DependencyProperty.Register(
+        nameof(UnitPlaceholder),
+        typeof(string),
+        typeof(FieldCell),
+        new PropertyMetadata(string.Empty, OnAnyPropertyChanged));
+
+    /// <summary>The unit's placeholder - "Currency" on the balance, the number's
+    /// example on the port.</summary>
+    public string UnitPlaceholder
+    {
+        get => (string)GetValue(UnitPlaceholderProperty);
+        set => SetValue(UnitPlaceholderProperty, value);
+    }
+
     /// <summary>Raised when the drawer's "add" row is picked. Carries nothing.</summary>
     public event EventHandler? AddChoiceRequested;
 
@@ -294,7 +404,31 @@ public sealed partial class FieldCell : UserControl
            && (ReferenceEquals(element, ValueInput)
                || ReferenceEquals(element, SecretInput)
                || ReferenceEquals(element, ChoiceInput)
-               || ReferenceEquals(element, DateInput));
+               || ReferenceEquals(element, DateInput)
+               || ReferenceEquals(element, UnitInput)
+               || ReferenceEquals(element, UnitChoice));
+
+    /// <summary>
+    /// The attached unit's focus target, or null when this cell has no unit on
+    /// screen.
+    /// </summary>
+    /// <remarks>
+    /// The Tab driver hops value to unit to next field, so a merged field is two
+    /// stops without the driver having to know which kind of unit it is.
+    /// </remarks>
+    public Control? UnitFocusTarget()
+        => UnitInput.Visibility == Visibility.Visible ? UnitInput
+         : UnitChoice.Visibility == Visibility.Visible ? UnitChoice
+         : null;
+
+    /// <summary>
+    /// Whether <paramref name="element"/> is this cell's unit editor rather than
+    /// its value editor.
+    /// </summary>
+    public bool UnitOwnsFocus(object? element)
+        => element is not null
+           && (ReferenceEquals(element, UnitInput)
+               || ReferenceEquals(element, UnitChoice));
 
     private static void OnAnyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((FieldCell)d).Refresh();
@@ -375,7 +509,75 @@ public sealed partial class FieldCell : UserControl
         CopyButton.IsEnabled = hasValue;
         CopyShell.Opacity = hasValue ? 1.0 : 0.45;
 
+        ShowPrefix();
+        ShowUnit(editable);
+
         ApplyTabOrder();
+    }
+
+    /// <summary>States what the value means, inside the box before it.</summary>
+    private void ShowPrefix()
+    {
+        PrefixLabel.Text = PrefixText;
+        PrefixLabel.Visibility = string.IsNullOrEmpty(PrefixText)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    /// <summary>
+    /// Dresses the attached unit zone for the current mode, or hides it outright.
+    /// </summary>
+    /// <remarks>
+    /// Editable fields with a unit get the picker or the small input; read-only
+    /// fields get the unit as text behind the same divider, so the preview keeps
+    /// the pairing the form promised. No unit, no zone - the divider is the zone's
+    /// to hide, so a field without one loses nothing.
+    /// </remarks>
+    private void ShowUnit(bool editable)
+    {
+        string unit = UnitValue ?? string.Empty;
+        bool picker = editable && UnitOptions is not null;
+        bool typed = editable && UnitOptions is null && UnitIsText;
+        bool readOnly = !editable && !string.IsNullOrEmpty(unit);
+
+        UnitDivider.Visibility = picker || typed || readOnly
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        UnitChoice.Visibility = picker ? Visibility.Visible : Visibility.Collapsed;
+        UnitInput.Visibility = typed ? Visibility.Visible : Visibility.Collapsed;
+        UnitText.Visibility = readOnly ? Visibility.Visible : Visibility.Collapsed;
+
+        if (picker)
+        {
+            UnitChoice.Placeholder = UnitPlaceholder;
+            UnitChoice.AllowCustom = false;
+            UnitChoice.ShowFlags = false;
+            UnitChoice.AddLabel = null;
+            UnitChoice.ItemIconKind = null;
+
+            if (!ReferenceEquals(UnitChoice.Options, UnitOptions))
+            {
+                UnitChoice.Options = UnitOptions;
+            }
+
+            _syncing = true;
+            UnitChoice.Value = unit;
+            _syncing = false;
+        }
+        else if (typed)
+        {
+            UnitInput.PlaceholderText = UnitPlaceholder;
+
+            _syncing = true;
+            if (UnitInput.Text != unit)
+            {
+                UnitInput.Text = unit;
+            }
+            _syncing = false;
+        }
+
+        UnitText.Text = unit;
     }
 
     private void ShowReadOnly(bool automatic, bool hasValue, string value)
@@ -527,6 +729,13 @@ public sealed partial class FieldCell : UserControl
         SecretInput.TabIndex = TabOrder;
         ChoiceInput.TabIndex = TabOrder;
         DateInput.TabIndex = TabOrder;
+
+        // The unit is one stop after the value it belongs to. A picker unit shares
+        // the value's stop - it is one motion, value then unit - while a typed unit
+        // (the port's number) is a real second field and takes the next number, so
+        // the cell after it has to count past it.
+        UnitChoice.TabIndex = TabOrder;
+        UnitInput.TabIndex = TabOrder + 1;
     }
 
     private static Microsoft.UI.Xaml.Media.Brush Brush(string key)
@@ -543,16 +752,63 @@ public sealed partial class FieldCell : UserControl
 
     private void OnRevealClick(object sender, RoutedEventArgs args)
     {
-        _revealed = !_revealed;
-        SecretInput.PasswordRevealMode = _revealed
+        // The press takes the reveal over from the generate's timed one, whichever
+        // way it was going.
+        _revealGeneration++;
+        SetRevealed(!_revealed);
+    }
+
+    /// <summary>Applies a reveal state in one place: mask, icon, and value.</summary>
+    private void SetRevealed(bool revealed)
+    {
+        _revealed = revealed;
+        SecretInput.PasswordRevealMode = revealed
             ? PasswordRevealMode.Visible
             : PasswordRevealMode.Hidden;
-        EyeSlash.Visibility = _revealed ? Visibility.Visible : Visibility.Collapsed;
+        EyeSlash.Visibility = revealed ? Visibility.Visible : Visibility.Collapsed;
         Refresh();
     }
 
     private void OnGenerateClick(object sender, RoutedEventArgs args)
-        => Commit(PasswordGenerator.Generate());
+    {
+        Commit(PasswordGenerator.Generate());
+
+        // A generated password lands masked, and a masked change reads as nothing
+        // having happened - the only other sign is the button's own press. So the
+        // generation shows its face: the new password is revealed for a moment,
+        // then masks itself again. A user who is already watching the field keeps
+        // nothing waiting; one who looks away can still press the eye.
+        if (IsSecret && !_revealed)
+        {
+            SetRevealed(true);
+            _ = MaskAgainAfterGenerateAsync();
+        }
+    }
+
+    /// <summary>How long a generated password stays revealed before masking itself.</summary>
+    private const int GeneratedRevealMs = 2500;
+
+    private int _revealGeneration;
+
+    /// <summary>Masks the password again unless something took the reveal over.</summary>
+    private async System.Threading.Tasks.Task MaskAgainAfterGenerateAsync()
+    {
+        int generation = unchecked(++_revealGeneration);
+
+        try
+        {
+            await System.Threading.Tasks.Task.Delay(GeneratedRevealMs);
+
+            if (generation == _revealGeneration && _revealed)
+            {
+                SetRevealed(false);
+            }
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Masking the generated password again failed", error);
+        }
+    }
 
     private void OnCopyClick(object sender, RoutedEventArgs args)
     {
@@ -610,6 +866,22 @@ public sealed partial class FieldCell : UserControl
         if (!_syncing)
         {
             Commit(SecretInput.Password);
+        }
+    }
+
+    private void OnUnitChoiceChosen(object? sender, string picked)
+    {
+        if (!_syncing)
+        {
+            UnitValue = picked;
+        }
+    }
+
+    private void OnUnitInputChanged(object sender, TextChangedEventArgs args)
+    {
+        if (!_syncing)
+        {
+            UnitValue = UnitInput.Text;
         }
     }
 

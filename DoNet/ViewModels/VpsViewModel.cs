@@ -58,6 +58,16 @@ public sealed partial class VpsViewModel : ObservableObject, IDeleteConfirmHost
 
     private VpsRecord? _pendingDelete;
 
+    // The four panels' booleans are computed from this, so every change has to
+    // carry them along - a plain SetProperty on a manual property raises only
+    // "RecordState", and the panels' x:Bind on IsLoading then never re-runs
+    // after its first read. This is exactly how the loading panel came to sit
+    // on the records forever: the load finished, the notification never came.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLoading))]
+    [NotifyPropertyChangedFor(nameof(IsError))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(HasNoMatches))]
     private DirectoryState _recordState = DirectoryState.Loading;
 
     private bool _isDialogOpen;
@@ -81,13 +91,6 @@ public sealed partial class VpsViewModel : ObservableObject, IDeleteConfirmHost
 
     /// <summary>The form behind the dialog, in whichever mode it is in.</summary>
     public VpsDialogViewModel Dialog { get; } = new();
-
-    /// <summary>The record list's state, for the surface's panels.</summary>
-    public DirectoryState RecordState
-    {
-        get => _recordState;
-        private set => SetProperty(ref _recordState, value);
-    }
 
     /// <summary>True while the first page is on its way.</summary>
     public bool IsLoading => RecordState == DirectoryState.Loading;

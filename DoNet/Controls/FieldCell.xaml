@@ -22,6 +22,15 @@
         country get pickers, phone and email get the right keyboards. A form where every
         field is a bare text box is how a directory ends up holding "UK", "U.K." and
         "united kingdom" as three different countries.
+
+        Two adornments attach meaning a bare box cannot carry, both born in the VPS
+        form and available to any field. PrefixText sits inside the box before the
+        value, stating what the number means ("1 BTC =" on the exchange rate). The unit
+        zone hangs off the value's right, behind a hairline divider: a picker for a
+        unit that is a choice (the currency on the balance, the d/w/m/y on the cycle)
+        or a small text input for a unit that is typed (the number on the port). One
+        box, one meaning - a currency floating in its own field a row away from the
+        balance says nothing about whose currency it is.
     -->
 
     <Border x:Name="Shell"
@@ -98,11 +107,11 @@
 
             <!--
                 No ColumnSpacing. A Grid puts its spacing between every pair of adjacent
-                columns, including ones that have collapsed to zero width, so the three
-                Auto columns below cost 30px of dead space on the right of every field
-                whenever their buttons are hidden - which is the whole add/edit form.
-                The gap belongs to the buttons, so each one carries it as a left margin
-                and a collapsed button contributes nothing.
+                columns, including ones that have collapsed to zero width, so the five
+                Auto columns below cost dead space on the right of every field whenever
+                their adornments or buttons are hidden - which is the whole add/edit
+                form. The gap belongs to what carries it - the divider's margins and the
+                buttons' left margins - and a collapsed element contributes nothing.
             -->
             <Grid Grid.Row="1" MinHeight="30">
                 <Grid.ColumnDefinitions>
@@ -110,11 +119,36 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+
+                <!--
+                    The value's own column: an optional prefix ("1 BTC =") then the
+                    editor, so the prefix reads as part of the value rather than as a
+                    label that lost its way.
+                -->
+                <Grid Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- What the number means, on the exchange rate. -->
+                    <TextBlock x:Name="PrefixLabel"
+                               Grid.Column="0"
+                               Margin="0,0,8,0"
+                               VerticalAlignment="Center"
+                               Visibility="Collapsed"
+                               FontFamily="{StaticResource BalooFont}"
+                               FontSize="{StaticResource FieldValueFontSize}"
+                               Foreground="{StaticResource CardMetaBrush}"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="20" />
 
                 <!-- Read-only value, used by the preview dialog. -->
                 <TextBlock x:Name="ValueText"
-                           Grid.Column="0"
+                           Grid.Column="1"
                            VerticalAlignment="Center"
                            FontFamily="{StaticResource BalooFont}"
                            FontSize="{StaticResource FieldValueFontSize}"
@@ -126,8 +160,8 @@
 
                 <!-- Free text, and the multiline note. -->
                 <TextBox x:Name="ValueInput"
+                         Grid.Column="1"
                          Style="{StaticResource BareTextBoxStyle}"
-                         Grid.Column="0"
                          Visibility="Collapsed"
                          VerticalAlignment="Center"
                          FontFamily="{StaticResource BalooFont}"
@@ -143,7 +177,7 @@
 
                 <!-- Secret value, masked until revealed. -->
                 <PasswordBox x:Name="SecretInput"
-                             Grid.Column="0"
+                         Grid.Column="1"
                              Visibility="Collapsed"
                              VerticalAlignment="Center"
                              FontFamily="{StaticResource BalooFont}"
@@ -159,7 +193,7 @@
 
                 <!-- Gender, country and the website picker. -->
                 <controls:ChoicePicker x:Name="ChoiceInput"
-                                       Grid.Column="0"
+                         Grid.Column="1"
                                        Visibility="Collapsed"
                                        HorizontalAlignment="Stretch"
                                        VerticalAlignment="Center"
@@ -168,7 +202,7 @@
 
                 <!-- Date of birth. -->
                 <CalendarDatePicker x:Name="DateInput"
-                                    Grid.Column="0"
+                         Grid.Column="1"
                                     Visibility="Collapsed"
                                     HorizontalAlignment="Stretch"
                                     VerticalAlignment="Center"
@@ -182,11 +216,61 @@
                                     MinWidth="0"
                                     DateFormat="{}{day.integer(2)} / {month.integer(2)} / {year.full}"
                                     DateChanged="OnDateChanged" />
+                </Grid>
+
+                <!--
+                    The unit zone: a hairline divider, then the unit itself - a picker
+                    when the unit is a choice, a small input when it is typed, plain
+                    text in the read-only modes. Collapsed together when the field has
+                    no unit, which is every field that is not a balance, a cycle or a
+                    port.
+                -->
+                <Rectangle x:Name="UnitDivider"
+                           Grid.Column="1"
+                           Width="1"
+                           Margin="12,4,12,4"
+                           VerticalAlignment="Stretch"
+                           Fill="{StaticResource SearchBorderBrush}"
+                           Visibility="Collapsed" />
+
+                <controls:ChoicePicker x:Name="UnitChoice"
+                                       Grid.Column="2"
+                                       Visibility="Collapsed"
+                                       VerticalAlignment="Center"
+                                       ValueChosen="OnUnitChoiceChosen" />
+
+                <TextBox x:Name="UnitInput"
+                         Grid.Column="2"
+                         Visibility="Collapsed"
+                         MinWidth="86"
+                         VerticalAlignment="Center"
+                         Style="{StaticResource BareTextBoxStyle}"
+                         FontFamily="{StaticResource BalooFont}"
+                         FontSize="{StaticResource FieldValueFontSize}"
+                         Foreground="{StaticResource TextPrimaryBrush}"
+                         PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="0"
+                         MinHeight="0"
+                         TextChanged="OnUnitInputChanged" />
+
+                <!-- The unit as read-only text, on the preview dialog. -->
+                <TextBlock x:Name="UnitText"
+                           Grid.Column="2"
+                           Visibility="Collapsed"
+                           VerticalAlignment="Center"
+                           FontFamily="{StaticResource BalooFont}"
+                           FontSize="{StaticResource FieldValueFontSize}"
+                           Foreground="{StaticResource CardMetaBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           LineStackingStrategy="BlockLineHeight"
+                           LineHeight="20" />
 
                 <!-- Reveal toggle for secret fields. -->
                 <Button x:Name="RevealButton"
                         Margin="10,0,0,0"
-                        Grid.Column="1"
+                        Grid.Column="3"
                         Visibility="Collapsed"
                         Width="28"
                         Height="28"
@@ -216,7 +300,7 @@
                 <!-- AUTO GENERATE, on the two password fields in the add/edit form. -->
                 <Button x:Name="GenerateButton"
                         Margin="10,0,0,0"
-                        Grid.Column="2"
+                        Grid.Column="4"
                         Visibility="Collapsed"
                         VerticalAlignment="Center"
                         Style="{StaticResource BareButtonStyle}"
@@ -239,7 +323,7 @@
                 <!-- COPY, on the preview dialog. -->
                 <Button x:Name="CopyButton"
                         Margin="10,0,0,0"
-                        Grid.Column="3"
+                        Grid.Column="5"
                         Visibility="Collapsed"
                         VerticalAlignment="Center"
                         Style="{StaticResource BareButtonStyle}"

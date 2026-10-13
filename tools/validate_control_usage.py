@@ -88,7 +88,10 @@ def main() -> int:
                 continue
 
             checked += 1
-            for attr in re.findall(r"(?:^|\s)([\w:\.]+)\s*=\s*\"", body):
+            # The value is consumed with the name: an attribute whose value
+            # contains " WORD =" (PrefixText="1 BTC =") must not read as a
+            # second attribute named WORD.
+            for attr in re.findall(r'(?:^|\s)([\w:\.]+)\s*=\s*"[^"]*"', body):
                 if (attr in FRAMEWORK or attr in INHERITED_EVENTS
                         or attr.startswith(("x:", "xmlns")) or "." in attr):
                     continue

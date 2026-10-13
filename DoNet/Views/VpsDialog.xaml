@@ -198,8 +198,21 @@
                             <TranslateTransform x:Name="FieldShift" Y="0" />
                         </StackPanel.RenderTransform>
 
-                        <!-- The VPS's own fields, three columns. -->
-                        <Grid x:Name="FieldGrid" ColumnSpacing="24">
+                        <!--
+                            The VPS's own fields, in the workbook's order, read like a
+                            page: left to right, top to bottom - the person, site and
+                            account the VPS hangs off, then its name, then its money,
+                            its dates, its cycle, its node, its country, its note.
+                            The units are not fields of their own: the currency hangs
+                            off the balance and the d/w/m/y off the cycle, inside the
+                            same box, so no one has to guess whose currency it is.
+
+                            No RowSpacing: the rows below the wide layout's last stay
+                            empty for the narrow state to fill, and spacing between
+                            empty rows is dead height. The gap between two rows is
+                            the cells' own bottom margin instead.
+                        -->
+                        <Grid x:Name="FieldGrid">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition x:Name="ColLeft" Width="*" />
                                 <ColumnDefinition x:Name="ColMiddle" Width="*" />
@@ -209,150 +222,231 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <StackPanel x:Name="LeftColumn" Grid.Row="0" Grid.Column="0" Spacing="16">
-                                <controls:FieldCell Label="#"
-                                                    IconKind="Hash"
-                                                    Placeholder="Assigned on save"
-                                                    Value="{x:Bind ViewModel.IdDisplay, Mode=OneWay}"
-                                                    Kind="{x:Bind ViewModel.AutoFieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="NameCell" Label="VPS NAME"
-                                                    IconKind="Tag"
-                                                    TabOrder="1"
-                                                    Placeholder="Enter the VPS name"
-                                                    Value="{x:Bind ViewModel.Name, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="PersonCell" Label="PERSON"
-                                                    IconKind="User"
-                                                    TabOrder="2"
-                                                    InputKind="Choice"
-                                                    Placeholder="Pick a person"
-                                                    Value="{x:Bind ViewModel.PersonLabel, Mode=TwoWay}"
-                                                    Options="{x:Bind ViewModel.PersonOptions, Mode=OneWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="SiteCell" Label="SITE"
-                                                    IconKind="Globe"
-                                                    TabOrder="3"
-                                                    InputKind="Choice"
-                                                    Placeholder="Pick a site"
-                                                    Value="{x:Bind ViewModel.SiteLabel, Mode=TwoWay}"
-                                                    Options="{x:Bind ViewModel.SiteOptions, Mode=OneWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="AccountCell" Label="ACCOUNT"
-                                                    IconKind="Account"
-                                                    TabOrder="4"
-                                                    InputKind="Choice"
-                                                    Placeholder="Pick an account"
-                                                    Value="{x:Bind ViewModel.AccountLabel, Mode=TwoWay}"
-                                                    Options="{x:Bind ViewModel.AccountOptions, Mode=OneWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="NodeCell" Label="NODE"
-                                                    IconKind="Briefcase"
-                                                    TabOrder="5"
-                                                    InputKind="Choice"
-                                                    Placeholder="Pick the VPS this one connects to"
-                                                    Value="{x:Bind ViewModel.NodeLabel, Mode=TwoWay}"
-                                                    Options="{x:Bind ViewModel.NodeOptions, Mode=OneWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            </StackPanel>
+                            <controls:FieldCell x:Name="RecordIdCell"
+                              Grid.Row="0"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="#"
+                              IconKind="Hash"
+                              Placeholder="Assigned on save"
+                              Value="{x:Bind ViewModel.IdDisplay, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.AutoFieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <StackPanel x:Name="MiddleColumn" Grid.Row="0" Grid.Column="1" Spacing="16">
-                                <controls:FieldCell x:Name="BalanceCell" Label="BALANCE"
-                                                    IconKind="Hash"
-                                                    TabOrder="6"
-                                                    Placeholder="Enter the balance"
-                                                    Value="{x:Bind ViewModel.BalanceText, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="CurrencyCell" Label="CURRENCY"
-                                                    IconKind="CreditCard"
-                                                    TabOrder="7"
-                                                    InputKind="Choice"
-                                                    Placeholder="Pick the currency"
-                                                    Value="{x:Bind ViewModel.CurrencyLabel, Mode=TwoWay}"
-                                                    Options="{x:Bind ViewModel.CurrencyOptions, Mode=OneWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="BtcCell" Label="BALANCE IN BTC"
-                                                    IconKind="Hash"
-                                                    TabOrder="8"
-                                                    Placeholder="Typed or filled from the rate"
-                                                    Value="{x:Bind ViewModel.BtcText, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="RateCell" Label="EXCHANGE-RATE"
-                                                    IconKind="Hash"
-                                                    TabOrder="9"
-                                                    Placeholder="One Bitcoin in the currency"
-                                                    Value="{x:Bind ViewModel.RateText, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="CreatedCell" Label="CREATED AT"
-                                                    IconKind="Clock"
-                                                    TabOrder="10"
-                                                    InputKind="Date"
-                                                    Placeholder="DD / MM / YYYY"
-                                                    Value="{x:Bind ViewModel.CreatedAt, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="OutCell" Label="OUT DATE"
-                                                    IconKind="Calendar"
-                                                    TabOrder="11"
-                                                    InputKind="Date"
-                                                    Placeholder="DD / MM / YYYY"
-                                                    Value="{x:Bind ViewModel.OutDate, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            </StackPanel>
+                            <controls:FieldCell x:Name="PersonCell"
+                              Grid.Row="0"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="PERSON"
+                              IconKind="User"
+                              TabOrder="1"
+                              Placeholder="Pick a person"
+                              Value="{x:Bind ViewModel.PersonLabel, Mode=TwoWay}"
+                              InputKind="Choice"
+                              Options="{x:Bind ViewModel.PersonOptions, Mode=OneWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <StackPanel x:Name="RightColumn" Grid.Row="0" Grid.Column="2" Spacing="16">
-                                <controls:FieldCell x:Name="CycleCell" Label="SUBSCRIPTION CYCLE"
-                                                    IconKind="Calendar"
-                                                    TabOrder="12"
-                                                    Placeholder="Enter the number"
-                                                    Value="{x:Bind ViewModel.CycleValueText, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="CycleUnitCell" Label="CYCLE UNIT"
-                                                    IconKind="Calendar"
-                                                    TabOrder="13"
-                                                    InputKind="Choice"
-                                                    Placeholder="Pick the unit"
-                                                    Value="{x:Bind ViewModel.CycleUnitLabel, Mode=TwoWay}"
-                                                    Options="{x:Bind ViewModel.CycleUnitOptions, Mode=OneWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="CountryCell" Label="COUNTRY"
-                                                    IconKind="GlobeMeridian"
-                                                    TabOrder="14"
-                                                    InputKind="Country"
-                                                    Placeholder="Enter the country"
-                                                    Value="{x:Bind ViewModel.Country, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="NoteCell" Label="NOTE"
-                                                    IconKind="Info"
-                                                    TabOrder="15"
-                                                    InputKind="Multiline"
-                                                    Placeholder="Anything worth remembering"
-                                                    Value="{x:Bind ViewModel.Note, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            </StackPanel>
+                            <controls:FieldCell x:Name="SiteCell"
+                              Grid.Row="0"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="SITE"
+                              IconKind="Globe"
+                              TabOrder="2"
+                              Placeholder="Pick a site"
+                              Value="{x:Bind ViewModel.SiteLabel, Mode=TwoWay}"
+                              InputKind="Choice"
+                              Options="{x:Bind ViewModel.SiteOptions, Mode=OneWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="AccountCell"
+                              Grid.Row="1"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="ACCOUNT"
+                              IconKind="Account"
+                              TabOrder="3"
+                              Placeholder="Pick an account"
+                              Value="{x:Bind ViewModel.AccountLabel, Mode=TwoWay}"
+                              InputKind="Choice"
+                              Options="{x:Bind ViewModel.AccountOptions, Mode=OneWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="NameCell"
+                              Grid.Row="1"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="VPS NAME"
+                              IconKind="Tag"
+                              TabOrder="4"
+                              Placeholder="Enter the VPS name"
+                              Value="{x:Bind ViewModel.Name, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="BalanceCell"
+                              Grid.Row="1"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="BALANCE"
+                              IconKind="CreditCard"
+                              TabOrder="5"
+                              Placeholder="Enter the balance"
+                              Value="{x:Bind ViewModel.BalanceText, Mode=TwoWay}"
+                              UnitOptions="{x:Bind ViewModel.CurrencyOptions, Mode=OneWay}"
+                              UnitValue="{x:Bind ViewModel.CurrencyLabel, Mode=TwoWay}"
+                              UnitPlaceholder="Currency"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="BtcCell"
+                              Grid.Row="2"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="BALANCE IN BTC"
+                              IconKind="Hash"
+                              TabOrder="6"
+                              Placeholder="Typed or filled from the rate"
+                              Value="{x:Bind ViewModel.BtcText, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="RateCell"
+                              Grid.Row="2"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="EXCHANGE-RATE"
+                              IconKind="Hash"
+                              TabOrder="7"
+                              Placeholder="In the currency"
+                              Value="{x:Bind ViewModel.RateText, Mode=TwoWay}"
+                              PrefixText="1 BTC ="
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="CreatedCell"
+                              Grid.Row="2"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="CREATED AT"
+                              IconKind="Clock"
+                              TabOrder="8"
+                              Value="{x:Bind ViewModel.CreatedAt, Mode=TwoWay}"
+                              InputKind="Date"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="OutCell"
+                              Grid.Row="3"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="OUT DATE"
+                              IconKind="Calendar"
+                              TabOrder="9"
+                              Value="{x:Bind ViewModel.OutDate, Mode=TwoWay}"
+                              InputKind="Date"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="CycleCell"
+                              Grid.Row="3"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="SUBSCRIPTION CYCLE"
+                              IconKind="Calendar"
+                              TabOrder="10"
+                              Placeholder="Enter the number"
+                              Value="{x:Bind ViewModel.CycleValueText, Mode=TwoWay}"
+                              UnitOptions="{x:Bind ViewModel.CycleUnitOptions, Mode=OneWay}"
+                              UnitValue="{x:Bind ViewModel.CycleUnitLabel, Mode=TwoWay}"
+                              UnitPlaceholder="Unit"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="NodeCell"
+                              Grid.Row="3"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="NODE"
+                              IconKind="Briefcase"
+                              TabOrder="11"
+                              Placeholder="Pick the VPS this one connects to"
+                              Value="{x:Bind ViewModel.NodeLabel, Mode=TwoWay}"
+                              InputKind="Choice"
+                              Options="{x:Bind ViewModel.NodeOptions, Mode=OneWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="CountryCell"
+                              Grid.Row="4"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="COUNTRY"
+                              IconKind="GlobeMeridian"
+                              TabOrder="12"
+                              Placeholder="Enter the country"
+                              Value="{x:Bind ViewModel.Country, Mode=TwoWay}"
+                              InputKind="Country"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="NoteCell"
+                              Grid.Row="4"
+                              Grid.Column="1"
+                              Grid.ColumnSpan="2"
+                              Margin="0"
+                              VerticalAlignment="Top"
+                              Label="NOTE"
+                              IconKind="Info"
+                              TabOrder="13"
+                              Placeholder="Anything worth remembering"
+                              Value="{x:Bind ViewModel.Note, Mode=TwoWay}"
+                              InputKind="Multiline"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                         </Grid>
 
                         <!-- The system section, its own grid under the VPS's. -->
                         <TextBlock Text="SYSTEM INFORMATION"
                                    Style="{StaticResource SectionLabelStyle}" />
 
-                        <Grid x:Name="SystemGrid" ColumnSpacing="24">
+                        <!--
+                            The system underneath, same rule: the workbook's order,
+                            left to right, top to bottom. The port's number hangs off
+                            its protocol as a typed unit - "SSH | 55475" is one fact,
+                            not two fields that happen to be neighbours.
+                        -->
+                        <Grid x:Name="SystemGrid">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition x:Name="SysColLeft" Width="*" />
                                 <ColumnDefinition x:Name="SysColMiddle" Width="*" />
@@ -362,146 +456,250 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <StackPanel x:Name="SysLeftColumn" Grid.Row="0" Grid.Column="0" Spacing="16">
-                                <controls:FieldCell Label="#"
-                                                    IconKind="Hash"
-                                                    Placeholder="Assigned with the VPS"
-                                                    Value="{x:Bind ViewModel.SystemIdDisplay, Mode=OneWay}"
-                                                    Kind="{x:Bind ViewModel.AutoFieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="OsCell" Label="OS"
-                                                    IconKind="Info"
-                                                    TabOrder="16"
-                                                    Placeholder="e.g. Debian 12"
-                                                    Value="{x:Bind ViewModel.Os, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="IpCell" Label="IP"
-                                                    IconKind="Globe"
-                                                    TabOrder="17"
-                                                    Placeholder="Enter the address"
-                                                    Value="{x:Bind ViewModel.Ip, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="PortCell" Label="PORT"
-                                                    IconKind="Key"
-                                                    TabOrder="18"
-                                                    Placeholder="e.g. SSH"
-                                                    Value="{x:Bind ViewModel.Port, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="PortNumberCell" Label="PORT NUMBER"
-                                                    IconKind="Hash"
-                                                    TabOrder="19"
-                                                    Placeholder="e.g. 55475"
-                                                    Value="{x:Bind ViewModel.PortNumber, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="UsernameCell" Label="USERNAME"
-                                                    IconKind="User"
-                                                    TabOrder="20"
-                                                    Placeholder="Enter the login user"
-                                                    Value="{x:Bind ViewModel.Username, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            </StackPanel>
+                            <controls:FieldCell x:Name="SystemIdCell"
+                              Grid.Row="0"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="#"
+                              IconKind="Hash"
+                              Placeholder="Assigned with the VPS"
+                              Value="{x:Bind ViewModel.SystemIdDisplay, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.AutoFieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <StackPanel x:Name="SysMiddleColumn" Grid.Row="0" Grid.Column="1" Spacing="16">
-                                <controls:FieldCell x:Name="UserPasswordCell" Label="USER PASSWORD"
-                                                    IconKind="Lock"
-                                                    TabOrder="21"
-                                                    IsSecret="True"
-                                                    ShowGenerate="{x:Bind ViewModel.IsEditing, Mode=OneWay}"
-                                                    Placeholder="Enter the password"
-                                                    Value="{x:Bind ViewModel.UserPassword, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="RootUserCell" Label="ROOT USER"
-                                                    IconKind="User"
-                                                    TabOrder="22"
-                                                    Placeholder="e.g. root"
-                                                    Value="{x:Bind ViewModel.RootUser, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="RootPasswordCell" Label="ROOT PASSWORD"
-                                                    IconKind="Lock"
-                                                    TabOrder="23"
-                                                    IsSecret="True"
-                                                    ShowGenerate="{x:Bind ViewModel.IsEditing, Mode=OneWay}"
-                                                    Placeholder="Enter the root password"
-                                                    Value="{x:Bind ViewModel.RootPassword, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="CpuCell" Label="CPU"
-                                                    IconKind="Info"
-                                                    TabOrder="24"
-                                                    Placeholder="e.g. Intel Xeon E-2388G"
-                                                    Value="{x:Bind ViewModel.Cpu, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="MemoryCell" Label="MEMORY (RAM)"
-                                                    IconKind="Info"
-                                                    TabOrder="25"
-                                                    Placeholder="e.g. 32 GB DDR5"
-                                                    Value="{x:Bind ViewModel.Memory, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            </StackPanel>
+                            <controls:FieldCell x:Name="OsCell"
+                              Grid.Row="0"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="OS"
+                              IconKind="Info"
+                              TabOrder="14"
+                              Placeholder="e.g. Debian 12"
+                              Value="{x:Bind ViewModel.Os, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <StackPanel x:Name="SysRightColumn" Grid.Row="0" Grid.Column="2" Spacing="16">
-                                <controls:FieldCell x:Name="DiskCell" Label="DISK"
-                                                    IconKind="Info"
-                                                    TabOrder="26"
-                                                    Placeholder="e.g. 2 TB"
-                                                    Value="{x:Bind ViewModel.Disk, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="BandwidthCell" Label="BANDWIDTH"
-                                                    IconKind="Info"
-                                                    TabOrder="27"
-                                                    Placeholder="e.g. 290 Gbps"
-                                                    Value="{x:Bind ViewModel.Bandwidth, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="BandwidthSpeedCell" Label="BANDWIDTH SPEED"
-                                                    IconKind="Info"
-                                                    TabOrder="28"
-                                                    Placeholder="e.g. 1 Gbps"
-                                                    Value="{x:Bind ViewModel.BandwidthSpeed, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="UploadCell" Label="UPLOAD SPEED"
-                                                    IconKind="Info"
-                                                    TabOrder="29"
-                                                    Placeholder="e.g. 316 Mb"
-                                                    Value="{x:Bind ViewModel.UploadSpeed, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="DownloadCell" Label="DOWNLOAD SPEED"
-                                                    IconKind="Info"
-                                                    TabOrder="30"
-                                                    Placeholder="e.g. 952 Mb"
-                                                    Value="{x:Bind ViewModel.DownloadSpeed, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="PingCell" Label="PING TIME"
-                                                    IconKind="Clock"
-                                                    TabOrder="31"
-                                                    Placeholder="e.g. 22 Sec"
-                                                    Value="{x:Bind ViewModel.PingTime, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                                <controls:FieldCell x:Name="SystemNoteCell" Label="NOTE"
-                                                    IconKind="Info"
-                                                    TabOrder="32"
-                                                    InputKind="Multiline"
-                                                    Placeholder="Anything worth remembering"
-                                                    Value="{x:Bind ViewModel.SystemNote, Mode=TwoWay}"
-                                                    Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                                                    ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
-                            </StackPanel>
+                            <controls:FieldCell x:Name="IpCell"
+                              Grid.Row="0"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="IP ADDRESS"
+                              IconKind="Globe"
+                              TabOrder="15"
+                              Placeholder="Enter the address"
+                              Value="{x:Bind ViewModel.Ip, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="PortCell"
+                              Grid.Row="1"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="PORT"
+                              IconKind="Key"
+                              TabOrder="16"
+                              Placeholder="e.g. SSH"
+                              Value="{x:Bind ViewModel.Port, Mode=TwoWay}"
+                              UnitIsText="True"
+                              UnitValue="{x:Bind ViewModel.PortNumber, Mode=TwoWay}"
+                              UnitPlaceholder="e.g. 55475"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="UsernameCell"
+                              Grid.Row="1"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="USERNAME"
+                              IconKind="User"
+                              TabOrder="18"
+                              Placeholder="Enter the login user"
+                              Value="{x:Bind ViewModel.Username, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="UserPasswordCell"
+                              Grid.Row="1"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="USER PASSWORD"
+                              IconKind="Lock"
+                              TabOrder="19"
+                              Placeholder="Enter the password"
+                              Value="{x:Bind ViewModel.UserPassword, Mode=TwoWay}"
+                              IsSecret="True"
+                              ShowGenerate="{x:Bind ViewModel.IsEditing, Mode=OneWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="RootUserCell"
+                              Grid.Row="2"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="ROOT USER"
+                              IconKind="User"
+                              TabOrder="20"
+                              Placeholder="e.g. root"
+                              Value="{x:Bind ViewModel.RootUser, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="RootPasswordCell"
+                              Grid.Row="2"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="ROOT PASSWORD"
+                              IconKind="Lock"
+                              TabOrder="21"
+                              Placeholder="Enter the root password"
+                              Value="{x:Bind ViewModel.RootPassword, Mode=TwoWay}"
+                              IsSecret="True"
+                              ShowGenerate="{x:Bind ViewModel.IsEditing, Mode=OneWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="CpuCell"
+                              Grid.Row="2"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="CPU"
+                              IconKind="Info"
+                              TabOrder="22"
+                              Placeholder="e.g. Intel Xeon E-2388G"
+                              Value="{x:Bind ViewModel.Cpu, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="MemoryCell"
+                              Grid.Row="3"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="MEMORY (RAM)"
+                              IconKind="Info"
+                              TabOrder="23"
+                              Placeholder="e.g. 32 GB DDR5"
+                              Value="{x:Bind ViewModel.Memory, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="DiskCell"
+                              Grid.Row="3"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="DISK"
+                              IconKind="Info"
+                              TabOrder="24"
+                              Placeholder="e.g. 2 TB"
+                              Value="{x:Bind ViewModel.Disk, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="BandwidthCell"
+                              Grid.Row="3"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="BANDWIDTH"
+                              IconKind="Info"
+                              TabOrder="25"
+                              Placeholder="e.g. 290 Gbps"
+                              Value="{x:Bind ViewModel.Bandwidth, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="BandwidthSpeedCell"
+                              Grid.Row="4"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="BANDWIDTH SPEED"
+                              IconKind="Info"
+                              TabOrder="26"
+                              Placeholder="e.g. 1 Gbps"
+                              Value="{x:Bind ViewModel.BandwidthSpeed, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="UploadCell"
+                              Grid.Row="4"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="UPLOAD SPEED"
+                              IconKind="Info"
+                              TabOrder="27"
+                              Placeholder="e.g. 316 Mb"
+                              Value="{x:Bind ViewModel.UploadSpeed, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="DownloadCell"
+                              Grid.Row="4"
+                              Grid.Column="2"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="DOWNLOAD SPEED"
+                              IconKind="Info"
+                              TabOrder="28"
+                              Placeholder="e.g. 952 Mb"
+                              Value="{x:Bind ViewModel.DownloadSpeed, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="PingCell"
+                              Grid.Row="5"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="PING TIME"
+                              IconKind="Clock"
+                              TabOrder="29"
+                              Placeholder="e.g. 22 Sec"
+                              Value="{x:Bind ViewModel.PingTime, Mode=TwoWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="SystemNoteCell"
+                              Grid.Row="5"
+                              Grid.Column="1"
+                              Grid.ColumnSpan="2"
+                              Margin="0"
+                              VerticalAlignment="Top"
+                              Label="NOTE"
+                              IconKind="Info"
+                              TabOrder="30"
+                              Placeholder="Anything worth remembering"
+                              Value="{x:Bind ViewModel.SystemNote, Mode=TwoWay}"
+                              InputKind="Multiline"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                         </Grid>
                     </StackPanel>
                 </ScrollViewer>
@@ -586,9 +784,11 @@
         </Border>
 
         <!--
-            Below 1000 the three columns cannot hold a readable field box, so they
-            become one and the form turns into a single scrolling list - both
-            grids, the same rule twice.
+            Below 1000 the three columns cannot hold a readable field box, so the
+            form becomes a single scrolling list. The cells are placed, not
+            stacked: each one is moved to its reading-order row in the one
+            remaining column, so the narrow form reads in the same order the
+            wide one does - the workbook's - rather than column by column.
         -->
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="DialogWidthStates">
@@ -605,16 +805,59 @@
                     <VisualState.Setters>
                         <Setter Target="ColMiddle.Width" Value="0" />
                         <Setter Target="ColRight.Width" Value="0" />
-                        <Setter Target="MiddleColumn.(Grid.Column)" Value="0" />
-                        <Setter Target="MiddleColumn.(Grid.Row)" Value="1" />
-                        <Setter Target="RightColumn.(Grid.Column)" Value="0" />
-                        <Setter Target="RightColumn.(Grid.Row)" Value="2" />
+                        <Setter Target="FieldGrid.ColumnSpacing" Value="0" />
+                        <Setter Target="PersonCell.(Grid.Row)" Value="1" />
+                        <Setter Target="PersonCell.(Grid.Column)" Value="0" />
+                        <Setter Target="SiteCell.(Grid.Row)" Value="2" />
+                        <Setter Target="SiteCell.(Grid.Column)" Value="0" />
+                        <Setter Target="AccountCell.(Grid.Row)" Value="3" />
+                        <Setter Target="NameCell.(Grid.Row)" Value="4" />
+                        <Setter Target="NameCell.(Grid.Column)" Value="0" />
+                        <Setter Target="BalanceCell.(Grid.Row)" Value="5" />
+                        <Setter Target="BalanceCell.(Grid.Column)" Value="0" />
+                        <Setter Target="BtcCell.(Grid.Row)" Value="6" />
+                        <Setter Target="RateCell.(Grid.Row)" Value="7" />
+                        <Setter Target="RateCell.(Grid.Column)" Value="0" />
+                        <Setter Target="CreatedCell.(Grid.Row)" Value="8" />
+                        <Setter Target="CreatedCell.(Grid.Column)" Value="0" />
+                        <Setter Target="OutCell.(Grid.Row)" Value="9" />
+                        <Setter Target="CycleCell.(Grid.Row)" Value="10" />
+                        <Setter Target="CycleCell.(Grid.Column)" Value="0" />
+                        <Setter Target="NodeCell.(Grid.Row)" Value="11" />
+                        <Setter Target="NodeCell.(Grid.Column)" Value="0" />
+                        <Setter Target="CountryCell.(Grid.Row)" Value="12" />
+                        <Setter Target="NoteCell.(Grid.Row)" Value="13" />
+                        <Setter Target="NoteCell.(Grid.Column)" Value="0" />
                         <Setter Target="SysColMiddle.Width" Value="0" />
                         <Setter Target="SysColRight.Width" Value="0" />
-                        <Setter Target="SysMiddleColumn.(Grid.Column)" Value="0" />
-                        <Setter Target="SysMiddleColumn.(Grid.Row)" Value="1" />
-                        <Setter Target="SysRightColumn.(Grid.Column)" Value="0" />
-                        <Setter Target="SysRightColumn.(Grid.Row)" Value="2" />
+                        <Setter Target="SystemGrid.ColumnSpacing" Value="0" />
+                        <Setter Target="OsCell.(Grid.Row)" Value="1" />
+                        <Setter Target="OsCell.(Grid.Column)" Value="0" />
+                        <Setter Target="IpCell.(Grid.Row)" Value="2" />
+                        <Setter Target="IpCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PortCell.(Grid.Row)" Value="3" />
+                        <Setter Target="UsernameCell.(Grid.Row)" Value="4" />
+                        <Setter Target="UsernameCell.(Grid.Column)" Value="0" />
+                        <Setter Target="UserPasswordCell.(Grid.Row)" Value="5" />
+                        <Setter Target="UserPasswordCell.(Grid.Column)" Value="0" />
+                        <Setter Target="RootUserCell.(Grid.Row)" Value="6" />
+                        <Setter Target="RootPasswordCell.(Grid.Row)" Value="7" />
+                        <Setter Target="RootPasswordCell.(Grid.Column)" Value="0" />
+                        <Setter Target="CpuCell.(Grid.Row)" Value="8" />
+                        <Setter Target="CpuCell.(Grid.Column)" Value="0" />
+                        <Setter Target="MemoryCell.(Grid.Row)" Value="9" />
+                        <Setter Target="DiskCell.(Grid.Row)" Value="10" />
+                        <Setter Target="DiskCell.(Grid.Column)" Value="0" />
+                        <Setter Target="BandwidthCell.(Grid.Row)" Value="11" />
+                        <Setter Target="BandwidthCell.(Grid.Column)" Value="0" />
+                        <Setter Target="BandwidthSpeedCell.(Grid.Row)" Value="12" />
+                        <Setter Target="UploadCell.(Grid.Row)" Value="13" />
+                        <Setter Target="UploadCell.(Grid.Column)" Value="0" />
+                        <Setter Target="DownloadCell.(Grid.Row)" Value="14" />
+                        <Setter Target="DownloadCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PingCell.(Grid.Row)" Value="15" />
+                        <Setter Target="SystemNoteCell.(Grid.Row)" Value="16" />
+                        <Setter Target="SystemNoteCell.(Grid.Column)" Value="0" />
                         <Setter Target="Card.Margin" Value="12" />
                     </VisualState.Setters>
                 </VisualState>

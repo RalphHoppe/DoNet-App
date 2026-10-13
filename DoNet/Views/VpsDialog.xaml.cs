@@ -60,21 +60,22 @@ public sealed partial class VpsDialog : UserControl
     public VpsDialogViewModel ViewModel { get; }
 
     /// <summary>
-    /// The fields in the order a person fills them in: the record's identity, its
-    /// money, its dates, then the system underneath it.
+    /// The fields in the order the form reads: the workbook's order, left to right
+    /// and top to bottom - who the VPS hangs off, its name, its money, its dates,
+    /// its cycle, its node, then the system underneath it.
     /// </summary>
     /// <remarks>
     /// The person dialog's reason, one grid further: TabIndex only compares within
-    /// a container, and this form has six of them. The dialog drives the Tab key
-    /// itself; the cells still carry TabOrder so each column is internally correct
-    /// if this handler ever does not run.
+    /// a container, and this form has two of them. The dialog drives the Tab key
+    /// itself; the cells still carry TabOrder so the order is also correct if this
+    /// handler ever does not run.
     /// </remarks>
     private FieldCell[] FieldsInTabOrder => new[]
     {
-        NameCell, PersonCell, SiteCell, AccountCell, NodeCell,
-        BalanceCell, CurrencyCell, BtcCell, RateCell,
-        CreatedCell, OutCell, CycleCell, CycleUnitCell, CountryCell, NoteCell,
-        OsCell, IpCell, PortCell, PortNumberCell, UsernameCell,
+        PersonCell, SiteCell, AccountCell, NameCell,
+        BalanceCell, BtcCell, RateCell,
+        CreatedCell, OutCell, CycleCell, NodeCell, CountryCell, NoteCell,
+        OsCell, IpCell, PortCell, UsernameCell,
         UserPasswordCell, RootUserCell, RootPasswordCell,
         CpuCell, MemoryCell, DiskCell,
         BandwidthCell, BandwidthSpeedCell, UploadCell, DownloadCell,
@@ -105,6 +106,26 @@ public sealed partial class VpsDialog : UserControl
         bool back = InputKeyboardSource
             .GetKeyStateForCurrentThread(VirtualKey.Shift)
             .HasFlag(CoreVirtualKeyStates.Down);
+
+        // A merged field is two stops: its value, then the unit hanging off it.
+        // The hop happens inside the cell so the driver stays a list of fields.
+        if (!back && !order[current].UnitOwnsFocus(focused)
+            && order[current].UnitFocusTarget() is { } unit)
+        {
+            if (unit.Focus(FocusState.Keyboard))
+            {
+                args.Handled = true;
+                return;
+            }
+        }
+        else if (back && order[current].UnitOwnsFocus(focused))
+        {
+            if (order[current].TryFocus())
+            {
+                args.Handled = true;
+                return;
+            }
+        }
 
         int next = current + (back ? -1 : 1);
 
