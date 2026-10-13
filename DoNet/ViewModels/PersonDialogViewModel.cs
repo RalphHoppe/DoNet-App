@@ -56,6 +56,18 @@ public sealed partial class PersonDialogViewModel : ObservableObject
     [ObservableProperty] private string _street = string.Empty;
     [ObservableProperty] private string _postalCode = string.Empty;
     [ObservableProperty] private string _phoneNumber = string.Empty;
+
+    /// <summary>
+    /// The phone's calling code - "+20", picked from the flag drawer - stored
+    /// apart from the number so the field can offer the one and type the other.
+    /// </summary>
+    /// <remarks>
+    /// The person record keeps a single string, as it always has; this is the
+    /// form's own view of it. Joining and splitting happen on the way in and
+    /// out, and a number that was saved before the drawer existed - with the
+    /// code typed by hand or with none - arrives whole and leaves whole.
+    /// </remarks>
+    [ObservableProperty] private string _phoneCountryCode = string.Empty;
     [ObservableProperty] private string _email = string.Empty;
     [ObservableProperty] private string _emailPassword = string.Empty;
     [ObservableProperty] private string _recoveryEmail = string.Empty;
@@ -182,7 +194,7 @@ public sealed partial class PersonDialogViewModel : ObservableObject
         person.City = City.Trim();
         person.Street = Street.Trim();
         person.PostalCode = PostalCode.Trim();
-        person.PhoneNumber = PhoneNumber.Trim();
+        person.PhoneNumber = JoinPhone();
         person.Email = Email.Trim();
 
         // Secrets are not trimmed: leading or trailing whitespace can be part of a
@@ -208,7 +220,7 @@ public sealed partial class PersonDialogViewModel : ObservableObject
         City = person.City;
         Street = person.Street;
         PostalCode = person.PostalCode;
-        PhoneNumber = person.PhoneNumber;
+        (PhoneCountryCode, PhoneNumber) = SplitPhone(person.PhoneNumber);
         Email = person.Email;
         EmailPassword = person.EmailPassword;
         RecoveryEmail = person.RecoveryEmail;
@@ -218,5 +230,45 @@ public sealed partial class PersonDialogViewModel : ObservableObject
 
         IdDisplay = person.Id > 0 ? person.Id.ToString() : string.Empty;
         CreatedAtDisplay = person.CreatedAtDisplay;
+    }
+
+    /// <summary>
+    /// Splits a stored phone string into its calling code and its number.
+    /// </summary>
+    /// <remarks>
+    /// A leading "+digits" is the code when the store holds one; everything after
+    /// it, minus the one space the join puts there, is the number. A string with
+    /// no code - every number saved before the drawer existed - returns an empty
+    /// code and the string as it is.
+    /// </remarks>
+    private static (string Code, string Number) SplitPhone(string stored)
+    {
+        stored = stored.Trim();
+
+        if (!stored.StartsWith('+'))
+        {
+            return (string.Empty, stored);
+        }
+
+        int digits = 1;
+        while (digits < stored.Length && char.IsDigit(stored[digits]))
+        {
+            digits++;
+        }
+
+        string code = stored[..digits];
+        string number = stored[digits..].TrimStart();
+        return (code, number);
+    }
+
+    /// <summary>The stored form of a phone: code, one space, number.</summary>
+    private string JoinPhone()
+    {
+        string code = PhoneCountryCode.Trim();
+        string number = PhoneNumber.Trim();
+
+        return code.Length == 0
+            ? number
+            : number.Length == 0 ? code : $"{code} {number}";
     }
 }

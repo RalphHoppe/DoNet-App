@@ -264,12 +264,21 @@
                                                 Value="{x:Bind ViewModel.Street, Mode=TwoWay}"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+                            <!--
+                                The phone is two parts in one box: the calling
+                                code picked from the same flag drawer the country
+                                field uses, and the number typed beside it. The
+                                record still stores one string; the form splits it
+                                on the way in and joins it on the way out.
+                            -->
                             <controls:FieldCell x:Name="PhoneCell" Label="PHONE NUMBER"
                                                 IconKind="Phone"
                                                 TabOrder="10"
                                                 InputKind="Phone"
                                                 Placeholder="Enter phone number"
                                                 Value="{x:Bind ViewModel.PhoneNumber, Mode=TwoWay}"
+                                                UnitValue="{x:Bind ViewModel.PhoneCountryCode, Mode=TwoWay}"
+                                                UnitPlaceholder="+ Code"
                                                 Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                                                 ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                         </StackPanel>

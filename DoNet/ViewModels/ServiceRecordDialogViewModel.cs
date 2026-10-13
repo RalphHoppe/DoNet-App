@@ -106,6 +106,7 @@ public sealed partial class RecordFieldEditor : ObservableObject
     {
         ServiceFieldKind.LongText => FieldInputKind.Multiline,
         ServiceFieldKind.Date => FieldInputKind.Date,
+        ServiceFieldKind.Number => FieldInputKind.Number,
         ServiceFieldKind.Person or ServiceFieldKind.Website or ServiceFieldKind.Account
             => FieldInputKind.Choice,
         _ => FieldInputKind.Text,

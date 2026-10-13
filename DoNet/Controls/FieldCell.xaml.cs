@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Text;
 using DoNet.Models;
 using DoNet.Services;
 using Microsoft.UI.Xaml;
@@ -52,6 +54,38 @@ public enum FieldInputKind
     /// store has been read and changes while the app is running.
     /// </remarks>
     Choice,
+
+    /// <summary>
+    /// Whole digits only: anything else is stripped as it is typed.
+    /// </summary>
+    /// <remarks>
+    /// A field that means a count or a number should never hold "3m" or "about 5" -
+    /// the store would have to parse it back out later, and the parse is what
+    /// breaks. The role is enforced by the editor, not by a save-time message the
+    /// user reads after the work is done.
+    /// </remarks>
+    Number,
+
+    /// <summary>
+    /// A number that can carry a decimal point and a leading minus.
+    /// </summary>
+    /// <remarks>
+    /// Balances and rates: digits, one separator, one sign. The decimal is
+    /// normalised to the invariant dot, so a value typed on a machine set to
+    /// comma-separators still parses the way the store reads it.
+    /// </remarks>
+    Decimal,
+
+    /// <summary>
+    /// An IPv4 address, shaped as it is typed.
+    /// </summary>
+    /// <remarks>
+    /// Digits and up to three dots survive the keyboard; each finished group is
+    /// held to 255; a value that cannot be an address turns the box's border red
+    /// until it can. The role keeps "172.5.42.191" a promise rather than a
+    /// suggestion.
+    /// </remarks>
+    IPv4,
 }
 
 /// <summary>
@@ -306,6 +340,28 @@ public sealed partial class FieldCell : UserControl
     }
 
     /// <summary>
+    /// Identifies the <see cref="UnitIsNumeric"/> property.
+    /// </summary>
+    public static readonly DependencyProperty UnitIsNumericProperty = DependencyProperty.Register(
+        nameof(UnitIsNumeric),
+        typeof(bool),
+        typeof(FieldCell),
+        new PropertyMetadata(false, OnAnyPropertyChanged));
+
+    /// <summary>
+    /// Whether a typed unit takes digits only - the number on a port.
+    /// </summary>
+    /// <remarks>
+    /// The role is the same one the value editors enforce; it belongs to the unit
+    /// too, or the port would guard its protocol and store "55a475" beside it.
+    /// </remarks>
+    public bool UnitIsNumeric
+    {
+        get => (bool)GetValue(UnitIsNumericProperty);
+        set => SetValue(UnitIsNumericProperty, value);
+    }
+
+    /// <summary>
     /// Identifies the <see cref="UnitValue"/> property.
     /// </summary>
     public static readonly DependencyProperty UnitValueProperty = DependencyProperty.Register(
@@ -512,6 +568,11 @@ public sealed partial class FieldCell : UserControl
         ShowPrefix();
         ShowUnit(editable);
 
+        // A value set from outside - a record read into the form - gets the same
+        // verdict as one typed: a stored address that cannot be an address says
+        // so the moment it appears.
+        UpdateValidity(editable ? value : string.Empty);
+
         ApplyTabOrder();
     }
 
@@ -535,9 +596,15 @@ public sealed partial class FieldCell : UserControl
     /// </remarks>
     private void ShowUnit(bool editable)
     {
+        // A phone field carries its own drawer: the calling code, with flags,
+        // drawn from the catalog rather than handed in. The host binds nothing
+        // but the unit's value - the list is the field's to know.
+        IReadOnlyList<string>? options = UnitOptions
+            ?? (InputKind == FieldInputKind.Phone ? Catalogs.CallingCodes : null);
+
         string unit = UnitValue ?? string.Empty;
-        bool picker = editable && UnitOptions is not null;
-        bool typed = editable && UnitOptions is null && UnitIsText;
+        bool picker = editable && options is not null;
+        bool typed = editable && options is null && UnitIsText;
         bool readOnly = !editable && !string.IsNullOrEmpty(unit);
 
         UnitDivider.Visibility = picker || typed || readOnly
@@ -556,9 +623,9 @@ public sealed partial class FieldCell : UserControl
             UnitChoice.AddLabel = null;
             UnitChoice.ItemIconKind = null;
 
-            if (!ReferenceEquals(UnitChoice.Options, UnitOptions))
+            if (!ReferenceEquals(UnitChoice.Options, options))
             {
-                UnitChoice.Options = UnitOptions;
+                UnitChoice.Options = options;
             }
 
             _syncing = true;
@@ -855,10 +922,166 @@ public sealed partial class FieldCell : UserControl
 
     private void OnInputChanged(object sender, TextChangedEventArgs args)
     {
-        if (!_syncing)
+        if (_syncing)
         {
-            Commit(ValueInput.Text);
+            return;
         }
+
+        string text = ValueInput.Text;
+        string cleaned = CleanForRole(InputKind, text);
+
+        if (cleaned != text)
+        {
+            // The editor, not a message, is what enforces the role: the character
+            // that cannot belong never appears. The rewrite raises this handler
+            // again, and the second pass - clean text - is the one that commits.
+            _syncing = true;
+            int caret = Math.Clamp(
+                ValueInput.SelectionStart - (text.Length - cleaned.Length),
+                0, cleaned.Length);
+            ValueInput.Text = cleaned;
+            ValueInput.SelectionStart = caret;
+            _syncing = false;
+            return;
+        }
+
+        UpdateValidity(text);
+        Commit(text);
+    }
+
+    /// <summary>
+    /// What may remain of <paramref name="text"/> under this input kind's role.
+    /// </summary>
+    private static string CleanForRole(FieldInputKind kind, string text)
+    {
+        switch (kind)
+        {
+            case FieldInputKind.Number:
+            {
+                // Digits only; a role that means a count does not negotiate.
+                char[] keep = text.Where(char.IsDigit).ToArray();
+                return keep.Length == 0 ? string.Empty : new string(keep);
+            }
+
+            case FieldInputKind.Decimal:
+            {
+                // Digits, the first dot, and one leading minus. Commas are
+                // stripped rather than treated as separators: a pasted
+                // "1,234.5" is the same number as "1234.5" to the store.
+                bool minus = text.StartsWith('-');
+                string body = minus ? text[1..] : text;
+                int dot = body.IndexOf('.');
+                string keep = new(body.Where(char.IsDigit).ToArray());
+                if (dot >= 0)
+                {
+                    keep = dot <= keep.Length
+                        ? keep.Insert(dot, ".")
+                        : keep + ".";
+                }
+                return keep.Length == 0 ? string.Empty : (minus ? "-" + keep : keep);
+            }
+
+            case FieldInputKind.IPv4:
+            {
+                // Digits and up to three dots: four groups is the whole address.
+                StringBuilder shaped = new();
+                int dots = 0;
+                foreach (char c in text)
+                {
+                    if (char.IsDigit(c))
+                    {
+                        shaped.Append(c);
+                    }
+                    else if (c == '.' && dots < 3
+                             && (shaped.Length == 0 || shaped[^1] != '.'))
+                    {
+                        shaped.Append('.');
+                        dots++;
+                    }
+                }
+
+                return shaped.ToString();
+            }
+
+            case FieldInputKind.Phone:
+            {
+                // Digits with the spaces, dashes and brackets people type, and a
+                // plus - which the calling-code drawer owns, but an imported
+                // value may still carry one.
+                bool plus = text.StartsWith('+');
+                string body = plus ? text[1..] : text;
+                string keep = new(body.Where(c =>
+                    char.IsDigit(c) || c is ' ' or '-' or '(' or ')').ToArray());
+                return keep.Length == 0 ? string.Empty : (plus ? "+" + keep : keep);
+            }
+
+            default:
+                return text;
+        }
+    }
+
+    /// <summary>True when a non-empty value cannot be what its kind promises.</summary>
+    private static bool IsInvalid(FieldInputKind kind, string text)
+        => kind == FieldInputKind.IPv4 && text.Length > 0 && !IsValidIPv4(text);
+
+    /// <summary>
+    /// Whether the text is, or is on its way to being, a valid IPv4 address.
+    /// </summary>
+    /// <remarks>
+    /// Tolerant of a half-typed address - "172.5." is fine while the owner is
+    /// still going - but every finished group must be 0 to 255 and there can be
+    /// no fifth group.
+    /// </remarks>
+    private static bool IsValidIPv4(string text)
+    {
+        if (text.StartsWith('.') || text.EndsWith(".."))
+        {
+            return false;
+        }
+
+        string[] groups = text.Split('.');
+        if (groups.Length > 4)
+        {
+            return false;
+        }
+
+        foreach (string group in groups)
+        {
+            if (group.Length == 0)
+            {
+                // An empty last group is the trailing dot of an address still
+                // being typed; anything else cannot happen - the cleaner keeps
+                // doubled dots out.
+                return ReferenceEquals(group, groups[^1]);
+            }
+
+            // "01" is not an octet anyone types on purpose; leading zeros are
+            // how addresses stop being what they look like.
+            if (group.Length > 3 || (group.Length > 1 && group[0] == '0'))
+            {
+                return false;
+            }
+
+            if (int.Parse(group, CultureInfo.InvariantCulture) > 255)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Turns the box's border red while the value cannot be what it claims, and
+    /// back the moment it can.
+    /// </summary>
+    private void UpdateValidity(string text)
+    {
+        bool invalid = IsInvalid(InputKind, text);
+        Shell.BorderBrush = Brush(invalid ? "DangerBrush" : "SearchBorderBrush");
+        ToolTipService.SetToolTip(
+            Shell,
+            invalid ? "Enter a valid IPv4 address, like 172.5.42.191" : null);
     }
 
     private void OnSecretChanged(object sender, RoutedEventArgs args)
@@ -879,10 +1102,25 @@ public sealed partial class FieldCell : UserControl
 
     private void OnUnitInputChanged(object sender, TextChangedEventArgs args)
     {
-        if (!_syncing)
+        if (_syncing)
         {
-            UnitValue = UnitInput.Text;
+            return;
         }
+
+        string text = UnitInput.Text;
+        if (UnitIsNumeric)
+        {
+            string cleaned = new(text.Where(char.IsDigit).ToArray());
+            if (cleaned != text)
+            {
+                _syncing = true;
+                UnitInput.Text = cleaned;
+                _syncing = false;
+                return;             // the rewrite raises this handler again
+            }
+        }
+
+        UnitValue = text;
     }
 
     private void OnChoiceChanged(object? sender, string picked)

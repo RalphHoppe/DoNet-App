@@ -36,6 +36,33 @@ public sealed partial class ChoicePicker : UserControl
     /// <summary>Lists at least this long get a filter box.</summary>
     private const int FilterThreshold = 12;
 
+    /// <summary>
+    /// Splits an option into what the row shows, the flag it flies, and what the
+    /// pick commits.
+    /// </summary>
+    /// <remarks>
+    /// An option is usually one string that is all three things at once - a
+    /// country name shows, is its own flag lookup, and is what gets stored. The
+    /// currency and calling-code lists need the three to differ: the row reads
+    /// "USD · US Dollar" under a United States flag, and the pick commits "USD",
+    /// so the closed field stays narrow. Those options carry the extras after a
+    /// unit separator: label, flag country, result - in that order. A plain
+    /// option - no separator - still means itself, as it always has.
+    /// </remarks>
+    private static (string Label, string? Flag, string Result) Parse(string option)
+    {
+        string[] parts = option.Split(Separator);
+        return parts.Length switch
+        {
+            3 => (parts[0], parts[1].Length == 0 ? null : parts[1], parts[2]),
+            2 => (parts[0], parts[1].Length == 0 ? null : parts[1], parts[0]),
+            _ => (option, null, option),
+        };
+    }
+
+    /// <summary>The marker an option's extras ride behind.</summary>
+    private const char Separator = '\u001F';
+
     private readonly ObservableCollection<ChoiceOption> _rows = new();
     private readonly Storyboard _spin = new();
     private readonly DoubleAnimation _spinAngle = new()
@@ -176,8 +203,19 @@ public sealed partial class ChoicePicker : UserControl
         ValueLabel.Text = hasValue ? Value : Placeholder;
         ValueLabel.Foreground = Brush(hasValue ? "TextPrimaryBrush" : "SearchPlaceholderBrush");
 
-        bool flag = ShowFlags && hasValue && FlagData.For(Value) is not null;
-        PresenterFlag.Country = flag ? Value : null;
+        // The country field's own way first: the value is the country's name.
+        // Otherwise an option whose result is the value may still fly a flag -
+        // the currency field's "USD" under a United States flag.
+        string? flagCountry = ShowFlags
+            ? Value
+            : Options?.Select(Parse)
+                .FirstOrDefault(p => p.Result == Value || p.Label == Value)
+                is { } hinted && hinted.Flag is not null
+                    ? hinted.Flag
+                    : null;
+
+        bool flag = hasValue && FlagData.For(flagCountry) is not null;
+        PresenterFlag.Country = flag ? flagCountry : null;
         PresenterFlag.Visibility = flag ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -316,12 +354,14 @@ public sealed partial class ChoicePicker : UserControl
         string query = FilterBox.Text.Trim();
         IReadOnlyList<string> options = Options ?? Array.Empty<string>();
 
-        IEnumerable<string> matches = options;
+        IEnumerable<(string Label, string? Flag, string Result)> parsed =
+            options.Select(Parse);
+
         if (query.Length > 0)
         {
-            matches = options
-                .Where(o => o.Contains(query, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(o => o.StartsWith(query, StringComparison.OrdinalIgnoreCase) ? 0 : 1);
+            parsed = parsed
+                .Where(p => p.Label.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(p => p.Label.StartsWith(query, StringComparison.OrdinalIgnoreCase) ? 0 : 1);
         }
 
         _syncing = true;
@@ -329,19 +369,23 @@ public sealed partial class ChoicePicker : UserControl
 
         // An answer the catalog does not have still has to be enterable. The country
         // field has always allowed one; this is where it went.
-        bool exact = options.Any(o => string.Equals(o, query, StringComparison.OrdinalIgnoreCase));
+        bool exact = parsed.Any(p =>
+            string.Equals(p.Label, query, StringComparison.OrdinalIgnoreCase));
         if (AllowCustom && query.Length > 0 && !exact)
         {
             _rows.Add(new ChoiceOption($"Use \u201c{query}\u201d", query, null, "Plus"));
         }
 
-        foreach (string option in matches)
+        foreach ((string label, string? flag, string result) in parsed)
         {
+            // A hinted flag wins; otherwise a country list flies its own option as
+            // the flag, and everything else falls back to the field's icon.
+            string? country = flag ?? (ShowFlags ? label : null);
             _rows.Add(new ChoiceOption(
-                option,
-                option,
-                ShowFlags ? option : null,
-                ShowFlags ? null : ItemIconKind));
+                label,
+                result,
+                country,
+                country is null ? ItemIconKind : null));
         }
 
         ChoiceOption? current = _rows.FirstOrDefault(

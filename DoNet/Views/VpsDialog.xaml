@@ -11,12 +11,13 @@
     <!--
         The VPS record dialog: the hand-built form for the first primary type.
 
-        One control serves all three modes - add, edit, preview - because they
-        differ in which cells are editable and what the button says, not in what
-        they contain. It is the person dialog's shape with two grids in it: the
-        VPS's own fields, then the system information section. The system is not
-        a picker - a system belongs to exactly one VPS and is created in the same
-        form - so its fields are simply the second half of this one.
+        One control serves all three modes, as two layouts. The add and edit
+        modes are the form: two grids in the workbook's order - the VPS's own
+        fields, then the system information section; the system is not a picker,
+        because a system belongs to exactly one VPS and is created in the same
+        form. The preview mode is not that form greyed out but a sheet of its
+        own: a hero naming the record, then sections grouping what it means, so
+        a reader finds what they came for instead of walking a form's order.
 
         The balance trio is the form's one piece of arithmetic and it lives in
         the view model: the exchange rate is one Bitcoin in the balance's
@@ -193,7 +194,15 @@
                 <ScrollViewer Grid.Row="1"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollMode="Disabled">
-                    <StackPanel x:Name="FieldHost" Spacing="24">
+                    <!--
+                        The form is one of two layouts in this dialog. The preview
+                        stopped being the form read-only: a record understood at a
+                        glance is a sheet of its own - a hero, then sections that
+                        group what the record means - so the two hosts trade places
+                        with the mode.
+                    -->
+                    <StackPanel x:Name="FieldHost" Spacing="24"
+                                Visibility="{x:Bind ViewModel.IsForm, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel.RenderTransform>
                             <TranslateTransform x:Name="FieldShift" Y="0" />
                         </StackPanel.RenderTransform>
@@ -212,7 +221,7 @@
                             empty rows is dead height. The gap between two rows is
                             the cells' own bottom margin instead.
                         -->
-                        <Grid x:Name="FieldGrid">
+                        <Grid x:Name="FieldGrid" ColumnSpacing="24">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition x:Name="ColLeft" Width="*" />
                                 <ColumnDefinition x:Name="ColMiddle" Width="*" />
@@ -306,48 +315,48 @@
                               Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                               ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <controls:FieldCell x:Name="BalanceCell"
-                              Grid.Row="1"
-                              Grid.Column="2"
-                              Margin="0,0,0,16"
-                              VerticalAlignment="Top"
-                              Label="BALANCE"
-                              IconKind="CreditCard"
-                              TabOrder="5"
-                              Placeholder="Enter the balance"
-                              Value="{x:Bind ViewModel.BalanceText, Mode=TwoWay}"
-                              UnitOptions="{x:Bind ViewModel.CurrencyOptions, Mode=OneWay}"
-                              UnitValue="{x:Bind ViewModel.CurrencyLabel, Mode=TwoWay}"
-                              UnitPlaceholder="Currency"
-                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+                                                        <controls:FieldCell
+     x:Name="BalanceCell"
+     Margin="0,0,0,16"
+     VerticalAlignment="Top"
+     Label="BALANCE"
+     IconKind="CreditCard"
+     TabOrder="5"
+     InputKind="Decimal"
+     Placeholder="Enter the balance"
+     Value="{x:Bind ViewModel.BalanceText, Mode=TwoWay}"
+     UnitOptions="{x:Bind ViewModel.CurrencyOptions, Mode=OneWay}"
+     UnitValue="{x:Bind ViewModel.CurrencyCode, Mode=TwoWay}"
+     UnitPlaceholder="Currency"
+     Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+     ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <controls:FieldCell x:Name="BtcCell"
-                              Grid.Row="2"
-                              Grid.Column="0"
-                              Margin="0,0,0,16"
-                              VerticalAlignment="Top"
-                              Label="BALANCE IN BTC"
-                              IconKind="Hash"
-                              TabOrder="6"
-                              Placeholder="Typed or filled from the rate"
-                              Value="{x:Bind ViewModel.BtcText, Mode=TwoWay}"
-                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+                                                        <controls:FieldCell
+     x:Name="BtcCell"
+     Margin="0,0,0,16"
+     VerticalAlignment="Top"
+     Label="BALANCE IN BTC"
+     IconKind="Bitcoin"
+     TabOrder="6"
+     InputKind="Decimal"
+     Placeholder="Typed or filled from the rate"
+     Value="{x:Bind ViewModel.BtcText, Mode=TwoWay}"
+     Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+     ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <controls:FieldCell x:Name="RateCell"
-                              Grid.Row="2"
-                              Grid.Column="1"
-                              Margin="0,0,0,16"
-                              VerticalAlignment="Top"
-                              Label="EXCHANGE-RATE"
-                              IconKind="Hash"
-                              TabOrder="7"
-                              Placeholder="In the currency"
-                              Value="{x:Bind ViewModel.RateText, Mode=TwoWay}"
-                              PrefixText="1 BTC ="
-                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+                                                        <controls:FieldCell
+     x:Name="RateCell"
+     Margin="0,0,0,16"
+     VerticalAlignment="Top"
+     Label="EXCHANGE-RATE"
+     IconKind="Bitcoin"
+     TabOrder="7"
+     InputKind="Decimal"
+     Placeholder="In the currency"
+     Value="{x:Bind ViewModel.RateText, Mode=TwoWay}"
+     PrefixText="1 BTC ="
+     Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+     ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
                             <controls:FieldCell x:Name="CreatedCell"
                               Grid.Row="2"
@@ -375,21 +384,21 @@
                               Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                               ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <controls:FieldCell x:Name="CycleCell"
-                              Grid.Row="3"
-                              Grid.Column="1"
-                              Margin="0,0,0,16"
-                              VerticalAlignment="Top"
-                              Label="SUBSCRIPTION CYCLE"
-                              IconKind="Calendar"
-                              TabOrder="10"
-                              Placeholder="Enter the number"
-                              Value="{x:Bind ViewModel.CycleValueText, Mode=TwoWay}"
-                              UnitOptions="{x:Bind ViewModel.CycleUnitOptions, Mode=OneWay}"
-                              UnitValue="{x:Bind ViewModel.CycleUnitLabel, Mode=TwoWay}"
-                              UnitPlaceholder="Unit"
-                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+                                                        <controls:FieldCell
+     x:Name="CycleCell"
+     Margin="0,0,0,16"
+     VerticalAlignment="Top"
+     Label="SUBSCRIPTION CYCLE"
+     IconKind="Calendar"
+     TabOrder="10"
+     InputKind="Number"
+     Placeholder="Enter the number"
+     Value="{x:Bind ViewModel.CycleValueText, Mode=TwoWay}"
+     UnitOptions="{x:Bind ViewModel.CycleUnitOptions, Mode=OneWay}"
+     UnitValue="{x:Bind ViewModel.CycleUnitCode, Mode=TwoWay}"
+     UnitPlaceholder="Unit"
+     Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+     ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
                             <controls:FieldCell x:Name="NodeCell"
                               Grid.Row="3"
@@ -446,7 +455,7 @@
                             its protocol as a typed unit - "SSH | 55475" is one fact,
                             not two fields that happen to be neighbours.
                         -->
-                        <Grid x:Name="SystemGrid">
+                        <Grid x:Name="SystemGrid" ColumnSpacing="24">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition x:Name="SysColLeft" Width="*" />
                                 <ColumnDefinition x:Name="SysColMiddle" Width="*" />
@@ -497,34 +506,34 @@
                               Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                               ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <controls:FieldCell x:Name="IpCell"
-                              Grid.Row="0"
-                              Grid.Column="2"
-                              Margin="0,0,0,16"
-                              VerticalAlignment="Top"
-                              Label="IP ADDRESS"
-                              IconKind="Globe"
-                              TabOrder="15"
-                              Placeholder="Enter the address"
-                              Value="{x:Bind ViewModel.Ip, Mode=TwoWay}"
-                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+                                                        <controls:FieldCell
+     x:Name="IpCell"
+     Margin="0,0,0,16"
+     VerticalAlignment="Top"
+     Label="IP ADDRESS"
+     IconKind="Globe"
+     TabOrder="15"
+     InputKind="IPv4"
+     Placeholder="e.g. 172.5.42.191"
+     Value="{x:Bind ViewModel.Ip, Mode=TwoWay}"
+     Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+     ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <controls:FieldCell x:Name="PortCell"
-                              Grid.Row="1"
-                              Grid.Column="0"
-                              Margin="0,0,0,16"
-                              VerticalAlignment="Top"
-                              Label="PORT"
-                              IconKind="Key"
-                              TabOrder="16"
-                              Placeholder="e.g. SSH"
-                              Value="{x:Bind ViewModel.Port, Mode=TwoWay}"
-                              UnitIsText="True"
-                              UnitValue="{x:Bind ViewModel.PortNumber, Mode=TwoWay}"
-                              UnitPlaceholder="e.g. 55475"
-                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
-                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+                                                        <controls:FieldCell
+     x:Name="PortCell"
+     Margin="0,0,0,16"
+     VerticalAlignment="Top"
+     Label="PORT"
+     IconKind="Key"
+     TabOrder="16"
+     Placeholder="e.g. SSH"
+     Value="{x:Bind ViewModel.Port, Mode=TwoWay}"
+     UnitValue="{x:Bind ViewModel.PortNumber, Mode=TwoWay}"
+     UnitPlaceholder="e.g. 55475"
+     UnitIsText="True"
+     UnitIsNumeric="True"
+     Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+     ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
                             <controls:FieldCell x:Name="UsernameCell"
                               Grid.Row="1"
@@ -702,6 +711,417 @@
                               ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
                         </Grid>
                     </StackPanel>
+
+                    <!--
+                        The information view: not the form with the inputs greyed
+                        out, but the record as a sheet of its own. A hero says
+                        whose record this is; the sections group what it means -
+                        the money, the records it hangs off, the machine under
+                        it, the notes - so a reader finds what they came for
+                        instead of walking a form's order.
+                    -->
+                    <StackPanel x:Name="PreviewHost" Spacing="24"
+                                Visibility="{x:Bind ViewModel.IsPreview, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+
+                        <!-- The hero: the mark, the name, and where the record sits. -->
+                        <Grid ColumnSpacing="18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Viewbox Grid.Column="0"
+                                     Width="56"
+                                     Height="56"
+                                     VerticalAlignment="Center">
+                                <controls:TypeMark Kind="Vps" />
+                            </Viewbox>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                <TextBlock Text="{x:Bind ViewModel.Name, Mode=OneWay}"
+                                           FontFamily="{StaticResource BalooSemiBoldFont}"
+                                           FontSize="22"
+                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           LineHeight="28" />
+                                <TextBlock Text="{x:Bind ViewModel.HeroCaption, Mode=OneWay}"
+                                           FontFamily="{StaticResource BalooFont}"
+                                           FontSize="{StaticResource CardMetaFontSize}"
+                                           Foreground="{StaticResource CardMetaBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           LineHeight="18" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- The money: what it holds and what it costs. -->
+                        <TextBlock Text="BALANCE &amp; PAYMENTS"
+                                   Style="{StaticResource SectionLabelStyle}" />
+                        <Grid x:Name="PvMoneyGrid" ColumnSpacing="24">
+                        <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        
+                                                    <controls:FieldCell x:Name="PvBalanceCell"
+                              Grid.Row="0"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="BALANCE"
+                              IconKind="CreditCard"
+                              Value="{x:Bind ViewModel.BalanceText, Mode=OneWay}"
+                              UnitValue="{x:Bind ViewModel.CurrencyCode, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvBtcCell"
+                              Grid.Row="0"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="BALANCE IN BTC"
+                              IconKind="Bitcoin"
+                              Value="{x:Bind ViewModel.BtcText, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvRateCell"
+                              Grid.Row="1"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="EXCHANGE-RATE"
+                              IconKind="Bitcoin"
+                              Value="{x:Bind ViewModel.RateText, Mode=OneWay}"
+                              PrefixText="1 BTC ="
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvCycleCell"
+                              Grid.Row="1"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="SUBSCRIPTION CYCLE"
+                              IconKind="Calendar"
+                              Value="{x:Bind ViewModel.CycleValueText, Mode=OneWay}"
+                              UnitValue="{x:Bind ViewModel.CycleUnitCode, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvCreatedCell"
+                              Grid.Row="2"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="CREATED AT"
+                              IconKind="Clock"
+                              Value="{x:Bind ViewModel.CreatedAt, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvOutCell"
+                              Grid.Row="2"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="OUT DATE"
+                              IconKind="Calendar"
+                              Value="{x:Bind ViewModel.OutDate, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        </Grid>
+
+                        <!-- The vault records this VPS hangs off. -->
+                        <TextBlock Text="LINKED RECORDS"
+                                   Style="{StaticResource SectionLabelStyle}" />
+                        <Grid x:Name="PvLinksGrid" ColumnSpacing="24">
+                        <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        
+                                                    <controls:FieldCell x:Name="PvPersonCell"
+                              Grid.Row="0"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="PERSON"
+                              IconKind="User"
+                              Value="{x:Bind ViewModel.PersonLabel, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvSiteCell"
+                              Grid.Row="0"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="SITE"
+                              IconKind="Globe"
+                              Value="{x:Bind ViewModel.SiteLabel, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvAccountCell"
+                              Grid.Row="1"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="ACCOUNT"
+                              IconKind="Account"
+                              Value="{x:Bind ViewModel.AccountLabel, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvNodeCell"
+                              Grid.Row="1"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="NODE"
+                              IconKind="Briefcase"
+                              Value="{x:Bind ViewModel.NodeLabel, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        </Grid>
+
+                        <!-- The machine underneath, as one spec sheet. -->
+                        <TextBlock Text="SYSTEM INFORMATION"
+                                   Style="{StaticResource SectionLabelStyle}" />
+                        <Grid x:Name="PvSystemGrid" ColumnSpacing="24">
+                        <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        
+                                                    <controls:FieldCell x:Name="PvOsCell"
+                              Grid.Row="0"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="OS"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.Os, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvIpCell"
+                              Grid.Row="0"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="IP ADDRESS"
+                              IconKind="Globe"
+                              Value="{x:Bind ViewModel.Ip, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvPortCell"
+                              Grid.Row="1"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="PORT"
+                              IconKind="Key"
+                              Value="{x:Bind ViewModel.Port, Mode=OneWay}"
+                              UnitValue="{x:Bind ViewModel.PortNumber, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvUsernameCell"
+                              Grid.Row="1"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="USERNAME"
+                              IconKind="User"
+                              Value="{x:Bind ViewModel.Username, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvUserPasswordCell"
+                              Grid.Row="2"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="USER PASSWORD"
+                              IconKind="Lock"
+                              Value="{x:Bind ViewModel.UserPassword, Mode=OneWay}"
+                              IsSecret="True"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvRootUserCell"
+                              Grid.Row="2"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="ROOT USER"
+                              IconKind="User"
+                              Value="{x:Bind ViewModel.RootUser, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvRootPasswordCell"
+                              Grid.Row="3"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="ROOT PASSWORD"
+                              IconKind="Lock"
+                              Value="{x:Bind ViewModel.RootPassword, Mode=OneWay}"
+                              IsSecret="True"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvCpuCell"
+                              Grid.Row="3"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="CPU"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.Cpu, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvMemoryCell"
+                              Grid.Row="4"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="MEMORY (RAM)"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.Memory, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvDiskCell"
+                              Grid.Row="4"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="DISK"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.Disk, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvBandwidthCell"
+                              Grid.Row="5"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="BANDWIDTH"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.Bandwidth, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvBandwidthSpeedCell"
+                              Grid.Row="5"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="BANDWIDTH SPEED"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.BandwidthSpeed, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvUploadCell"
+                              Grid.Row="6"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="UPLOAD SPEED"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.UploadSpeed, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvDownloadCell"
+                              Grid.Row="6"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="DOWNLOAD SPEED"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.DownloadSpeed, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvPingCell"
+                              Grid.Row="7"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="PING TIME"
+                              IconKind="Clock"
+                              Value="{x:Bind ViewModel.PingTime, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        </Grid>
+
+                        <!-- The two notes, side by side. -->
+                        <TextBlock Text="NOTES"
+                                   Style="{StaticResource SectionLabelStyle}" />
+                        <Grid x:Name="PvNotesGrid" ColumnSpacing="24">
+                        <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        
+                                                    <controls:FieldCell x:Name="PvNoteCell"
+                              Grid.Row="0"
+                              Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="NOTE"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.Note, Mode=OneWay}"
+                              InputKind="Multiline"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        
+                                                    <controls:FieldCell x:Name="PvSystemNoteCell"
+                              Grid.Row="0"
+                              Grid.Column="1"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="SYSTEM NOTE"
+                              IconKind="Info"
+                              Value="{x:Bind ViewModel.SystemNote, Mode=OneWay}"
+                              InputKind="Multiline"
+                              Kind="Display"
+                              ShowCopy="True" />
+                        </Grid>
+                    </StackPanel>
                 </ScrollViewer>
 
                 <!-- Footer .................................................. -->
@@ -858,6 +1278,46 @@
                         <Setter Target="PingCell.(Grid.Row)" Value="15" />
                         <Setter Target="SystemNoteCell.(Grid.Row)" Value="16" />
                         <Setter Target="SystemNoteCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvMoneyGrid.ColumnSpacing" Value="0" />
+                        <Setter Target="PvBtcCell.(Grid.Row)" Value="1" />
+                        <Setter Target="PvBtcCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvRateCell.(Grid.Row)" Value="2" />
+                        <Setter Target="PvCycleCell.(Grid.Row)" Value="3" />
+                        <Setter Target="PvCycleCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvCreatedCell.(Grid.Row)" Value="4" />
+                        <Setter Target="PvOutCell.(Grid.Row)" Value="5" />
+                        <Setter Target="PvOutCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvLinksGrid.ColumnSpacing" Value="0" />
+                        <Setter Target="PvSiteCell.(Grid.Row)" Value="1" />
+                        <Setter Target="PvSiteCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvAccountCell.(Grid.Row)" Value="2" />
+                        <Setter Target="PvNodeCell.(Grid.Row)" Value="3" />
+                        <Setter Target="PvNodeCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvSystemGrid.ColumnSpacing" Value="0" />
+                        <Setter Target="PvIpCell.(Grid.Row)" Value="1" />
+                        <Setter Target="PvIpCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvPortCell.(Grid.Row)" Value="2" />
+                        <Setter Target="PvUsernameCell.(Grid.Row)" Value="3" />
+                        <Setter Target="PvUsernameCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvUserPasswordCell.(Grid.Row)" Value="4" />
+                        <Setter Target="PvRootUserCell.(Grid.Row)" Value="5" />
+                        <Setter Target="PvRootUserCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvRootPasswordCell.(Grid.Row)" Value="6" />
+                        <Setter Target="PvCpuCell.(Grid.Row)" Value="7" />
+                        <Setter Target="PvCpuCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvMemoryCell.(Grid.Row)" Value="8" />
+                        <Setter Target="PvDiskCell.(Grid.Row)" Value="9" />
+                        <Setter Target="PvDiskCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvBandwidthCell.(Grid.Row)" Value="10" />
+                        <Setter Target="PvBandwidthSpeedCell.(Grid.Row)" Value="11" />
+                        <Setter Target="PvBandwidthSpeedCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvUploadCell.(Grid.Row)" Value="12" />
+                        <Setter Target="PvDownloadCell.(Grid.Row)" Value="13" />
+                        <Setter Target="PvDownloadCell.(Grid.Column)" Value="0" />
+                        <Setter Target="PvPingCell.(Grid.Row)" Value="14" />
+                        <Setter Target="PvNotesGrid.ColumnSpacing" Value="0" />
+                        <Setter Target="PvSystemNoteCell.(Grid.Row)" Value="1" />
+                        <Setter Target="PvSystemNoteCell.(Grid.Column)" Value="0" />
                         <Setter Target="Card.Margin" Value="12" />
                     </VisualState.Setters>
                 </VisualState>

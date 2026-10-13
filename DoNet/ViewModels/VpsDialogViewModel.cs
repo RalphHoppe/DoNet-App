@@ -61,14 +61,6 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
     private readonly Dictionary<string, int> _nodeIds = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Label to three-letter code, from the shipped currency list.</summary>
-    private readonly Dictionary<string, string> _currencyCodes =
-        new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>Label to unit letter, from the fixed cycle units.</summary>
-    private readonly Dictionary<string, string> _cycleUnitCodes =
-        new(StringComparer.OrdinalIgnoreCase);
-
     /// <summary>Which of the pair the form last filled on its own.</summary>
     private enum DerivedSide
     {
@@ -86,43 +78,51 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
     private VpsSystemInfo? _originalSystem;
 
-    /// <summary>The cycle units the user asked for: days, weeks, months, years.</summary>
-    public static readonly string[] CycleUnits = ["d · Days", "w · Weeks", "m · Months", "y · Years"];
-
-    /// <summary>Precomposed label per unit letter, for filling the picker on edit.</summary>
-    public static string CycleUnitLabelOf(string code) =>
-        CycleUnits.FirstOrDefault(unit => unit.StartsWith(code, StringComparison.Ordinal)) ?? string.Empty;
+    /// <summary>
+    /// The cycle units the user asked for: days, weeks, months, years. Each entry
+    /// is the drawer's three-part option - the row's label, the flag (a unit has
+    /// none), and what the pick commits, which is the unit's own letter.
+    /// </summary>
+    public static readonly string[] CycleUnits =
+    [
+        "d · Days\u001F\u001Fd",
+        "w · Weeks\u001F\u001Fw",
+        "m · Months\u001F\u001Fm",
+        "y · Years\u001F\u001Fy",
+    ];
 
     /// <summary>
-    /// The currencies the balance can be held in, as "CODE · Name" labels - the
-    /// code is the label's first token and what the store keeps.
+    /// The currencies the balance can be held in. Each entry is the drawer's
+    /// three-part option: the row reads "USD · US Dollar" under a United States
+    /// flag, and the pick commits the bare code - both what the store keeps and
+    /// all the closed field needs to say.
     /// </summary>
     public static readonly string[] Currencies =
     [
-        "USD · US Dollar",
-        "EUR · Euro",
-        "GBP · British Pound",
-        "TRY · Turkish Lira",
-        "CHF · Swiss Franc",
-        "CAD · Canadian Dollar",
-        "AUD · Australian Dollar",
-        "JPY · Japanese Yen",
-        "CNY · Chinese Yuan",
-        "INR · Indian Rupee",
-        "RUB · Russian Ruble",
-        "SAR · Saudi Riyal",
-        "AED · UAE Dirham",
-        "QAR · Qatari Riyal",
-        "KWD · Kuwaiti Dinar",
-        "EGP · Egyptian Pound",
-        "ILS · Israeli Shekel",
-        "SEK · Swedish Krona",
-        "NOK · Norwegian Krone",
-        "DKK · Danish Krone",
-        "PLN · Polish Zloty",
-        "BRL · Brazilian Real",
-        "MXN · Mexican Peso",
-        "ZAR · South African Rand",
+        "USD · US Dollar\u001FUnited States\u001FUSD",
+        "EUR · Euro\u001FEuropean Union\u001FEUR",
+        "GBP · British Pound\u001FUnited Kingdom\u001FGBP",
+        "TRY · Turkish Lira\u001FTurkey\u001FTRY",
+        "CHF · Swiss Franc\u001FSwitzerland\u001FCHF",
+        "CAD · Canadian Dollar\u001FCanada\u001FCAD",
+        "AUD · Australian Dollar\u001FAustralia\u001FAUD",
+        "JPY · Japanese Yen\u001FJapan\u001FJPY",
+        "CNY · Chinese Yuan\u001FChina\u001FCNY",
+        "INR · Indian Rupee\u001FIndia\u001FINR",
+        "RUB · Russian Ruble\u001FRussia\u001FRUB",
+        "SAR · Saudi Riyal\u001FSaudi Arabia\u001FSAR",
+        "AED · UAE Dirham\u001FUnited Arab Emirates\u001FAED",
+        "QAR · Qatari Riyal\u001FQatar\u001FQAR",
+        "KWD · Kuwaiti Dinar\u001FKuwait\u001FKWD",
+        "EGP · Egyptian Pound\u001FEgypt\u001FEGP",
+        "ILS · Israeli Shekel\u001FIsrael\u001FILS",
+        "SEK · Swedish Krona\u001FSweden\u001FSEK",
+        "NOK · Norwegian Krone\u001FNorway\u001FNOK",
+        "DKK · Danish Krone\u001FDenmark\u001FDKK",
+        "PLN · Polish Zloty\u001FPoland\u001FPLN",
+        "BRL · Brazilian Real\u001FBrazil\u001FBRL",
+        "MXN · Mexican Peso\u001FMexico\u001FMXN",
+        "ZAR · South African Rand\u001FSouth Africa\u001FZAR",
     ];
 
     /// <summary>The currency picker's list, as the binding wants it: an instance.</summary>
@@ -131,22 +131,8 @@ public sealed partial class VpsDialogViewModel : ObservableObject
     /// <summary>The cycle unit picker's list, likewise.</summary>
     public IReadOnlyList<string> CycleUnitOptions => CycleUnits;
 
-    /// <summary>The "CODE · Name" label for a stored code, or the code itself.</summary>
-    public static string CurrencyLabelOf(string code) =>
-        Currencies.FirstOrDefault(label => label.StartsWith(code, StringComparison.Ordinal))
-        ?? code;
-
     public VpsDialogViewModel()
     {
-        foreach (string label in Currencies)
-        {
-            _currencyCodes[label] = label[..label.IndexOf(' ')];
-        }
-
-        foreach (string label in CycleUnits)
-        {
-            _cycleUnitCodes[label] = label[..label.IndexOf(' ')];
-        }
     }
 
     // ------------------------------------------------------------------
@@ -166,6 +152,7 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         OnPropertyChanged(nameof(Subtitle));
         OnPropertyChanged(nameof(IsPreview));
         OnPropertyChanged(nameof(IsEditing));
+        OnPropertyChanged(nameof(IsForm));
         OnPropertyChanged(nameof(PrimaryActionText));
         OnPropertyChanged(nameof(FieldKind));
         OnPropertyChanged(nameof(CanSave));
@@ -192,6 +179,25 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
     /// <summary>True in the two modes that save.</summary>
     public bool IsEditing => Mode is VpsDialogMode.Add or VpsDialogMode.Edit;
+
+    /// <summary>
+    /// The preview hero's one-liner: the record's number, where it sits, and
+    /// where it lives, joined with dots and empty parts dropped.
+    /// </summary>
+    public string HeroCaption =>
+        string.Join(" \u00B7 ", new[]
+        {
+            IdDisplay,
+            NodeLabel,
+            Country,
+        }.Where(part => !string.IsNullOrWhiteSpace(part)));
+
+    /// <summary>
+    /// True while the form is the thing to show - the add and edit modes. The
+    /// preview is its own layout, not the form's grids read-only, so the two
+    /// hosts trade visibility on this.
+    /// </summary>
+    public bool IsForm => !IsPreview;
 
     /// <summary>The one wide button's words, from the mode.</summary>
     public string PrimaryActionText => Mode switch
@@ -224,7 +230,9 @@ public sealed partial class VpsDialogViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanSave))]
     private string _name = string.Empty;
 
-    [ObservableProperty] private string _idDisplay = "Assigned on save";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HeroCaption))]
+    private string _idDisplay = "Assigned on save";
 
     [ObservableProperty] private string _personLabel = string.Empty;
 
@@ -232,9 +240,13 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
     [ObservableProperty] private string _accountLabel = string.Empty;
 
-    [ObservableProperty] private string _nodeLabel = MainNodeLabel;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HeroCaption))]
+    private string _nodeLabel = MainNodeLabel;
 
-    [ObservableProperty] private string _country = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HeroCaption))]
+    private string _country = string.Empty;
 
     [ObservableProperty] private string _createdAt = string.Empty;
 
@@ -242,13 +254,13 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
     [ObservableProperty] private string _cycleValueText = string.Empty;
 
-    [ObservableProperty] private string _cycleUnitLabel = string.Empty;
+    [ObservableProperty] private string _cycleUnitCode = string.Empty;
 
     [ObservableProperty] private string _note = string.Empty;
 
     [ObservableProperty] private string _balanceText = string.Empty;
 
-    [ObservableProperty] private string _currencyLabel = "USD · US Dollar";
+    [ObservableProperty] private string _currencyCode = "USD";
 
     [ObservableProperty] private string _btcText = string.Empty;
 
@@ -489,10 +501,10 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         CreatedAt = string.Empty;
         OutDate = string.Empty;
         CycleValueText = string.Empty;
-        CycleUnitLabel = string.Empty;
+        CycleUnitCode = string.Empty;
         Note = string.Empty;
         BalanceText = string.Empty;
-        CurrencyLabel = CurrencyLabelOf("USD");
+        CurrencyCode = "USD";
         BtcText = string.Empty;
         RateText = string.Empty;
         ClearSystemFields();
@@ -547,11 +559,10 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         CreatedAt = record.CreatedAt;
         OutDate = record.OutDate;
         CycleValueText = record.CycleValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
-        CycleUnitLabel = CycleUnitLabelOf(record.CycleUnit);
+        CycleUnitCode = record.CycleUnit ?? string.Empty;
         Note = record.Note;
         BalanceText = record.Balance is { } balance ? FormatAmount(balance) : string.Empty;
-        CurrencyLabel = CurrencyLabelOf(
-            string.IsNullOrWhiteSpace(record.Currency) ? "USD" : record.Currency);
+        CurrencyCode = string.IsNullOrWhiteSpace(record.Currency) ? "USD" : record.Currency;
         BtcText = record.BalanceBtc is { } bitcoin ? FormatAmount(bitcoin) : string.Empty;
         RateText = record.ExchangeRate is { } rate ? FormatAmount(rate) : string.Empty;
 
@@ -617,7 +628,7 @@ public sealed partial class VpsDialogViewModel : ObservableObject
             AccountId = ResolveId(_accountIds, AccountLabel),
             Name = Name.Trim(),
             Balance = TryParseAmount(BalanceText, out decimal balance) ? balance : null,
-            Currency = _currencyCodes.TryGetValue(CurrencyLabel, out string? code) ? code : "USD",
+            Currency = string.IsNullOrWhiteSpace(CurrencyCode) ? "USD" : CurrencyCode,
             BalanceBtc = TryParseAmount(BtcText, out decimal bitcoin) ? bitcoin : null,
             ExchangeRate = TryParseAmount(RateText, out decimal rate) ? rate : null,
             CreatedAt = CreatedAt.Trim(),
@@ -626,9 +637,7 @@ public sealed partial class VpsDialogViewModel : ObservableObject
                 CycleValueText.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cycle)
                 ? cycle
                 : null,
-            CycleUnit = _cycleUnitCodes.TryGetValue(CycleUnitLabel, out string? unit)
-                ? unit
-                : string.Empty,
+            CycleUnit = CycleUnitCode,
             NodeVpsId = string.Equals(NodeLabel, MainNodeLabel, StringComparison.OrdinalIgnoreCase)
                 ? null
                 : ResolveId(_nodeIds, NodeLabel),
