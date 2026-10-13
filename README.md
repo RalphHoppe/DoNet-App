@@ -482,7 +482,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/convert_type_icons.py` | Converts the supplied v2 type icons (SVG) into the app's geometry source, `TypeMarkData.cs` - expands scientific notation the mini-language rejects, pins fill rules per path, re-centres the chevron on the rail's 28 grid |
 | `tools/analyze_services_bar.py` | Pixel forensics on the v2 reference mockups - classifies pixels, prints ASCII maps, measures each button's bbox, enclosed-white interior and corner profile - how the tile design (64px, radius 28, white icon at natural size) was read off `services_bar.png` |
 | `tools/fit_button_shape.py` | Fits the reference button's corner curve against circle/rounded-square/squircle profiles (the radius-28 rounded square won) and maps the full layout of `services.png` - button row, labels, header - for the left-aligned rebuild |
-| `tools/validate_usings.py` | Checks framework and app type uses against their carrying usings, and extension-method calls (`.GetRequiredService()`) against the using that imports the extension class |
+| `tools/validate_usings.py` | Checks framework and app type uses against their carrying usings, extension-method calls (`.GetRequiredService()`) against the using that imports the extension class, and rejects the WinRT colour helpers (`ColorHelper`, `Colors`) that are not projected for C# consumers - the `Color` struct is fine, the static classes around it have each cost a build |
 | `tools/build_icons.py` | Normalises the icon paths and regenerates `Controls/LineIconData.cs` plus the proof sheet |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |
 

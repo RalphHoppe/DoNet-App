@@ -54,7 +54,7 @@ public sealed partial class TypeMark : UserControl
         // The colour is the button's, not the icon's.
         Tile.Background = PrimaryServiceTypes.GradientOf(Kind);
 
-        Brush icon = new SolidColorBrush(Colors.White);
+        Brush icon = new SolidColorBrush(PrimaryServiceTypes.IconWhite);
 
         foreach (string data in PrimaryServiceTypes.MarkOf(Kind))
         {

@@ -83,6 +83,20 @@ public static class PrimaryServiceTypes
     }
 
     /// <summary>
+    /// The white every type icon is drawn in on its gradient tile. Built on the
+    /// struct's channels because the WinRT colour helpers are not projected for
+    /// C# consumers - <c>ColorHelper</c> and <c>Colors</c> do not exist for
+    /// this app, and each has cost a build.
+    /// </summary>
+    public static Color IconWhite => new Color
+    {
+        A = 255,
+        R = 255,
+        G = 255,
+        B = 255,
+    };
+
+    /// <summary>
     /// <c>#RRGGBB</c> as a colour. WinUI has no parser for the string form and
     /// <c>ColorHelper</c> is not projected for C# consumers, so the struct's
     /// channels are set by hand - the only format this catalog ever holds.

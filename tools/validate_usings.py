@@ -182,6 +182,19 @@ EXTENSION_METHODS = {
 }
 
 
+# WinRT colour helpers that are NOT projected for C# consumers in this app.
+# The Color struct resolves; the static classes around it do not - ColorHelper
+# and Colors have each cost a user build (CS0103). They are checked outside the
+# map below because no using can carry them: a bare use is a finding whatever
+# the file imports. Build the struct's channels, or take the colour from
+# PrimaryServiceTypes, which owns every colour this app draws.
+WINRT_COLOUR_TRAPS = {
+    "ColorHelper": "not projected for C# consumers - set the Color struct's channels or take the colour from PrimaryServiceTypes",
+    "ColorHelpers": "not projected for C# consumers - set the Color struct's channels or take the colour from PrimaryServiceTypes",
+    "Colors": "not projected for C# consumers - set the Color struct's channels or take the colour from PrimaryServiceTypes",
+}
+
+
 def strip_noise(source: str) -> str:
     """Removes character literals, comments and strings, in that order.
 
@@ -266,6 +279,11 @@ def main() -> int:
             if only_qualifier_members(name) or declares_member(name):
                 continue
             problems.append(f"{path.relative_to(ROOT)}: uses {name} without using {ns}")
+
+        for name, why in WINRT_COLOUR_TRAPS.items():
+            if name in declared_here or declares_member(name) or not uses_bare(name):
+                continue
+            problems.append(f"{path.relative_to(ROOT)}: uses {name} - {why}")
 
         for method, ns in EXTENSION_METHODS.items():
             if (re.search(rf"\.{method}\s*[<(]", code) is not None
