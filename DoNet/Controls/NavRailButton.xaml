@@ -64,6 +64,59 @@
                              To="0.05" Duration="0:0:0.16" />
         </Storyboard>
 
+        <!--
+            The glyph swap: one icon slides out and the other slides in, on the
+            app's layer timings. The Services button is the back button while a
+            type is drilled in, and the briefcase and the chevron trade places
+            rather than blink - a swap reads as a state change, a blink reads as
+            a different button.
+        -->
+        <Storyboard x:Key="ToAlt">
+            <DoubleAnimation Storyboard.TargetName="IconShift"
+                             Storyboard.TargetProperty="X"
+                             To="-16" Duration="0:0:0.16">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="Icon"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="IconAltShift"
+                             Storyboard.TargetProperty="X"
+                             To="0" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="IconAlt"
+                             Storyboard.TargetProperty="Opacity"
+                             To="1" Duration="0:0:0.18" />
+        </Storyboard>
+
+        <Storyboard x:Key="FromAlt">
+            <DoubleAnimation Storyboard.TargetName="IconShift"
+                             Storyboard.TargetProperty="X"
+                             To="0" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="Icon"
+                             Storyboard.TargetProperty="Opacity"
+                             To="1" Duration="0:0:0.18" />
+            <DoubleAnimation Storyboard.TargetName="IconAltShift"
+                             Storyboard.TargetProperty="X"
+                             To="16" Duration="0:0:0.16">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="IconAlt"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+        </Storyboard>
+
         <Storyboard x:Key="ToPressed">
             <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"
                              To="0.93" Duration="0:0:0.10" />
@@ -156,12 +209,28 @@
                       StrokeLineJoin="Round"
                       StrokeStartLineCap="Round"
                       StrokeEndLineCap="Round">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="IconShift" X="0" />
+                    </Path.RenderTransform>
                     <!-- Declared inline so every button owns its instance: the selection
                          animation writes this brush's Color, and a shared one would
                          repaint the whole rail at once. -->
                     <Path.Stroke>
                         <SolidColorBrush x:Name="IconStroke" Color="#4BAA98" />
                     </Path.Stroke>
+                </Path>
+
+                <!--
+                    The alternate glyph, parked off to the right until
+                    IconAltActive trades the two. Filled, and sharing the
+                    primary's colour brush, so the selection animation drives
+                    both.
+                -->
+                <Path x:Name="IconAlt"
+                      Opacity="0">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="IconAltShift" X="16" />
+                    </Path.RenderTransform>
                 </Path>
             </Canvas>
         </Viewbox>

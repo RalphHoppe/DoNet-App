@@ -11,8 +11,8 @@ using Microsoft.UI.Xaml.Media.Animation;
 namespace DoNet.Views;
 
 /// <summary>
-/// The Services directory: the type list, and the drill from it into one type's
-/// records.
+/// The v2 Services directory: the four primary types, and the drill from the
+/// type list into one type's hand-built screen.
 /// </summary>
 public sealed partial class ServicesView : UserControl
 {
@@ -34,79 +34,24 @@ public sealed partial class ServicesView : UserControl
     public ServicesViewModel ViewModel { get; }
 
     /// <summary>
-    /// Plays the drill when the view model enters or leaves a type.
+    /// Releases this control's hold on the view model. Called when the host page
+    /// is leaving for good; see <see cref="HomePage.OnNavigatedFrom"/> for why it
+    /// is not automatic.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The hidden layer is collapsed, not faded under or disabled in place. Grid
-    /// and Border are not Controls and have no IsEnabled to disable anything
-    /// with, and an invisible layer that still hit-tests would sit over the
-    /// screen swallowing clicks; Collapsed is the one state the platform
-    /// guarantees is inert - no pointer, no tab stops, no focus.
-    /// </para>
-    /// <para>
-    /// The records layer's repeater source is attached only while it is visible,
-    /// and <see cref="UIElement.UpdateLayout"/> runs before the drill-in load can
-    /// land a single record: a collection change against a collapsed, unmeasured
-    /// ItemsRepeater is the COMException this app has met before, and the layer
-    /// starts collapsed, so the measure has to be forced rather than hoped for.
-    /// </para>
-    /// </remarks>
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
-    {
-        if (args.PropertyName != nameof(ServicesViewModel.IsDrilled))
-        {
-            return;
-        }
-
-        if (ViewModel.IsDrilled)
-        {
-            TypeWrapper.Visibility = Visibility.Collapsed;
-            RecordsLayer.Visibility = Visibility.Visible;
-            RecordsScreen.AttachSource();
-            RecordsLayer.UpdateLayout();
-        }
-        else
-        {
-            RecordsScreen.DetachSource();
-            RecordsLayer.Visibility = Visibility.Collapsed;
-            TypeWrapper.Visibility = Visibility.Visible;
-        }
-
-        if (Resources[ViewModel.IsDrilled ? "DrillInStoryboard" : "DrillOutStoryboard"]
-                is Storyboard board)
-        {
-            board.Begin();
-        }
-    }
-
-    /// <summary>
-    /// Releases this control's hold on the view model. Called when the host page is
-    /// leaving for good; see <see cref="HomePage.OnNavigatedFrom"/> for why it is not
-    /// automatic.
-    /// </summary>
-    /// <remarks>
-    /// Stopping the compiled bindings is not enough on its own. An ItemsRepeater
-    /// subscribes to its source collection through its own ItemsSourceView, and that
-    /// subscription is invisible to x:Bind - so a detached view would keep receiving
-    /// collection changes from the singleton view model, forever, while no longer
-    /// being in a visual tree. Dropping the source is what actually unhooks it.
-    /// </remarks>
     public void ReleaseBindings()
     {
         Bindings.StopTracking();
-        CardRepeater.ItemsSource = null;
-        RecordsScreen.ReleaseBindings();
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        TypeScreen.ReleaseBindings();
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs args)
+    private void OnLoaded(object sender, RoutedEventArgs args)
     {
         try
         {
-            // Usually a no-op: the catalog was fetched while an earlier screen was
-            // animating. Joining that load rather than starting a fresh one is what
-            // keeps the directory from flashing empty on the way in.
-            await ViewModel.EnsureLoadedAsync();
+            // The store warm-up and the catalog read this drives keep the dynamic
+            // machinery alive for the round that brings custom types back.
+            _ = ViewModel.EnsureLoadedAsync();
         }
         catch (Exception error)
         {
@@ -115,69 +60,90 @@ public sealed partial class ServicesView : UserControl
     }
 
     /// <summary>
-    /// The open action on a type card. The first open of a type is the structure
-    /// designer; every later one is its records.
+    /// Plays the drill when the view model enters or leaves a type, and keeps
+    /// the type list's search honest over its four names.
     /// </summary>
-    private async void OnCardOpen(object? sender, Service service)
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        try
+        if (args.PropertyName == nameof(ServicesViewModel.IsDrilled))
         {
-            await ViewModel.OpenTypeAsync(service);
+            bool drilled = ViewModel.IsDrilled;
+
+            TypeWrapper.Visibility = drilled ? Visibility.Collapsed : Visibility.Visible;
+            ScreenLayer.Visibility = drilled ? Visibility.Visible : Visibility.Collapsed;
+
+            if (Resources[drilled ? "DrillInStoryboard" : "DrillOutStoryboard"]
+                    is Storyboard board)
+            {
+                board.Begin();
+            }
         }
-        catch (Exception error)
+        else if (args.PropertyName == nameof(ServicesViewModel.SearchText))
         {
-            AppLog.Error("Opening a service type failed", error);
+            ApplySearch();
         }
     }
 
-    private void OnCardEdit(object? sender, Service service) => ViewModel.OpenEdit(service);
+    // ------------------------------------------------------------------
+    // The type list
+    // ------------------------------------------------------------------
+
+    private void OnVpsClick(object sender, RoutedEventArgs args) => ViewModel.OpenPrimary(PrimaryServiceType.Vps);
+
+    private void OnProxyClick(object sender, RoutedEventArgs args) => ViewModel.OpenPrimary(PrimaryServiceType.Proxy);
+
+    private void OnDomainClick(object sender, RoutedEventArgs args) => ViewModel.OpenPrimary(PrimaryServiceType.Domain);
+
+    private void OnWalletsClick(object sender, RoutedEventArgs args) => ViewModel.OpenPrimary(PrimaryServiceType.Wallets);
 
     /// <summary>
-    /// The delete on a type card asks first - the confirmation says how many
-    /// records would go with the type.
+    /// A mark brightens under the pointer - an affordance, not a state change.
     /// </summary>
-    private async void OnCardDelete(object? sender, Service service)
+    private void OnTypePointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs args)
     {
-        try
+        if (sender is Button button)
         {
-            await ViewModel.RequestDeleteAsync(service);
+            button.Opacity = 0.8;
         }
-        catch (Exception error)
+    }
+
+    private void OnTypePointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs args)
+    {
+        if (sender is Button button)
         {
-            AppLog.Error("Asking to delete a service type failed", error);
+            button.Opacity = 1;
         }
     }
 
     /// <summary>
-    /// Fetches the next page as the end of the list comes into reach.
+    /// Filters the four marks by the search box, over their names.
     /// </summary>
     /// <remarks>
-    /// The catalog is six rows today and this will fire once and find nothing to do.
-    /// It is here because this screen is the template for the service records to
-    /// come, and a directory that stops paging the day it grows is a bug introduced
-    /// on purpose.
+    /// Four fixed names are matched in the view: there is no page to fetch and
+    /// nothing to debounce, and the list is the whole answer.
     /// </remarks>
-    private async void OnCardScrollChanged(object sender, ScrollViewerViewChangedEventArgs args)
+    private void ApplySearch()
     {
-        if (sender is not ScrollViewer scroller)
+        string term = ViewModel.SearchText.Trim();
+
+        (Button button, string name)[] marks =
+        [
+            (VpsButton, PrimaryServiceTypes.NameOf(PrimaryServiceType.Vps)),
+            (ProxyButton, PrimaryServiceTypes.NameOf(PrimaryServiceType.Proxy)),
+            (DomainButton, PrimaryServiceTypes.NameOf(PrimaryServiceType.Domain)),
+            (WalletsButton, PrimaryServiceTypes.NameOf(PrimaryServiceType.Wallets)),
+        ];
+
+        bool any = false;
+
+        foreach ((Button button, string name) in marks)
         {
-            return;
+            bool matches = term.Length == 0
+                || name.Contains(term, StringComparison.OrdinalIgnoreCase);
+            button.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
+            any |= matches;
         }
 
-        double remaining = scroller.ScrollableHeight - scroller.VerticalOffset;
-
-        if (remaining > scroller.ViewportHeight * 0.75)
-        {
-            return;
-        }
-
-        try
-        {
-            await ViewModel.LoadMoreAsync();
-        }
-        catch (Exception error)
-        {
-            AppLog.Error("Loading more service types failed", error);
-        }
+        NoMatchesText.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
     }
 }

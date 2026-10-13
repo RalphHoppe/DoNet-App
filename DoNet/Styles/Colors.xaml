@@ -132,4 +132,11 @@
     -->
     <SolidColorBrush x:Key="AddActionBorderBrush" Color="#BBDFD8" />
 
+    <!-- The v2 header actions: search and ADD sit on a soft fill rather than the
+         card's white - a quieter box for the row above the content. -->
+    <SolidColorBrush x:Key="HeaderActionFillBrush" Color="#F5F5F5" />
+
+    <!-- The v2 type marks' names, beneath the gradient icons. -->
+    <SolidColorBrush x:Key="TypeLabelBrush" Color="#111827" />
+
 </ResourceDictionary>

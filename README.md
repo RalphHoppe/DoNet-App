@@ -479,6 +479,7 @@ Design-time scripts, not part of the app build. They need `fonttools` and `pillo
 | `tools/validate_visual_states.py` | Checks every visual-state `Setter Target` and storyboard target resolves |
 | `tools/validate_attributes.py` | Checks every attribute sits on a declaration kind it is valid on (`[NotMapped]` on a method is CS0592, not a hint) - the attributes this app uses, by hand, like the usings map |
 | `tools/make_app_icons.py` | Draws every package icon (tiles, store, splash, and the setup's `.ico`) as the title bar's own mark - the segmented gradient ring, from the lockup's exact geometry - re-run it whenever the mark moves |
+| `tools/convert_type_icons.py` | Converts the supplied v2 type icons (SVG) into the app's geometry source, `TypeMarkData.cs` - expands scientific notation the mini-language rejects, pins fill rules per path, re-centres the chevron on the rail's 28 grid |
 | `tools/validate_usings.py` | Checks framework and app type uses against their carrying usings, and extension-method calls (`.GetRequiredService()`) against the using that imports the extension class |
 | `tools/build_icons.py` | Normalises the icon paths and regenerates `Controls/LineIconData.cs` plus the proof sheet |
 | `tools/make_semibold.py` | Regenerates the Baloo 2 SemiBold instance from the variable font |
@@ -1465,6 +1466,34 @@ the host forcing a layout pass before the first record can arrive - a collection
 change against a collapsed, unmeasured `ItemsRepeater` being the COMException
 this app has met before. The validator now rejects `IsEnabled` on every panel and
 decorator it knows about, negative-tested both ways.
+
+### v2: the four primaries, and the rail that goes back
+
+The services tab is rebuilt around four primary types - VPS, Proxy, Domain,
+Wallets - each with its own mark and its own gradient, top-left to
+bottom-right: red for VPS, green for Proxy, blue for Domain, yellow for
+Wallets. The type list is no longer cards: the marks themselves are the
+buttons, 64px with the type's name set beneath in small caps, the section
+header trimmed to the bare title (no disc - the marks carry the identity now).
+The header's search and ADD sit on a soft grey fill rather than the card's
+white.
+
+Each primary opens a hand-built screen in the type's colours: the name as the
+title in the type's gradient, the ADD button's accents in the type's colour,
+the directory skeleton below - the records that fill it arrive with the fields,
+and until then the surface says so and the buttons that would need them are
+asleep rather than absent.
+
+The rail's Services button becomes the back button while a type is on show:
+the disc takes the type's gradient and the chevron slides in over the
+briefcase - out and in on the app's layer timings, so the swap reads as the
+button changing state rather than becoming a different button. The click goes
+to GoBack; the tooltip says "Back to services".
+
+What the dynamic round built is dormant, not deleted: the catalog cards, the
+structure designer and the generated records screens stay in the codebase and
+come back for types the user adds - the primaries are code because their
+screens are, and adding one is a code change, by design.
 
 ### Still worth doing
 

@@ -60,6 +60,14 @@ public sealed partial class NavRailButton : UserControl
     public static readonly DependencyProperty CommandProperty = DependencyProperty.Register(
         nameof(Command), typeof(ICommand), typeof(NavRailButton), new PropertyMetadata(null));
 
+    public static readonly DependencyProperty IconAltDataProperty = DependencyProperty.Register(
+        nameof(IconAltData), typeof(Geometry), typeof(NavRailButton),
+        new PropertyMetadata(null, OnIconAltDataChanged));
+
+    public static readonly DependencyProperty IconAltActiveProperty = DependencyProperty.Register(
+        nameof(IconAltActive), typeof(bool), typeof(NavRailButton),
+        new PropertyMetadata(false, OnIconAltActiveChanged));
+
     public static readonly DependencyProperty CommandParameterProperty =
         DependencyProperty.Register(
             nameof(CommandParameter), typeof(object), typeof(NavRailButton),
@@ -71,6 +79,10 @@ public sealed partial class NavRailButton : UserControl
     public NavRailButton()
     {
         InitializeComponent();
+
+        // The alternate glyph shares the primary's colour brush, so the selection
+        // animation drives both without a second storyboard.
+        IconAlt.Fill = IconStroke;
 
         // Storyboards cannot target elements before the tree is live, so the initial
         // selection is applied on Loaded - and skipped straight to its end value, so a
@@ -121,6 +133,42 @@ public sealed partial class NavRailButton : UserControl
             button.Icon.Fill = null;
             button.Icon.Stroke = button.IconStroke;
         }
+    }
+
+    /// <summary>
+    /// The alternate icon, on the same 28 grid - the glyph this button becomes
+    /// while <see cref="IconAltActive"/> is set.
+    /// </summary>
+    public Geometry? IconAltData
+    {
+        get => (Geometry?)GetValue(IconAltDataProperty);
+        set => SetValue(IconAltDataProperty, value);
+    }
+
+    /// <summary>
+    /// True while the alternate glyph is the one showing, slid into place.
+    /// </summary>
+    public bool IconAltActive
+    {
+        get => (bool)GetValue(IconAltActiveProperty);
+        set => SetValue(IconAltActiveProperty, value);
+    }
+
+    private static void OnIconAltDataChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((NavRailButton)d).IconAlt.Data = (Geometry?)e.NewValue;
+
+    private static void OnIconAltActiveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        NavRailButton button = (NavRailButton)d;
+
+        // Without a glyph to slide in there is nothing to swap with; the
+        // property stays a no-op rather than hiding the only icon.
+        if (button.IconAltData is null)
+        {
+            return;
+        }
+
+        button.Play((bool)e.NewValue ? "ToAlt" : "FromAlt", animate: true);
     }
 
     /// <summary>Tooltip text, and the control's accessible name.</summary>

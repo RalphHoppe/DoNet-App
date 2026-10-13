@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.TypeMark"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        One primary service type's mark: the supplied SVG shape, filled with the
+        type's own gradient from the top-left corner to the bottom-right.
+
+        Built in code rather than XAML because the marks are data - the paths
+        come from the generated TypeMarkData sheet and each type draws a
+        different number of them (the wallet is three paths, the globe nine).
+        This control is the size the caller gives it; the paths scale inside a
+        Viewbox from their native box, so the geometry is never re-authored.
+    -->
+
+    <Viewbox Stretch="Uniform">
+        <Canvas x:Name="Sheet" />
+    </Viewbox>
+</UserControl>

@@ -1,5 +1,7 @@
 using System;
 using System.ComponentModel;
+using DoNet.Controls;
+using DoNet.Models;
 using DoNet.Services;
 using Microsoft.UI.Dispatching;
 using DoNet.ViewModels;
@@ -383,7 +385,12 @@ public sealed partial class HomePage : Page
 
     private void OnServicesPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (args.PropertyName == nameof(ServicesViewModel.IsDialogOpen) && _services.IsDialogOpen)
+        if (args.PropertyName is nameof(ServicesViewModel.IsDrilled)
+                              or nameof(ServicesViewModel.SelectedKind))
+        {
+            UpdateServicesRailButton();
+        }
+        else if (args.PropertyName == nameof(ServicesViewModel.IsDialogOpen) && _services.IsDialogOpen)
         {
             Realize("ServiceModal");
         }
@@ -440,6 +447,45 @@ public sealed partial class HomePage : Page
                  && _persons.IsConfirmingDelete)
         {
             Realize("ConfirmModal");
+        }
+    }
+
+    /// <summary>
+    /// Dresses the Services rail button for where the services tab is: the
+    /// section's briefcase, or the drilled type's gradient and chevron.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// While a primary type's screen is on show, the button IS the back button -
+    /// the v2 design - so the click goes to GoBack rather than the section
+    /// switch, and the disc wears the type's gradient with the chevron slid in
+    /// over the briefcase. The accent is set here rather than bound because a
+    /// bound brush would fight the swap on every drill.
+    /// </para>
+    /// <para>
+    /// The chevron geometry is handed over once: it never changes, only its
+    /// presence does.
+    /// </para>
+    /// </remarks>
+    private void UpdateServicesRailButton()
+    {
+        if (_services.IsDrilled && _services.SelectedKind is { } kind)
+        {
+            ServicesRailButton.IconAltData = (Microsoft.UI.Xaml.Media.Geometry)
+                Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(
+                    typeof(Microsoft.UI.Xaml.Media.Geometry), TypeMarkData.Chevron);
+            ServicesRailButton.AccentBrush = PrimaryServiceTypes.GradientOf(kind);
+            ServicesRailButton.IconAltActive = true;
+            ServicesRailButton.Command = _services.GoBackCommand;
+            ServicesRailButton.Label = "Back to services";
+        }
+        else
+        {
+            ServicesRailButton.IconAltActive = false;
+            ServicesRailButton.AccentBrush =
+                (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["NavSelectedBrush"];
+            ServicesRailButton.Command = ViewModel.SelectServicesCommand;
+            ServicesRailButton.Label = "Services";
         }
     }
 

@@ -114,6 +114,12 @@ public sealed partial class ServicesViewModel : ObservableObject, IDeleteConfirm
     [ObservableProperty] private bool _isDesignerOpen;
     [ObservableProperty] private bool _hasMoreRecords;
 
+    /// <summary>
+    /// The primary type whose screen is on show, when drilled in. Null at the
+    /// type list.
+    /// </summary>
+    [ObservableProperty] private PrimaryServiceType? _selectedKind;
+
     public ServicesViewModel(
         IServiceDirectory directory,
         IEncryptedStore store,
@@ -210,6 +216,7 @@ public sealed partial class ServicesViewModel : ObservableObject, IDeleteConfirm
         _recordsLoad = null;
         _selectedType = null;
         _designerTarget = null;
+        SelectedKind = null;
         _definition = null;
         _choices = new ServiceChoiceOptions(
             new Dictionary<ServiceFieldKind, ServiceChoiceSource>());
@@ -596,6 +603,19 @@ public sealed partial class ServicesViewModel : ObservableObject, IDeleteConfirm
             // asked for it completes by arriving in the records.
             await EnterTypeAsync(type, definition).ConfigureAwait(true);
         }
+    }
+
+    /// <summary>
+    /// Opens one of the four primary types' screens.
+    /// </summary>
+    /// <remarks>
+    /// The primaries are hand-built: their screens are code, not schema, so
+    /// opening one is a switch rather than a store read.
+    /// </remarks>
+    public void OpenPrimary(PrimaryServiceType kind)
+    {
+        SelectedKind = kind;
+        IsDrilled = true;
     }
 
     /// <summary>Returns from a type's records to the type list.</summary>

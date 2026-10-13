@@ -5,19 +5,20 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:models="using:DoNet.Models"
     xmlns:controls="using:DoNet.Controls"
     xmlns:views="using:DoNet.Views"
     mc:Ignorable="d">
 
     <!--
-        The Services directory, hosted inside the home screen's content surface.
+        The v2 Services directory: the four primary types as gradient marks,
+        each opening its own hand-built screen.
 
-        The same screen as the other three directories, on purpose: the header, the
-        search, the card surface and the four states are what a directory is in this
-        app, and the Services tab is where the records to come - a VPS, a phone
-        number - will be filed. The cards it shows today are the vocabulary those
-        records will be filed under.
+        The types are buttons, not cards - the mark itself is the affordance,
+        carrying its gradient from the top-left corner to the bottom-right, with
+        its name set beneath in small caps. What the dynamic round put here -
+        the catalog cards, the designer, the generated records - stays in the
+        codebase and comes back for types the user adds; the primaries are code,
+        and this screen is theirs.
     -->
 
     <UserControl.Resources>
@@ -34,54 +35,33 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <!-- Shared by the four message states so they cannot drift apart. -->
-        <Style x:Key="StateTitleStyle" TargetType="TextBlock">
+        <!-- The mark's name, set beneath it. -->
+        <Style x:Key="TypeLabelStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
-            <Setter Property="FontSize" Value="{StaticResource CardTitleFontSize}" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{StaticResource TypeLabelBrush}" />
+            <Setter Property="CharacterSpacing" Value="20" />
             <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,12,0,0" />
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="22" />
+            <Setter Property="LineHeight" Value="18" />
         </Style>
-
-        <Style x:Key="StateBodyStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
-            <Setter Property="FontSize" Value="{StaticResource SectionSubtitleFontSize}" />
-            <Setter Property="Foreground" Value="{StaticResource CardMetaBrush}" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="TextAlignment" Value="Center" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="MaxWidth" Value="360" />
-            <Setter Property="Margin" Value="0,6,0,0" />
-            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="22" />
-        </Style>
-
-        <DataTemplate x:Key="ServiceCardTemplate" x:DataType="models:Service">
-            <controls:ServiceCard Service="{x:Bind}"
-                                  OpenRequested="OnCardOpen"
-                                  EditRequested="OnCardEdit"
-                                  DeleteRequested="OnCardDelete" />
-        </DataTemplate>
 
         <!--
-            The drill between the type list and one type's records, on the settle
-            timing the app's other layer changes use. Only the arriving layer
-            animates: the leaving one is collapsed outright at the same moment,
-            because a layer that is merely invisible can still be tabbed into,
-            and one that is invisible and hit-testable sits over the screen
-            swallowing clicks. Collapsed is the one state the platform guarantees
-            is inert.
+            The drill between the type list and a type's screen: the outgoing
+            layer dips out fast, the incoming one rises in behind it. Only the
+            arriving layer animates; the leaving one is collapsed outright -
+            a collapsed layer can neither be clicked nor tabbed into.
         -->
         <Storyboard x:Key="DrillInStoryboard">
-            <DoubleAnimation Storyboard.TargetName="RecordsLayer"
+            <DoubleAnimation Storyboard.TargetName="ScreenLayer"
                              Storyboard.TargetProperty="Opacity"
                              From="0" To="1" Duration="0:0:0.22">
                 <DoubleAnimation.EasingFunction>
                     <CubicEase EasingMode="EaseOut" />
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="RecordsShift"
+            <DoubleAnimation Storyboard.TargetName="ScreenShift"
                              Storyboard.TargetProperty="Y"
                              From="14" To="0" Duration="0:0:0.22">
                 <DoubleAnimation.EasingFunction>
@@ -91,14 +71,7 @@
         </Storyboard>
 
         <Storyboard x:Key="DrillOutStoryboard">
-            <DoubleAnimation Storyboard.TargetName="Header"
-                             Storyboard.TargetProperty="Opacity"
-                             From="0" To="1" Duration="0:0:0.22">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="CardSurface"
+            <DoubleAnimation Storyboard.TargetName="TypeWrapper"
                              Storyboard.TargetProperty="Opacity"
                              From="0" To="1" Duration="0:0:0.22">
                 <DoubleAnimation.EasingFunction>
@@ -123,14 +96,10 @@
         </Grid.RowDefinitions>
 
         <!--
-            The type list. Shifts as one unit when the drill changes layers, and
-            collapses as one unit while a type's records are on screen - which is
-            why the header and the card surface sit under one transform and one
-            name.
+            The type list. Collapsed as one unit while a type's screen is on
+            show, which is why the header and the marks sit under one name.
         -->
-        <Grid x:Name="TypeWrapper"
-              Grid.Row="0"
-              Grid.RowSpan="2">
+        <Grid x:Name="TypeWrapper" Grid.Row="0" Grid.RowSpan="2">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="TypeShift" Y="0" />
             </Grid.RenderTransform>
@@ -139,46 +108,23 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-        <!-- Header ........................................................... -->
-        <Grid x:Name="Header" Grid.Row="0" Margin="0,0,0,24" ColumnSpacing="24">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="HeaderTitleColumn" Width="*" />
-                <ColumnDefinition x:Name="HeaderActionColumn" Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <Grid Grid.Row="0"
-                  Grid.Column="0"
-                  VerticalAlignment="Center">
+            <!-- Header ...................................................... -->
+            <!--
+                No disc: the v2 header is the title at the content edge, with
+                the actions beside it - the section mark now lives in the
+                marks themselves.
+            -->
+            <Grid x:Name="Header" Grid.Row="0" Margin="0,0,0,24" ColumnSpacing="24">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition x:Name="HeaderTitleColumn" Width="*" />
+                    <ColumnDefinition x:Name="HeaderActionColumn" Width="Auto" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-                <Border Grid.Column="0"
-                        Width="{StaticResource SectionDiscSize}"
-                        Height="{StaticResource SectionDiscSize}"
-                        CornerRadius="{StaticResource SectionDiscCorner}"
-                        Margin="0,0,14,0"
-                        VerticalAlignment="Center"
-                        Background="{StaticResource CardAvatarBrush}"
-                        BorderBrush="{StaticResource SearchBorderBrush}"
-                        BorderThickness="1">
-                    <!--
-                        The briefcase from the rail button, promoted into the icon
-                        set so the tab's header and its rail entry carry the same
-                        mark - the rule every other section follows.
-                    -->
-                    <controls:LineIcon Kind="Briefcase"
-                                       Width="{StaticResource SectionDiscIconSize}"
-                                       Height="{StaticResource SectionDiscIconSize}"
-                                       Foreground="{StaticResource BrandPrimaryBrush}" />
-                </Border>
-
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
                     <TextBlock Text="SERVICES"
                                FontFamily="{StaticResource BaumansFont}"
                                FontSize="{StaticResource SectionTitleFontSize}"
@@ -195,258 +141,213 @@
                                LineStackingStrategy="BlockLineHeight"
                                LineHeight="20" />
                 </StackPanel>
-            </Grid>
 
-            <Grid x:Name="HeaderActions"
-                  Grid.Row="0"
-                  Grid.Column="1"
-                  VerticalAlignment="Center"
-                  ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition x:Name="SearchColumn" Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+                <Grid x:Name="HeaderActions"
+                      Grid.Row="0"
+                      Grid.Column="1"
+                      VerticalAlignment="Center"
+                      ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="SearchColumn" Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                <Border x:Name="SearchHost"
-                        Grid.Column="0"
-                        Width="304"
-                        Height="42"
-                        CornerRadius="21"
-                        Padding="16,0,16,0"
-                        Background="{StaticResource CardBackgroundBrush}"
-                        BorderBrush="{StaticResource SearchBorderBrush}"
-                        BorderThickness="1">
-                    <Border.Resources>
-                        <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
-                        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
-                        <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
-                        <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="Transparent" />
-                        <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
-                        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
-                        <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
-                        <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="Transparent" />
-
-                        <!--
-                            Without these the focused and pointer-over visual states
-                            in the stock TextBox template set Foreground to the theme
-                            brush, which on a machine running Windows in dark mode is
-                            white - white text on a white card.
-                        -->
-                        <SolidColorBrush x:Key="TextControlForeground" Color="#2B2F33" />
-                        <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#2B2F33" />
-                        <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#2B2F33" />
-                        <SolidColorBrush x:Key="TextControlForegroundDisabled" Color="#8C9196" />
-                        <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
-                        <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
-                        <Thickness x:Key="TextControlThemePadding">0</Thickness>
-                        <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
-                        <x:Double x:Key="TextControlThemeMinWidth">0</x:Double>
-                    </Border.Resources>
-
-                    <Grid ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <Viewbox Grid.Column="0"
-                                 Width="18"
-                                 Height="18"
-                                 VerticalAlignment="Center">
-                            <Canvas Width="18" Height="18">
-                                <Path Data="M13.5 8A5.5 5.5 0 1 1 2.5 8A5.5 5.5 0 1 1 13.5 8 M12.2 12.2L16 16"
-                                      Stroke="{StaticResource SearchPlaceholderBrush}"
-                                      StrokeThickness="1.8"
-                                      StrokeStartLineCap="Round"
-                                      StrokeEndLineCap="Round" />
-                            </Canvas>
-                        </Viewbox>
-
-                        <TextBox Grid.Column="1"
-                                 Style="{StaticResource SearchBoxStyle}"
-                                 PlaceholderText="SEARCH DIRECTORY"
-                                 PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
-                                 Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    </Grid>
-                </Border>
-
-                <!-- ADD SERVICE, the same supplied icon treatment as every tab. -->
-                <Button x:Name="AddServiceButton"
-                        Grid.Column="1"
-                        Style="{StaticResource BareButtonStyle}"
-                        Command="{x:Bind ViewModel.AddServiceCommand}">
-                    <Border CornerRadius="21"
-                            Padding="14,0,18,0"
+                    <!-- The type list's search, over four names. -->
+                    <Border x:Name="SearchHost"
+                            Grid.Column="0"
+                            Width="304"
                             Height="42"
-                            Background="{StaticResource CardBackgroundBrush}"
-                            BorderBrush="{StaticResource AddActionBorderBrush}"
+                            CornerRadius="21"
+                            Padding="16,0,16,0"
+                            Background="{StaticResource HeaderActionFillBrush}"
+                            BorderBrush="{StaticResource SearchBorderBrush}"
                             BorderThickness="1">
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="10"
-                                    VerticalAlignment="Center">
-                            <Grid Width="18" Height="18" VerticalAlignment="Center">
-                                <Rectangle Width="18"
-                                           Height="18"
-                                           RadiusX="6"
-                                           RadiusY="6"
-                                           Fill="{StaticResource BrandPrimaryBrush}" />
-                                <Viewbox Width="18" Height="18">
-                                    <Canvas Width="18" Height="18">
-                                        <Path Data="M3.74951 8.99999H14.2507 M9.00011 3.74939V14.2506"
-                                              Stroke="#FFFFFF"
-                                              StrokeThickness="2"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round" />
-                                    </Canvas>
-                                </Viewbox>
-                            </Grid>
-                            <TextBlock Text="ADD SERVICE"
-                                       VerticalAlignment="Center"
-                                       FontFamily="{StaticResource JerseyFont}"
-                                       FontSize="{StaticResource ButtonFontSize}"
-                                       Foreground="{StaticResource BrandPrimaryBrush}"
-                                       CharacterSpacing="40" />
-                        </StackPanel>
+                        <Border.Resources>
+                            <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="Transparent" />
+
+                            <!--
+                                Without these the focused and pointer-over visual states
+                                in the stock TextBox template set Foreground to the theme
+                                brush, which on a machine running Windows in dark mode is
+                                white - white text on a white card.
+                            -->
+                            <SolidColorBrush x:Key="TextControlForeground" Color="#2B2F33" />
+                            <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#2B2F33" />
+                            <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#2B2F33" />
+                            <SolidColorBrush x:Key="TextControlForegroundDisabled" Color="#8C9196" />
+                            <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
+                            <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                            <Thickness x:Key="TextControlThemePadding">0</Thickness>
+                            <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
+                            <x:Double x:Key="TextControlThemeMinWidth">0</x:Double>
+                        </Border.Resources>
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Viewbox Grid.Column="0"
+                                     Width="18"
+                                     Height="18"
+                                     VerticalAlignment="Center">
+                                <Canvas Width="18" Height="18">
+                                    <Path Data="M13.5 8A5.5 5.5 0 1 1 2.5 8A5.5 5.5 0 1 1 13.5 8 M12.2 12.2L16 16"
+                                          Stroke="{StaticResource SearchPlaceholderBrush}"
+                                          StrokeThickness="1.8"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round" />
+                                </Canvas>
+                            </Viewbox>
+
+                            <TextBox Grid.Column="1"
+                                     Style="{StaticResource SearchBoxStyle}"
+                                     PlaceholderText="SEARCH DIRECTORY"
+                                     PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
+                                     Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </Grid>
                     </Border>
-                </Button>
-            </Grid>
-        </Grid>
 
-        <!-- Card surface ..................................................... -->
-        <Border x:Name="CardSurface"
-                Grid.Row="1"
-                CornerRadius="26"
-                Padding="24"
-                Background="{StaticResource CardBackgroundBrush}">
-
-            <Grid>
-
-                <!--
-                    Deliberately always visible. An ItemsRepeater inside a collapsed
-                    ScrollViewer has no measured viewport, and a collection change
-                    reaching it in that state fails with COMException: Unspecified
-                    error. With nothing selected it draws nothing anyway, and the
-                    state panels below paint over it.
-                -->
-                <ScrollViewer x:Name="CardScroller"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollMode="Disabled"
-                              ViewChanged="OnCardScrollChanged"
-                              Padding="0,0,4,0">
-                    <ItemsRepeater x:Name="CardRepeater"
-                                   ItemsSource="{x:Bind ViewModel.Services}"
-                                   ItemTemplate="{StaticResource ServiceCardTemplate}">
-                        <ItemsRepeater.Layout>
-                            <UniformGridLayout MinItemWidth="430"
-                                               MinColumnSpacing="20"
-                                               MinRowSpacing="20"
-                                               ItemsStretch="Fill" />
-                        </ItemsRepeater.Layout>
-                    </ItemsRepeater>
-                </ScrollViewer>
-
-                <!-- Loading -->
-                <Border Background="{StaticResource CardBackgroundBrush}"
-                        Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
-                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
-                                           Kind="Loading"
-                                           IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
-                        <TextBlock Text="Opening the directory"
-                                   Style="{StaticResource StateTitleStyle}"
-                                   Margin="0,16,0,0" />
-                        <TextBlock Text="Just a moment." Style="{StaticResource StateBodyStyle}" />
-                    </StackPanel>
-                </Border>
-
-                <!-- Empty: no service types at all -->
-                <Border Background="{StaticResource CardBackgroundBrush}"
-                        Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
-                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
-                                           Kind="Empty"
-                                           IsActive="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
-                        <TextBlock Text="No services yet"
-                                   Style="{StaticResource StateTitleStyle}"
-                                   Margin="0,16,0,0" />
-                        <TextBlock Text="Service types you add will appear here."
-                                   Style="{StaticResource StateBodyStyle}" />
-                    </StackPanel>
-                </Border>
-
-                <!-- Empty: types exist, the search excluded them -->
-                <Border Background="{StaticResource CardBackgroundBrush}"
-                        Visibility="{x:Bind ViewModel.HasNoMatches, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
-                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
-                                           Kind="NoMatch"
-                                           IsActive="{x:Bind ViewModel.HasNoMatches, Mode=OneWay}" />
-                        <TextBlock Text="Nothing matches that search"
-                                   Style="{StaticResource StateTitleStyle}"
-                                   Margin="0,16,0,0" />
-                        <TextBlock Text="Try a shorter term, or clear the search to see every type."
-                                   Style="{StaticResource StateBodyStyle}" />
-                    </StackPanel>
-                </Border>
-
-                <!-- Error -->
-                <Border Background="{StaticResource CardBackgroundBrush}"
-                        Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
-                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
-                                           Kind="Error"
-                                           IsActive="{x:Bind ViewModel.IsError, Mode=OneWay}" />
-                        <TextBlock Text="The directory could not be opened"
-                                   Style="{StaticResource StateTitleStyle}"
-                                   Margin="0,16,0,0" />
-                        <TextBlock Text="Nothing was changed. You can try again."
-                                   Style="{StaticResource StateBodyStyle}" />
-                        <Button Margin="0,20,0,0"
-                                HorizontalAlignment="Center"
-                                Style="{StaticResource BareButtonStyle}"
-                                Command="{x:Bind ViewModel.RetryCommand}">
-                            <Border CornerRadius="20"
-                                    Height="40"
-                                    Padding="22,0,22,0"
-                                    Background="{StaticResource BrandPrimaryBrush}">
-                                <TextBlock Text="TRY AGAIN"
+                    <!--
+                        Custom service types arrive with the dynamic round; the
+                        button stays in place, asleep, until then.
+                    -->
+                    <Button x:Name="AddServiceButton"
+                            Grid.Column="1"
+                            Style="{StaticResource BareButtonStyle}"
+                            IsEnabled="False"
+                            ToolTipService.ToolTip="Custom service types arrive with the next step">
+                        <Border CornerRadius="21"
+                                Padding="14,0,18,0"
+                                Height="42"
+                                Background="{StaticResource HeaderActionFillBrush}"
+                                BorderBrush="{StaticResource SearchBorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="10"
+                                        VerticalAlignment="Center">
+                                <Grid Width="18" Height="18" VerticalAlignment="Center">
+                                    <Rectangle Width="18"
+                                               Height="18"
+                                               RadiusX="6"
+                                               RadiusY="6"
+                                               Fill="{StaticResource AddActionBorderBrush}" />
+                                    <Viewbox Width="18" Height="18">
+                                        <Canvas Width="18" Height="18">
+                                            <Path Data="M3.74951 8.99999H14.2507 M9.00011 3.74939V14.2506"
+                                                  Stroke="#FFFFFF"
+                                                  StrokeThickness="2"
+                                                  StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Grid>
+                                <TextBlock Text="ADD SERVICE"
                                            VerticalAlignment="Center"
                                            FontFamily="{StaticResource JerseyFont}"
                                            FontSize="{StaticResource ButtonFontSize}"
-                                           Foreground="#FFFFFF"
+                                           Foreground="{StaticResource CardMetaBrush}"
                                            CharacterSpacing="40" />
-                            </Border>
-                        </Button>
-                    </StackPanel>
-                </Border>
-
+                            </StackPanel>
+                        </Border>
+                    </Button>
+                </Grid>
             </Grid>
-        </Border>
+
+            <!-- The four primary types ..................................... -->
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        Spacing="72"
+                        Margin="24,8,0,0">
+
+                <Button x:Name="VpsButton"
+                        Style="{StaticResource BareButtonStyle}"
+                        AutomationProperties.Name="VPS"
+                        Click="OnVpsClick"
+                        PointerEntered="OnTypePointerEntered"
+                        PointerExited="OnTypePointerExited">
+                    <StackPanel>
+                        <controls:TypeMark Kind="Vps" Width="64" Height="64" />
+                        <TextBlock Text="VPS" Style="{StaticResource TypeLabelStyle}" />
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="ProxyButton"
+                        Style="{StaticResource BareButtonStyle}"
+                        AutomationProperties.Name="Proxy"
+                        Click="OnProxyClick"
+                        PointerEntered="OnTypePointerEntered"
+                        PointerExited="OnTypePointerExited">
+                    <StackPanel>
+                        <controls:TypeMark Kind="Proxy" Width="64" Height="64" />
+                        <TextBlock Text="PROXY" Style="{StaticResource TypeLabelStyle}" />
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="DomainButton"
+                        Style="{StaticResource BareButtonStyle}"
+                        AutomationProperties.Name="Domain"
+                        Click="OnDomainClick"
+                        PointerEntered="OnTypePointerEntered"
+                        PointerExited="OnTypePointerExited">
+                    <StackPanel>
+                        <controls:TypeMark Kind="Domain" Width="64" Height="64" />
+                        <TextBlock Text="DOMAIN" Style="{StaticResource TypeLabelStyle}" />
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="WalletsButton"
+                        Style="{StaticResource BareButtonStyle}"
+                        AutomationProperties.Name="Wallets"
+                        Click="OnWalletsClick"
+                        PointerEntered="OnTypePointerEntered"
+                        PointerExited="OnTypePointerExited">
+                    <StackPanel>
+                        <controls:TypeMark Kind="Wallets" Width="64" Height="64" />
+                        <TextBlock Text="WALLETS" Style="{StaticResource TypeLabelStyle}" />
+                    </StackPanel>
+                </Button>
+
+            </StackPanel>
+
+            <!--
+                The type list holds four names, but the search still owes an
+                answer when it excludes them all.
+            -->
+            <TextBlock x:Name="NoMatchesText"
+                       Grid.Row="1"
+                       Text="Nothing matches that search."
+                       FontFamily="{StaticResource BalooFont}"
+                       FontSize="{StaticResource SectionSubtitleFontSize}"
+                       Foreground="{StaticResource CardMetaBrush}"
+                       Margin="24,28,0,0"
+                       Visibility="Collapsed" />
 
         </Grid>
 
         <!--
-            One type's records, over the type list. Collapsed until its type is
-            drilled in, and empty-handed while it is: the card repeater's source
-            is attached only for as long as the layer is visible, because a
-            collection change reaching a collapsed, unmeasured ItemsRepeater is
-            the COMException this app has met before. The host attaches, measures
-            and only then lets the records load.
+            One primary type's screen, over the type list. Collapsed until its
+            type is drilled in - the one state the platform guarantees is
+            inert.
         -->
-        <Grid x:Name="RecordsLayer"
+        <Grid x:Name="ScreenLayer"
               Grid.Row="0"
               Grid.RowSpan="2"
               Opacity="0"
               Visibility="Collapsed">
             <Grid.RenderTransform>
-                <TranslateTransform x:Name="RecordsShift" Y="14" />
+                <TranslateTransform x:Name="ScreenShift" Y="14" />
             </Grid.RenderTransform>
 
-            <views:ServiceRecordsView x:Name="RecordsScreen" />
+            <views:ServiceTypeScreenView x:Name="TypeScreen" />
         </Grid>
 
         <!--
@@ -469,8 +370,6 @@
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="Root.Padding" Value="12" />
-                        <Setter Target="CardSurface.Padding" Value="12" />
-                        <Setter Target="CardSurface.CornerRadius" Value="18" />
                         <Setter Target="Header.Margin" Value="0,0,0,16" />
 
                         <!-- Actions move under the title and span the full width. -->
@@ -485,6 +384,5 @@
 
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
-
     </Grid>
 </UserControl>
