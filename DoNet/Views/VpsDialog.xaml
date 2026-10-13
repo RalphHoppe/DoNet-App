@@ -194,15 +194,16 @@
                 <ScrollViewer Grid.Row="1"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollMode="Disabled">
-                    <!--
-                        The form is one of two layouts in this dialog. The preview
-                        stopped being the form read-only: a record understood at a
-                        glance is a sheet of its own - a hero, then sections that
-                        group what the record means - so the two hosts trade places
-                        with the mode.
-                    -->
-                    <StackPanel x:Name="FieldHost" Spacing="24"
-                                Visibility="{x:Bind ViewModel.IsForm, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <Grid>
+                        <!--
+                            The form is one of two layouts in this dialog. The preview
+                            stopped being the form read-only: a record understood at a
+                            glance is a sheet of its own - a hero, then sections that
+                            group what the record means - so the two hosts trade places
+                            with the mode.
+                        -->
+                        <StackPanel x:Name="FieldHost" Spacing="24"
+                                    Visibility="{x:Bind ViewModel.IsForm, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel.RenderTransform>
                             <TranslateTransform x:Name="FieldShift" Y="0" />
                         </StackPanel.RenderTransform>
@@ -721,7 +722,7 @@
                         instead of walking a form's order.
                     -->
                     <StackPanel x:Name="PreviewHost" Spacing="24"
-                                Visibility="{x:Bind ViewModel.IsPreview, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                Visibility="{x:Bind ViewModel.IsPreview, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" >
 
                         <!-- The hero: the mark, the name, and where the record sits. -->
                         <Grid ColumnSpacing="18">
@@ -1122,6 +1123,7 @@
                               ShowCopy="True" />
                         </Grid>
                     </StackPanel>
+                    </Grid>
                 </ScrollViewer>
 
                 <!-- Footer .................................................. -->
