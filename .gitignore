@@ -27,3 +27,6 @@ AppPackages/
 # Python tooling
 __pycache__/
 *.pyc
+
+# Generated installer files
+installer/Output/
