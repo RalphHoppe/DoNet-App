@@ -269,11 +269,18 @@
             <!--
                 Left-aligned at the content edge, level with the title above,
                 72px between tiles - the reference's row, not a centred grid.
+
+                Pinned to the top explicitly: a horizontal StackPanel left to
+                its defaults in a star row stretches to fill it and arranges
+                its children centred on the cross axis, which parked the tiles
+                in the vertical middle of the tab. Top holds the row under the
+                header, where the reference draws it.
             -->
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         Spacing="72"
-                        Margin="0,40,0,0">
+                        Margin="0,40,0,0"
+                        VerticalAlignment="Top">
 
                 <Button x:Name="VpsButton"
                         Style="{StaticResource BareButtonStyle}"
@@ -319,7 +326,9 @@
 
             <!--
                 The type list holds four names, but the search still owes an
-                answer when it excludes them all.
+                answer when it excludes them all. Top for the same reason as
+                the row above: a TextBlock stretched by a star row centres
+                its text in the leftover height.
             -->
             <TextBlock x:Name="NoMatchesText"
                        Grid.Row="1"
@@ -328,6 +337,7 @@
                        FontSize="{StaticResource SectionSubtitleFontSize}"
                        Foreground="{StaticResource CardMetaBrush}"
                        Margin="0,28,0,0"
+                       VerticalAlignment="Top"
                        Visibility="Collapsed" />
 
         </Grid>

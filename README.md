@@ -1483,6 +1483,15 @@ section header is trimmed to the bare title (no disc - the tiles carry the
 identity now). The header's search and ADD sit on a soft grey fill rather
 than the card's white.
 
+One WinUI behaviour is pinned in the markup because its default cost a
+build: a horizontal StackPanel left to its defaults inside a star Grid row
+stretches to fill the row and arranges its children centred on the cross
+axis, which parked the tile row in the vertical middle of the tab (caught
+on the user's screenshot - tiles measured dead centre of the leftover
+height, header to row gap ~300px where ~40 belongs). The list and the
+no-matches text therefore set `VerticalAlignment="Top"` explicitly, and
+the gap lands at the reference's 40px under the header.
+
 Each primary opens a hand-built screen in the type's colours: the name as the
 title in the type's gradient, the ADD button's accents in the type's colour,
 the header over open space - the records that fill it arrive with the fields,
