@@ -46,7 +46,9 @@ public sealed partial class ServiceTypeScreenView : UserControl
     /// </summary>
     public void ReleaseBindings()
     {
-        Bindings.StopTracking();
+        // Nothing on this screen binds through x:Bind - the shell dresses
+        // itself by listening to the view model - so there are no generated
+        // bindings to stop; the subscription is the whole hold to release.
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
     }
 

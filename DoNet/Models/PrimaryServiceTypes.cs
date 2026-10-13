@@ -83,16 +83,19 @@ public static class PrimaryServiceTypes
     }
 
     /// <summary>
-    /// <c>#RRGGBB</c> as a colour. WinUI has no parser for the string form, so
-    /// the pairs are read by hand - the only format this catalog ever holds.
+    /// <c>#RRGGBB</c> as a colour. WinUI has no parser for the string form and
+    /// <c>ColorHelper</c> is not projected for C# consumers, so the struct's
+    /// channels are set by hand - the only format this catalog ever holds.
     /// </summary>
     private static Color ColorFromHex(string hex)
     {
-        return ColorHelper.FromArgb(
-            255,
-            Convert.ToByte(hex.Substring(1, 2), 16),
-            Convert.ToByte(hex.Substring(3, 2), 16),
-            Convert.ToByte(hex.Substring(5, 2), 16));
+        return new Color
+        {
+            A = 255,
+            R = Convert.ToByte(hex.Substring(1, 2), 16),
+            G = Convert.ToByte(hex.Substring(3, 2), 16),
+            B = Convert.ToByte(hex.Substring(5, 2), 16),
+        };
     }
 
     /// <summary>The icon paths for the type's mark; see <see cref="TypeMarkData"/>.</summary>
