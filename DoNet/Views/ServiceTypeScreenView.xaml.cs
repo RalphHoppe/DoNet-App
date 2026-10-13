@@ -25,6 +25,7 @@ public sealed partial class ServiceTypeScreenView : UserControl
     public ServiceTypeScreenView()
     {
         ViewModel = App.Current.Services.GetRequiredService<ServicesViewModel>();
+        Vps = App.Current.Services.GetRequiredService<VpsViewModel>();
 
         InitializeComponent();
 
@@ -41,15 +42,23 @@ public sealed partial class ServiceTypeScreenView : UserControl
     public ServicesViewModel ViewModel { get; }
 
     /// <summary>
+    /// The VPS directory: its search fills the header's box and its records
+    /// fill the surface, for as long as the VPS is the one type with fields.
+    /// </summary>
+    public VpsViewModel Vps { get; }
+
+    /// <summary>
     /// Releases this control's hold on the view model. Called by the host when
     /// the home screen is leaving for good.
     /// </summary>
     public void ReleaseBindings()
     {
-        // Nothing on this screen binds through x:Bind - the shell dresses
-        // itself by listening to the view model - so there are no generated
-        // bindings to stop; the subscription is the whole hold to release.
+        // The shell dresses itself by listening to the view model; the search
+        // box is the one compiled binding, and its tracking stops with the
+        // rest. The hosted list releases its own holds below.
+        Bindings.StopTracking();
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        VpsList?.ReleaseBindings();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
@@ -81,12 +90,41 @@ public sealed partial class ServiceTypeScreenView : UserControl
         AddText.Foreground = new SolidColorBrush(
             PrimaryServiceTypes.GradientOf(kind).GradientStops[0].Color);
         AddPlusFill.Fill = AddText.Foreground;
+
+        // The VPS has its fields; the other three are still waiting on theirs.
+        // Awake is enabled with a working tooltip, asleep keeps the pending one.
+        bool awake = kind == PrimaryServiceType.Vps;
+        AddRecordButton.IsEnabled = awake;
+        ToolTipService.SetToolTip(
+            AddRecordButton,
+            awake ? $"Add a {name.ToLowerInvariant()} record" : "Records arrive with the next step");
+
+        SearchInput.PlaceholderText = $"SEARCH {name.ToUpperInvariant()}...";
+
+        if (awake)
+        {
+            // Deferred on purpose: realizing it here puts the list in the tree
+            // inside a drill, where its repeater gets a measured viewport.
+            _ = FindName(nameof(VpsList));
+        }
     }
 
-    private void OnAddRecordClick(object sender, RoutedEventArgs args)
+    /// <summary>
+    /// The awake types only: opens the form. The asleep ones never arrive -
+    /// the button is disabled underneath them.
+    /// </summary>
+    private async void OnAddRecordClick(object sender, RoutedEventArgs args)
     {
-        // Asleep until the fields arrive; the click handler exists so the
-        // button's shape is already the finished one.
-        _ = sender;
+        try
+        {
+            if (ViewModel.SelectedKind == PrimaryServiceType.Vps)
+            {
+                await Vps.AddVpsAsync();
+            }
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Opening the VPS form failed", error);
+        }
     }
 }

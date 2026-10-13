@@ -5,15 +5,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="using:DoNet.Views"
     mc:Ignorable="d">
 
     <!--
         One primary service type's screen: the directory skeleton with the
         type's own colours. The title, the ADD button's accents and the rail's
-        back button all wear the type's gradient. The records that will fill
-        the surface arrive with the fields, and until then the surface is
-        empty - as the reference draws it: no placeholder art, nothing
-        centred in the tab, just the header over the open space.
+        back button all wear the type's gradient. The VPS - the first type
+        whose fields arrived - fills the surface with its records; the other
+        three are still the reference's empty screen: no placeholder art,
+        nothing centred in the tab, just the header over the open space.
     -->
 
     <UserControl.Resources>
@@ -127,16 +128,26 @@
                             </Canvas>
                         </Viewbox>
 
-                        <TextBox Grid.Column="1"
+                        <!--
+                            Bound to the VPS directory's search: the VPS is the
+                            one primary with records so far, so the box serves
+                            it and sits idle on the other three, exactly like
+                            the ADD button beside it.
+                        -->
+                        <TextBox x:Name="SearchInput"
+                                 Grid.Column="1"
                                  Style="{StaticResource SearchBoxStyle}"
                                  PlaceholderText="SEARCH..."
-                                 PlaceholderForeground="{StaticResource SearchPlaceholderBrush}" />
+                                 PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
+                                 Text="{x:Bind Vps.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                 </Border>
 
                 <!--
-                    ADD <TYPE>: the type's colour on the accents. Asleep until
-                    the fields arrive, like its twin on the type list.
+                    ADD <TYPE>: the type's colour on the accents. Awake for the
+                    VPS, whose fields have arrived; asleep for the other three
+                    until theirs do. The state is set from the kind in
+                    code-behind, where the kind is known.
                 -->
                 <Button x:Name="AddRecordButton"
                         Grid.Column="1"
@@ -183,10 +194,13 @@
         </Grid>
 
         <!--
-            The records surface. Empty until the fields arrive - the reference
-            draws the header over open space, with nothing centred in the tab,
-            so this is the finished shape with its content pending.
+            The records surface. The reference draws the header over open
+            space; the directories that fill it arrive one type at a time, and
+            the VPS - the first with fields - is deferred so it is only ever
+            realized in a drill, where its repeater gets a measured viewport.
         -->
-        <Grid x:Name="RecordsSurface" Grid.Row="1" />
+        <Grid x:Name="RecordsSurface" Grid.Row="1">
+            <views:VpsRecordsView x:Name="VpsList" x:Load="False" />
+        </Grid>
     </Grid>
 </UserControl>

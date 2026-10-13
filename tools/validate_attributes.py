@@ -104,12 +104,19 @@ def classify(declaration: str) -> str | None:
     equal = re.search(r"=>|[＝=]", declaration)
     body = declaration.find("{")
     paren = declaration.find("(")
-    limits = [p for p in (equal.start() if equal else -1, body) if p != -1]
+
+    # A field's array or collection initializer also opens a brace - after the
+    # '=' (`= new[] { ... };`). That brace is data, not a body, and must not
+    # turn the field into a property; a body's brace has no '=' in front of it.
+    body_is_initializer = body != -1 and equal is not None and body > equal.start()
+
+    limits = [p for p in (equal.start() if equal else -1,
+                          body if not body_is_initializer else -1) if p != -1]
     first_stop = min(limits) if limits else len(declaration)
 
     if paren != -1 and paren < first_stop:
         return "method"
-    if body != -1 or "=>" in declaration:
+    if (body != -1 and not body_is_initializer) or "=>" in declaration:
         return "property"
     if declaration.rstrip().endswith(";"):
         return "field"

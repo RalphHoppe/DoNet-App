@@ -63,6 +63,16 @@ public sealed class DoNetDbContext : DbContext
     /// </summary>
     public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
 
+    /// <summary>
+    /// The hand-built VPS type's records. The dynamic machinery above serves the
+    /// types the user adds; the primaries are code, and this is the first one's
+    /// store.
+    /// </summary>
+    public DbSet<VpsRecord> VpsRecords => Set<VpsRecord>();
+
+    /// <summary>The system information rows, one per VPS.</summary>
+    public DbSet<VpsSystemInfo> VpsSystemInfos => Set<VpsSystemInfo>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         options.UseSqlite(_connection);
@@ -170,6 +180,56 @@ public sealed class DoNetDbContext : DbContext
             // the store already removes a record's children explicitly before it.
             entity.HasIndex(r => r.ServiceTypeId);
             entity.HasIndex(r => r.ParentRecordId);
+        });
+
+        model.Entity<VpsRecord>(entity =>
+        {
+            entity.ToTable("VpsRecords");
+            entity.HasKey(v => v.Id);
+            entity.Property(v => v.Id).ValueGeneratedOnAdd();
+
+            // The three directory pointers are optional and outlive nothing: the
+            // directories' deletes clear them rather than taking the VPS with
+            // them, because a VPS is not "on" a person the way an account is on
+            // a site - the pointers are cross-references, not ownership.
+            entity.HasOne<Person>()
+                  .WithMany()
+                  .HasForeignKey(v => v.PersonId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<Website>()
+                  .WithMany()
+                  .HasForeignKey(v => v.WebsiteId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<Account>()
+                  .WithMany()
+                  .HasForeignKey(v => v.AccountId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            // NodeVpsId is a plain column for the same reason ServiceRecord's
+            // ParentRecordId is: a self-referencing key over a delete the store
+            // performs in the same batch as the reparenting is ordering roulette
+            // on SQLite. The directory keeps the references whole - children are
+            // reparented to null before their main is removed.
+            entity.HasIndex(v => v.NodeVpsId);
+        });
+
+        model.Entity<VpsSystemInfo>(entity =>
+        {
+            entity.ToTable("VpsSystemInfos");
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.Id).ValueGeneratedOnAdd();
+
+            // Owned by its VPS, one row per VPS: the cascade removes the system
+            // with the VPS, and the unique index keeps the pair 1:1 - a database
+            // guarantee for the design's "one system in one VPS".
+            entity.HasOne<VpsRecord>()
+                  .WithOne(v => v.System)
+                  .HasForeignKey<VpsSystemInfo>(s => s.VpsId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(s => s.VpsId).IsUnique();
         });
 
         model.Entity<Service>(entity =>

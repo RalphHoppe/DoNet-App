@@ -37,6 +37,9 @@ public sealed partial class HomePage : Page
     private readonly AccountsViewModel _accounts;
     private readonly ServicesViewModel _services;
 
+    // The VPS directory: its dialog and its delete confirm are hosted here too.
+    private readonly VpsViewModel _vps;
+
     // Opacity is linear and movement is eased, which is how the rail and the entrance
     // animation already behave. Out is short enough to read as the old section getting
     // out of the way rather than as a wait; in is long enough to be seen.
@@ -87,6 +90,7 @@ public sealed partial class HomePage : Page
         _websites = App.Current.Services.GetRequiredService<WebsitesViewModel>();
         _accounts = App.Current.Services.GetRequiredService<AccountsViewModel>();
         _services = App.Current.Services.GetRequiredService<ServicesViewModel>();
+        _vps = App.Current.Services.GetRequiredService<VpsViewModel>();
 
         InitializeComponent();
 
@@ -96,6 +100,7 @@ public sealed partial class HomePage : Page
         _websites.PropertyChanged += OnWebsitesPropertyChanged;
         _accounts.PropertyChanged += OnAccountsPropertyChanged;
         _services.PropertyChanged += OnServicesPropertyChanged;
+        _vps.PropertyChanged += OnVpsPropertyChanged;
         ViewModel.PropertyChanged += OnSectionChanged;
 
         WireSectionTransition();
@@ -411,6 +416,19 @@ public sealed partial class HomePage : Page
         }
     }
 
+    private void OnVpsPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(VpsViewModel.IsDialogOpen) && _vps.IsDialogOpen)
+        {
+            Realize("VpsModal");
+        }
+        else if (args.PropertyName == nameof(VpsViewModel.IsConfirmingDelete)
+                 && _vps.IsConfirmingDelete)
+        {
+            Realize("ConfirmModal");
+        }
+    }
+
     private void OnAccountsPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
         if (args.PropertyName == nameof(AccountsViewModel.IsDialogOpen) && _accounts.IsDialogOpen)
@@ -534,6 +552,7 @@ public sealed partial class HomePage : Page
         _websites.PropertyChanged -= OnWebsitesPropertyChanged;
         _accounts.PropertyChanged -= OnAccountsPropertyChanged;
         _services.PropertyChanged -= OnServicesPropertyChanged;
+        _vps.PropertyChanged -= OnVpsPropertyChanged;
         ViewModel.PropertyChanged -= OnSectionChanged;
 
         // Unsubscribe before stopping, so a transition caught in flight by the lock
@@ -559,6 +578,7 @@ public sealed partial class HomePage : Page
         ServiceModal?.ReleaseBindings();
         ServiceDesignerModal?.ReleaseBindings();
         ServiceRecordModal?.ReleaseBindings();
+        VpsModal?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();

@@ -31,6 +31,7 @@ public partial class HomeViewModel : ObservableObject
     private readonly WebsitesViewModel _websites;
     private readonly AccountsViewModel _accounts;
     private readonly ServicesViewModel _services;
+    private readonly VpsViewModel _vps;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsServicesSelected))]
@@ -48,7 +49,8 @@ public partial class HomeViewModel : ObservableObject
         PersonsViewModel persons,
         WebsitesViewModel websites,
         AccountsViewModel accounts,
-        ServicesViewModel services)
+        ServicesViewModel services,
+        VpsViewModel vps)
     {
         _navigation = navigation;
         _vault = vault;
@@ -56,6 +58,7 @@ public partial class HomeViewModel : ObservableObject
         _websites = websites;
         _accounts = accounts;
         _services = services;
+        _vps = vps;
     }
 
     public bool IsServicesSelected => SelectedSection == HomeSection.Services;
@@ -93,6 +96,7 @@ public partial class HomeViewModel : ObservableObject
         _websites.Reset();
         _accounts.Reset();
         _services.Reset();
+        _vps.Reset();
         _vault.Lock();
 
         _navigation.NavigateTo(typeof(LockPage), clearBackStack: true);
