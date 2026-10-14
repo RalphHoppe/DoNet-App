@@ -27,6 +27,7 @@ public sealed partial class ServiceTypeScreenView : UserControl
         ViewModel = App.Current.Services.GetRequiredService<ServicesViewModel>();
         Vps = App.Current.Services.GetRequiredService<VpsViewModel>();
         Wallets = App.Current.Services.GetRequiredService<WalletViewModel>();
+        VpsMap = App.Current.Services.GetRequiredService<VpsMapViewModel>();
 
         InitializeComponent();
 
@@ -50,6 +51,9 @@ public sealed partial class ServiceTypeScreenView : UserControl
 
     /// <summary>The wallets directory, the same job for its own screen.</summary>
     public WalletViewModel Wallets { get; }
+
+    /// <summary>The VPS map: the records laid over the whole earth.</summary>
+    public VpsMapViewModel VpsMap { get; }
 
     /// <summary>Guards the search sync so loading a directory's text is not read back as typing.</summary>
     private bool _syncingSearch;
@@ -112,6 +116,11 @@ public sealed partial class ServiceTypeScreenView : UserControl
         // The VPS and the Wallets have their fields; the other two are still
         // waiting on theirs. Awake is enabled with a working tooltip, asleep
         // keeps the pending one.
+        // The map button is the VPS's own: the other types have no node chain
+        // to draw yet, so theirs is simply not on offer rather than asleep.
+        bool isVps = kind == PrimaryServiceType.Vps;
+        MapButton.Visibility = isVps ? Visibility.Visible : Visibility.Collapsed;
+
         bool awake = kind is PrimaryServiceType.Vps or PrimaryServiceType.Wallets;
         AddRecordButton.IsEnabled = awake;
         ToolTipService.SetToolTip(
@@ -165,6 +174,22 @@ public sealed partial class ServiceTypeScreenView : UserControl
     /// The awake types only: opens the form. The asleep ones never arrive -
     /// the button is disabled underneath them.
     /// </summary>
+    /// <summary>
+    /// Opens the map. Fire-and-forget is safe: the read inside is wrapped, so
+    /// the call either opens the map or logs why not.
+    /// </summary>
+    private void OnMapClick(object sender, RoutedEventArgs args)
+    {
+        try
+        {
+            _ = VpsMap.OpenAsync();
+        }
+        catch (Exception error)
+        {
+            AppLog.Error("Opening the VPS map failed", error);
+        }
+    }
+
     private async void OnAddRecordClick(object sender, RoutedEventArgs args)
     {
         try

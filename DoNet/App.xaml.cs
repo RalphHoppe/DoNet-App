@@ -141,6 +141,10 @@ public partial class App : Application
         // And the wallets directory, the same three views onto its own screen.
         services.AddSingleton<WalletViewModel>();
 
+        // The VPS map: one view over the records, opened from the type
+        // screen's header and hosted at the HomePage root like the others.
+        services.AddSingleton<VpsMapViewModel>();
+
         return services.BuildServiceProvider();
     }
 }

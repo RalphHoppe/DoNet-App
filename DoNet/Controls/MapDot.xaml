@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.MapDot"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        One dot on the VPS map.
+
+        The dot itself is a white coin carrying the country's flag, with the
+        ring saying what the record is: the VPS's own red for a main, the
+        app's slate for a VPS connected into an open network. The extras hang
+        off the coin rather than sizing it, so the hit target stays the dot
+        and nothing else: the count badge for a country holding several
+        mains, the MAIN tag so a network's root can never be mistaken for
+        one of its own children, the label under the dot, and the hover card
+        that says in words what the colours just said.
+
+        The control is sized and filled from its pin in code, in the Apply
+        pattern the cards use, because the pin is a plain object refreshed by
+        replacement rather than one that raises changes. The caller positions
+        it on the map canvas; this control only ever owns its own square.
+    -->
+
+    <UserControl.Resources>
+
+        <!-- The two rings a dot can wear, here so the code can hand them to
+             the coin without building colours itself. -->
+        <SolidColorBrush x:Key="MainRingBrush" Color="#FF5F57" />
+        <SolidColorBrush x:Key="NodeRingBrush" Color="#A0A5AB" />
+
+        <Style x:Key="TipTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#D6DADE" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="MaxWidth" Value="226" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="16" />
+        </Style>
+
+        <!-- The hover card arriving and leaving, quickly enough to feel
+             attached to the pointer rather than animated in its own right. -->
+        <Storyboard x:Key="TipShow">
+            <DoubleAnimation Storyboard.TargetName="TipCard"
+                             Storyboard.TargetProperty="Opacity"
+                             To="1" Duration="0:0:0.10" />
+        </Storyboard>
+
+        <Storyboard x:Key="TipHide">
+            <DoubleAnimation Storyboard.TargetName="TipCard"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.08" />
+        </Storyboard>
+
+        <!-- The dot leaning toward the pointer. -->
+        <Storyboard x:Key="HoverOn">
+            <DoubleAnimation Storyboard.TargetName="HoverScale"
+                             Storyboard.TargetProperty="ScaleX"
+                             To="1.14" Duration="0:0:0.12">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="HoverScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             To="1.14" Duration="0:0:0.12">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Key="HoverOff">
+            <DoubleAnimation Storyboard.TargetName="HoverScale"
+                             Storyboard.TargetProperty="ScaleX"
+                             To="1" Duration="0:0:0.12">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="HoverScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             To="1" Duration="0:0:0.12">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+    </UserControl.Resources>
+
+    <!--
+        The root is exactly the coin's square; the badge, the tag, the label
+        and the hover card overhang it on negative margins, which a Grid
+        allows without clipping.
+    -->
+    <Grid x:Name="Root"
+          Width="34"
+          Height="34"
+          RenderTransformOrigin="0.5,0.5"
+          PointerEntered="OnPointerEntered"
+          PointerExited="OnPointerExited">
+        <Grid.RenderTransform>
+            <TransformGroup>
+                <ScaleTransform x:Name="EntryScale" ScaleX="1" ScaleY="1" />
+                <ScaleTransform x:Name="HoverScale" ScaleX="1" ScaleY="1" />
+            </TransformGroup>
+        </Grid.RenderTransform>
+
+        <Button Style="{StaticResource BareButtonStyle}"
+                Click="OnClick">
+            <Grid>
+                <!-- The main's halo: a soft ring outside the coin. -->
+                <Ellipse x:Name="Halo"
+                         Opacity="0"
+                         Stroke="#47FF5F57"
+                         StrokeThickness="1.5" />
+
+                <!-- The coin: white fill, the ring saying what the record is. -->
+                <Ellipse x:Name="Coin"
+                         Fill="#FFFFFF"
+                         Stroke="{StaticResource MainRingBrush}"
+                         StrokeThickness="3" />
+
+                <!-- The country's flag, or the globe when there is none. -->
+                <Viewbox x:Name="FlagBox"
+                         Width="21"
+                         Height="15">
+                    <controls:FlagIcon x:Name="Flag" />
+                </Viewbox>
+                <Viewbox x:Name="NoCountryBox"
+                         Width="16"
+                         Height="16"
+                         Visibility="Collapsed">
+                    <controls:LineIcon Kind="Globe"
+                                       Width="16"
+                                       Height="16"
+                                       Foreground="#A0A5AB" />
+                </Viewbox>
+            </Grid>
+        </Button>
+
+        <!-- A country holding several mains wears its count. -->
+        <Border x:Name="CountBadge"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Right"
+                Margin="2,-8,-20,0"
+                CornerRadius="10"
+                Padding="7,1"
+                Background="#FEBC2E"
+                BorderBrush="#FFFFFF"
+                BorderThickness="1.5"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+            <TextBlock x:Name="CountText"
+                       FontFamily="{StaticResource JerseyFont}"
+                       FontSize="13"
+                       Foreground="#8A5B12"
+                       LineStackingStrategy="BlockLineHeight"
+                       LineHeight="14" />
+        </Border>
+
+        <!-- The network's root, named so it cannot be mistaken for a child. -->
+        <Border x:Name="MainTag"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Center"
+                Margin="0,-26,0,0"
+                CornerRadius="8"
+                Padding="8,1"
+                Background="#FF5F57"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+            <TextBlock Text="MAIN"
+                       FontFamily="{StaticResource BalooSemiBoldFont}"
+                       FontSize="10.5"
+                       Foreground="#FFFFFF"
+                       CharacterSpacing="80"
+                       LineStackingStrategy="BlockLineHeight"
+                       LineHeight="13" />
+        </Border>
+
+        <!-- The words under the dot: a country in the overview, a name in a
+             network. A pill, so it stays readable over land and sea alike. -->
+        <Border x:Name="LabelPill"
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,-30"
+                CornerRadius="10"
+                Padding="9,2"
+                Background="#D8FFFFFF"
+                IsHitTestVisible="False">
+            <TextBlock x:Name="LabelText"
+                       FontFamily="{StaticResource BalooFont}"
+                       FontSize="12"
+                       Foreground="#5C6066"
+                       TextTrimming="CharacterEllipsis"
+                       MaxWidth="150"
+                       LineStackingStrategy="BlockLineHeight"
+                       LineHeight="15" />
+        </Border>
+
+        <!-- The hover card: the country in words, the record's name, and its
+             place in the network. -->
+        <Border x:Name="TipCard"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Center"
+                Margin="0,-64,0,0"
+                CornerRadius="12"
+                Padding="12,10"
+                Background="{StaticResource TooltipBackgroundBrush}"
+                Opacity="0"
+                IsHitTestVisible="False">
+            <StackPanel Spacing="3">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Viewbox x:Name="TipFlagBox"
+                             Width="18"
+                             Height="13"
+                             VerticalAlignment="Center">
+                        <controls:FlagIcon x:Name="TipFlag" />
+                    </Viewbox>
+                    <TextBlock x:Name="TipTitle"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="13"
+                               Foreground="#FFFFFF"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="200"
+                               VerticalAlignment="Center"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="17" />
+                </StackPanel>
+                <TextBlock x:Name="TipDetail" Style="{StaticResource TipTextStyle}" />
+                <TextBlock x:Name="TipMeta" Style="{StaticResource TipTextStyle}" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

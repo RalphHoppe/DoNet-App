@@ -42,6 +42,8 @@ public sealed partial class HomePage : Page
 
     private readonly WalletViewModel _wallets;
 
+    private readonly VpsMapViewModel _vpsMap;
+
     // Opacity is linear and movement is eased, which is how the rail and the entrance
     // animation already behave. Out is short enough to read as the old section getting
     // out of the way rather than as a wait; in is long enough to be seen.
@@ -94,6 +96,7 @@ public sealed partial class HomePage : Page
         _services = App.Current.Services.GetRequiredService<ServicesViewModel>();
         _vps = App.Current.Services.GetRequiredService<VpsViewModel>();
         _wallets = App.Current.Services.GetRequiredService<WalletViewModel>();
+        _vpsMap = App.Current.Services.GetRequiredService<VpsMapViewModel>();
 
         InitializeComponent();
 
@@ -105,6 +108,7 @@ public sealed partial class HomePage : Page
         _services.PropertyChanged += OnServicesPropertyChanged;
         _vps.PropertyChanged += OnVpsPropertyChanged;
         _wallets.PropertyChanged += OnWalletsPropertyChanged;
+        _vpsMap.PropertyChanged += OnVpsMapPropertyChanged;
         ViewModel.PropertyChanged += OnSectionChanged;
 
         WireSectionTransition();
@@ -451,6 +455,14 @@ public sealed partial class HomePage : Page
         }
     }
 
+    private void OnVpsMapPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(VpsMapViewModel.IsDialogOpen) && _vpsMap.IsDialogOpen)
+        {
+            Realize("VpsMapModal");
+        }
+    }
+
     private void OnAccountsPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
         if (args.PropertyName == nameof(AccountsViewModel.IsDialogOpen) && _accounts.IsDialogOpen)
@@ -576,6 +588,7 @@ public sealed partial class HomePage : Page
         _services.PropertyChanged -= OnServicesPropertyChanged;
         _vps.PropertyChanged -= OnVpsPropertyChanged;
         _wallets.PropertyChanged -= OnWalletsPropertyChanged;
+        _vpsMap.PropertyChanged -= OnVpsMapPropertyChanged;
         ViewModel.PropertyChanged -= OnSectionChanged;
 
         // Unsubscribe before stopping, so a transition caught in flight by the lock
@@ -604,6 +617,7 @@ public sealed partial class HomePage : Page
         ServiceRecordModal?.ReleaseBindings();
         VpsModal?.ReleaseBindings();
         WalletModal?.ReleaseBindings();
+        VpsMapModal?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();
