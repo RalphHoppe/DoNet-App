@@ -73,6 +73,11 @@ public sealed class DoNetDbContext : DbContext
     /// <summary>The system information rows, one per VPS.</summary>
     public DbSet<VpsSystemInfo> VpsSystemInfos => Set<VpsSystemInfo>();
 
+    /// <summary>
+    /// The hand-built Wallets type's records - the fourth primary's store.
+    /// </summary>
+    public DbSet<WalletRecord> WalletRecords => Set<WalletRecord>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         options.UseSqlite(_connection);
@@ -207,12 +212,22 @@ public sealed class DoNetDbContext : DbContext
                   .HasForeignKey(v => v.AccountId)
                   .OnDelete(DeleteBehavior.SetNull);
 
+            // The wallet a VPS was paid with, when it was: a nullable
+            // cross-reference that clears when the wallet goes, because the
+            // payment already happened - the VPS record is history, not a
+            // member of the wallet.
+            entity.HasOne<WalletRecord>()
+                  .WithMany()
+                  .HasForeignKey(v => v.WalletId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
             // NodeVpsId is a plain column for the same reason ServiceRecord's
             // ParentRecordId is: a self-referencing key over a delete the store
             // performs in the same batch as the reparenting is ordering roulette
             // on SQLite. The directory keeps the references whole - children are
             // reparented to null before their main is removed.
             entity.HasIndex(v => v.NodeVpsId);
+            entity.HasIndex(v => v.WalletId);
         });
 
         model.Entity<VpsSystemInfo>(entity =>
@@ -230,6 +245,22 @@ public sealed class DoNetDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(s => s.VpsId).IsUnique();
+        });
+
+        model.Entity<WalletRecord>(entity =>
+        {
+            entity.ToTable("WalletRecords");
+            entity.HasKey(w => w.Id);
+            entity.Property(w => w.Id).ValueGeneratedOnAdd();
+
+            // The owner, when the directory has met them: cleared rather than
+            // cascaded, the same reading as the VPS's own pointers.
+            entity.HasOne<Person>()
+                  .WithMany()
+                  .HasForeignKey(w => w.PersonId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(w => w.PersonId);
         });
 
         model.Entity<Service>(entity =>

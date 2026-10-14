@@ -227,11 +227,6 @@ public static class FlagData
         "Yemen" => "YE",
         "Zambia" => "ZM",
         "Zimbabwe" => "ZW",
-
-        // Not a country, but the euro's row needs a flag and the European
-        // Union's is the one it flies. The PNG is generated in the pack's own
-        // 63x45 frame; see Catalogs.CallingCodes for the drawer that uses it.
-        "European Union" => "EU",
         _ => null,
     };
 }

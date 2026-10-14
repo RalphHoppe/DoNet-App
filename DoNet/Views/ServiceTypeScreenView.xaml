@@ -129,17 +129,18 @@
                         </Viewbox>
 
                         <!--
-                            Bound to the VPS directory's search: the VPS is the
-                            one primary with records so far, so the box serves
-                            it and sits idle on the other three, exactly like
-                            the ADD button beside it.
+                            The directory's search, routed in code: the types
+                            with fields each have a directory of their own, and
+                            the box serves whichever screen is drilled in. On
+                            the types still waiting for fields it sits idle,
+                            exactly like the ADD button beside it.
                         -->
                         <TextBox x:Name="SearchInput"
                                  Grid.Column="1"
                                  Style="{StaticResource SearchBoxStyle}"
                                  PlaceholderText="SEARCH..."
                                  PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
-                                 Text="{x:Bind Vps.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                 TextChanged="OnSearchInputChanged" />
                     </Grid>
                 </Border>
 
@@ -200,7 +201,13 @@
             realized in a drill, where its repeater gets a measured viewport.
         -->
         <Grid x:Name="RecordsSurface" Grid.Row="1">
+            <!--
+                One list per type with fields, each deferred so it is only ever
+                realized in its own drill, where its repeater gets a measured
+                viewport.
+            -->
             <views:VpsRecordsView x:Name="VpsList" x:Load="False" />
+            <views:WalletsRecordsView x:Name="WalletsList" x:Load="False" />
         </Grid>
     </Grid>
 </UserControl>

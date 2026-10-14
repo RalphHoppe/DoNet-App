@@ -424,9 +424,24 @@
                               Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
                               ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
 
-                            <controls:FieldCell x:Name="CountryCell"
+                            <controls:FieldCell x:Name="WalletCell"
                               Grid.Row="4"
                               Grid.Column="0"
+                              Margin="0,0,0,16"
+                              VerticalAlignment="Top"
+                              Label="PAID WITH WALLET"
+                              IconKind="Wallet"
+                              TabOrder="12"
+                              InputKind="Choice"
+                              Placeholder="Pick the wallet it was paid with"
+                              Value="{x:Bind ViewModel.WalletLabel, Mode=TwoWay}"
+                              Options="{x:Bind ViewModel.WalletOptions, Mode=OneWay}"
+                              Kind="{x:Bind ViewModel.FieldKind, Mode=OneWay}"
+                              ShowCopy="{x:Bind ViewModel.IsPreview, Mode=OneWay}" />
+
+                            <controls:FieldCell x:Name="CountryCell"
+                              Grid.Row="4"
+                              Grid.Column="1"
                               Margin="0,0,0,16"
                               VerticalAlignment="Top"
                               Label="COUNTRY"
@@ -440,9 +455,9 @@
 
                             <controls:FieldCell x:Name="NoteCell"
                               Grid.Row="4"
-                              Grid.Column="1"
-                              Grid.ColumnSpan="2"
-                              Margin="0"
+                              Grid.Column="2"
+                             
+                              Margin="0,0,0,16"
                               VerticalAlignment="Top"
                               Label="NOTE"
                               IconKind="Info"
@@ -868,8 +883,9 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        
+
                                                     <controls:FieldCell x:Name="PvPersonCell"
                               Grid.Row="0"
                               Grid.Column="0"
@@ -911,6 +927,17 @@
                               Label="NODE"
                               IconKind="Briefcase"
                               Value="{x:Bind ViewModel.NodeLabel, Mode=OneWay}"
+                              Kind="Display"
+                              ShowCopy="True" />
+                                                <controls:FieldCell x:Name="PvWalletCell"
+                              Grid.Row="2"
+                              Grid.Column="0"
+                              Grid.ColumnSpan="2"
+                              Margin="0"
+                              VerticalAlignment="Top"
+                              Label="PAID WITH WALLET"
+                              IconKind="Wallet"
+                              Value="{x:Bind ViewModel.WalletLabel, Mode=OneWay}"
                               Kind="Display"
                               ShowCopy="True" />
                         </Grid>
@@ -1271,9 +1298,11 @@
                         <Setter Target="CycleCell.(Grid.Row)" Value="10" />
                         <Setter Target="CycleCell.(Grid.Column)" Value="0" />
                         <Setter Target="NodeCell.(Grid.Row)" Value="11" />
+                        <Setter Target="WalletCell.(Grid.Row)" Value="12" />
+                        <Setter Target="WalletCell.(Grid.Column)" Value="0" />
                         <Setter Target="NodeCell.(Grid.Column)" Value="0" />
-                        <Setter Target="CountryCell.(Grid.Row)" Value="12" />
-                        <Setter Target="NoteCell.(Grid.Row)" Value="13" />
+                        <Setter Target="CountryCell.(Grid.Row)" Value="13" />
+                        <Setter Target="NoteCell.(Grid.Row)" Value="14" />
                         <Setter Target="NoteCell.(Grid.Column)" Value="0" />
                         <Setter Target="SysColMiddle.Width" Value="0" />
                         <Setter Target="SysColRight.Width" Value="0" />
@@ -1319,6 +1348,7 @@
                         <Setter Target="PvSiteCell.(Grid.Column)" Value="0" />
                         <Setter Target="PvAccountCell.(Grid.Row)" Value="2" />
                         <Setter Target="PvNodeCell.(Grid.Row)" Value="3" />
+                        <Setter Target="PvWalletCell.(Grid.Row)" Value="4" />
                         <Setter Target="PvNodeCell.(Grid.Column)" Value="0" />
                         <Setter Target="PvSystemGrid.ColumnSpacing" Value="0" />
                         <Setter Target="PvIpCell.(Grid.Row)" Value="1" />

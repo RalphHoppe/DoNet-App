@@ -26,6 +26,7 @@ public sealed partial class ServiceTypeScreenView : UserControl
     {
         ViewModel = App.Current.Services.GetRequiredService<ServicesViewModel>();
         Vps = App.Current.Services.GetRequiredService<VpsViewModel>();
+        Wallets = App.Current.Services.GetRequiredService<WalletViewModel>();
 
         InitializeComponent();
 
@@ -43,9 +44,25 @@ public sealed partial class ServiceTypeScreenView : UserControl
 
     /// <summary>
     /// The VPS directory: its search fills the header's box and its records
-    /// fill the surface, for as long as the VPS is the one type with fields.
+    /// fill the surface while the VPS screen is the one drilled in.
     /// </summary>
     public VpsViewModel Vps { get; }
+
+    /// <summary>The wallets directory, the same job for its own screen.</summary>
+    public WalletViewModel Wallets { get; }
+
+    /// <summary>Guards the search sync so loading a directory's text is not read back as typing.</summary>
+    private bool _syncingSearch;
+
+    /// <summary>
+    /// The directory behind the drilled-in screen, or null on the asleep types.
+    /// </summary>
+    private object? ActiveDirectory => ViewModel.SelectedKind switch
+    {
+        PrimaryServiceType.Vps => Vps,
+        PrimaryServiceType.Wallets => Wallets,
+        _ => null,
+    };
 
     /// <summary>
     /// Releases this control's hold on the view model. Called by the host when
@@ -59,6 +76,7 @@ public sealed partial class ServiceTypeScreenView : UserControl
         Bindings.StopTracking();
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         VpsList?.ReleaseBindings();
+        WalletsList?.ReleaseBindings();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
@@ -91,9 +109,10 @@ public sealed partial class ServiceTypeScreenView : UserControl
             PrimaryServiceTypes.GradientOf(kind).GradientStops[0].Color);
         AddPlusFill.Fill = AddText.Foreground;
 
-        // The VPS has its fields; the other three are still waiting on theirs.
-        // Awake is enabled with a working tooltip, asleep keeps the pending one.
-        bool awake = kind == PrimaryServiceType.Vps;
+        // The VPS and the Wallets have their fields; the other two are still
+        // waiting on theirs. Awake is enabled with a working tooltip, asleep
+        // keeps the pending one.
+        bool awake = kind is PrimaryServiceType.Vps or PrimaryServiceType.Wallets;
         AddRecordButton.IsEnabled = awake;
         ToolTipService.SetToolTip(
             AddRecordButton,
@@ -101,11 +120,44 @@ public sealed partial class ServiceTypeScreenView : UserControl
 
         SearchInput.PlaceholderText = $"SEARCH {name.ToUpperInvariant()}...";
 
+        // The box shows the drilled directory's own search, so switching types
+        // switches the text with it rather than carrying one into the other.
+        _syncingSearch = true;
+        SearchInput.Text = ActiveDirectory switch
+        {
+            VpsViewModel vps => vps.SearchText,
+            WalletViewModel wallets => wallets.SearchText,
+            _ => string.Empty,
+        };
+        _syncingSearch = false;
+
         if (awake)
         {
             // Deferred on purpose: realizing it here puts the list in the tree
             // inside a drill, where its repeater gets a measured viewport.
-            _ = FindName(nameof(VpsList));
+            _ = FindName(kind == PrimaryServiceType.Vps ? nameof(VpsList) : nameof(WalletsList));
+        }
+    }
+
+    /// <summary>
+    /// The search box's text, handed to whichever directory is drilled in.
+    /// </summary>
+    private void OnSearchInputChanged(object sender, RoutedEventArgs args)
+    {
+        if (_syncingSearch)
+        {
+            return;
+        }
+
+        switch (ActiveDirectory)
+        {
+            case VpsViewModel vps:
+                vps.SearchText = SearchInput.Text;
+                break;
+
+            case WalletViewModel wallets:
+                wallets.SearchText = SearchInput.Text;
+                break;
         }
     }
 
@@ -117,14 +169,20 @@ public sealed partial class ServiceTypeScreenView : UserControl
     {
         try
         {
-            if (ViewModel.SelectedKind == PrimaryServiceType.Vps)
+            switch (ViewModel.SelectedKind)
             {
-                await Vps.AddVpsAsync();
+                case PrimaryServiceType.Vps:
+                    await Vps.AddVpsAsync();
+                    break;
+
+                case PrimaryServiceType.Wallets:
+                    await Wallets.AddWalletAsync();
+                    break;
             }
         }
         catch (Exception error)
         {
-            AppLog.Error("Opening the VPS form failed", error);
+            AppLog.Error("Opening the record form failed", error);
         }
     }
 }

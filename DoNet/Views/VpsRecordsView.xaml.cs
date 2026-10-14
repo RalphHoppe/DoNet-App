@@ -134,7 +134,12 @@ public sealed partial class VpsRecordsView : UserControl
         }
     }
 
-    private void OnCardOpen(object sender, VpsRecord record) => ViewModel.PreviewRecord(record);
+    private void OnCardOpen(object sender, VpsRecord record)
+    {
+        // Fire-and-forget is safe here: every store read inside is wrapped, so
+        // the call cannot throw - it either opens the preview or logs why not.
+        _ = ViewModel.PreviewRecordAsync(record);
+    }
 
     private void OnCardEdit(object sender, VpsRecord record) => _ = ViewModel.EditVpsAsync(record);
 

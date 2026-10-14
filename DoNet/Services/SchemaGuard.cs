@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DoNet.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace DoNet.Services;
 
@@ -32,42 +33,104 @@ namespace DoNet.Services;
 internal static class SchemaGuard
 {
     /// <summary>
-    /// Creates any table in the model that the database is missing.
+    /// Brings the open database up to the model: tables it is missing, columns
+    /// its tables are missing, and indexes it is missing.
     /// </summary>
     /// <param name="db">A context over an already open, already keyed connection.</param>
     /// <param name="cancellationToken">Cancels the work.</param>
     /// <returns>The names of the tables this call created, in model order.</returns>
     /// <remarks>
+    /// <para>
     /// The return value is the only trustworthy "this database has never had this
     /// table" signal, which is what first-run seeding keys off. An empty table
     /// afterwards is ambiguous - the user may have emptied it on purpose.
+    /// </para>
+    /// <para>
+    /// Columns are the same gap one level down: a table that shipped in an
+    /// earlier round is present, and the model growing a column on it is
+    /// invisible to a table-only pass - every query against that column would
+    /// fail on the databases that were there before it. So each present
+    /// table's columns are read and compared too, and the missing ones added.
+    /// </para>
     /// </remarks>
     internal static async Task<List<string>> EnsureTablesAsync(
         DoNetDbContext db, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(db);
 
-        List<string> expected = db.Model.GetEntityTypes()
+        string script = db.Database.GenerateCreateScript();
+
+        List<(string Table, string Column)> missingColumns = new();
+
+        foreach (IGrouping<string, IEntityType> tableGroup in db.Model.GetEntityTypes()
+                     .GroupBy(entity => entity.GetTableName() ?? string.Empty, StringComparer.Ordinal))
+        {
+            string tableName = tableGroup.Key;
+            if (tableName.Length == 0)
+            {
+                continue;
+            }
+
+            IEntityType table = tableGroup.First();
+            HashSet<string> columns = await ReadColumnNamesAsync(db, tableName, cancellationToken)
+                .ConfigureAwait(false);
+
+            // A table sqlite_master has not heard of is the table pass's to
+            // create whole; the column pass is only for tables that exist.
+            if (columns.Count == 0)
+            {
+                continue;
+            }
+
+            StoreObjectIdentifier store = StoreObjectIdentifier.Table(tableName, table.GetSchema());
+
+            foreach (IProperty property in table.GetProperties())
+            {
+                string? column = property.GetColumnName(store);
+                if (column is null || columns.Contains(column))
+                {
+                    continue;
+                }
+
+                missingColumns.Add((tableName, column));
+            }
+        }
+
+        List<string> expectedTables = db.Model.GetEntityTypes()
             .Select(entity => entity.GetTableName())
             .Where(name => !string.IsNullOrEmpty(name))
             .Select(name => name!)
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
-        HashSet<string> present = await ReadTableNamesAsync(db, cancellationToken).ConfigureAwait(false);
-        List<string> missing = expected.Where(name => !present.Contains(name)).ToList();
+        HashSet<string> presentTables =
+            await ReadTableNamesAsync(db, cancellationToken).ConfigureAwait(false);
+        List<string> missingTables = expectedTables
+            .Where(name => !presentTables.Contains(name))
+            .ToList();
 
-        if (missing.Count == 0)
+        // The script's own index names, against what the database has. Indexes
+        // ride along with the replayed script, so this is only the signal for
+        // whether a replay has to happen at all.
+        HashSet<string> presentIndexes =
+            await ReadIndexNamesAsync(db, cancellationToken).ConfigureAwait(false);
+        List<string> missingIndexes = IndexNamesOf(script)
+            .Where(name => !presentIndexes.Contains(name))
+            .ToList();
+
+        if (missingTables.Count == 0 && missingColumns.Count == 0 && missingIndexes.Count == 0)
         {
-            // The common path, and it costs one cheap read against sqlite_master.
-            return missing;
+            // The common path, and it costs a few cheap reads against sqlite_master.
+            return missingTables;
         }
 
         AppLog.Info(
-            $"The database is missing {missing.Count} table(s) the model expects: " +
-            $"{string.Join(", ", missing)}. Creating them.");
+            $"Schema guard: {missingTables.Count} missing table(s), " +
+            $"{missingColumns.Count} missing column(s), {missingIndexes.Count} missing index(es).");
 
-        string script = db.Database.GenerateCreateScript();
+        // The replayed script creates the missing tables whole, with all their
+        // columns and indexes, and adds any index a new column brought with it;
+        // the IF NOT EXISTS rewrites make every other statement a no-op.
         int applied = 0;
         List<string> created = new();
 
@@ -93,7 +156,7 @@ internal static class SchemaGuard
             // the statement rather than assumed, so the two can never disagree about
             // which table a CREATE was for.
             if (TableNameOf(statement) is { } table
-                && missing.Contains(table)
+                && missingTables.Contains(table)
                 && !created.Contains(table))
             {
                 created.Add(table);
@@ -105,10 +168,122 @@ internal static class SchemaGuard
             applied++;
         }
 
+        // The columns the replay cannot add: they belong to tables that already
+        // exist, so each becomes its own ALTER. SQLite can add a column that is
+        // nullable and carries no default; one that is neither is left with a
+        // warning rather than a half-guessed default.
+        foreach ((string tableName, string column) in missingColumns)
+        {
+            IProperty property = PropertyOf(db, tableName, column);
+
+            if (!property.IsNullable)
+            {
+                AppLog.Warn(
+                    $"Schema guard cannot add the required column {tableName}.{column}; " +
+                    "it needs a default or a migration.");
+                continue;
+            }
+
+            string type = property.GetColumnType() ?? "TEXT";
+
+            await db.Database.ExecuteSqlRawAsync(
+                $"ALTER TABLE \"{tableName}\" ADD COLUMN \"{column}\" {type} NULL;",
+                cancellationToken).ConfigureAwait(false);
+            applied++;
+
+            AppLog.Info($"Schema guard added column {tableName}.{column} ({type}).");
+        }
+
         AppLog.Info($"Schema guard applied {applied} statement(s).");
 
         return created;
     }
+
+    /// <summary>The model property behind one table's column.</summary>
+    /// <remarks>
+    /// The pair comes from the model itself moments earlier, so the lookup only
+    /// fails if the model changed under it, and a failure inside a schema
+    /// repair should stop the repair rather than guess a type.
+    /// </remarks>
+    private static IProperty PropertyOf(DoNetDbContext db, string tableName, string column)
+    {
+        IEntityType table = db.Model.GetEntityTypes()
+            .FirstOrDefault(entity => entity.GetTableName() == tableName)
+            ?? throw new InvalidOperationException(
+                $"The model has no table {tableName} to add a column to.");
+
+        StoreObjectIdentifier store = StoreObjectIdentifier.Table(tableName, table.GetSchema());
+
+        return table.GetProperties().FirstOrDefault(
+                   property => property.GetColumnName(store) == column)
+            ?? throw new InvalidOperationException(
+                $"The model has no column {tableName}.{column} to add.");
+    }
+
+    /// <summary>The index names out of a creation script, in order.</summary>
+    private static IEnumerable<string> IndexNamesOf(string script)
+    {
+        foreach (string piece in script.Split(';'))
+        {
+            string statement = piece.Trim();
+
+            int index = statement.IndexOf("INDEX \"", StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                continue;
+            }
+
+            int start = index + "INDEX \"".Length;
+            int end = statement.IndexOf('"', start);
+            if (end > start)
+            {
+                yield return statement[start..end];
+            }
+        }
+    }
+
+    /// <summary>Reads one table's column names; empty when the table is not there.</summary>
+    private static async Task<HashSet<string>> ReadColumnNamesAsync(
+        DoNetDbContext db, string tableName, CancellationToken cancellationToken)
+    {
+        HashSet<string> names = new(StringComparer.OrdinalIgnoreCase);
+
+        DbConnection connection = db.Database.GetDbConnection();
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText = $"PRAGMA table_info(\"{tableName}\");";
+
+        await using DbDataReader reader =
+            await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            names.Add(reader.GetString(1));
+        }
+
+        return names;
+    }
+
+    /// <summary>The index names the database already has.</summary>
+    private static async Task<HashSet<string>> ReadIndexNamesAsync(
+        DoNetDbContext db, CancellationToken cancellationToken)
+    {
+        HashSet<string> names = new(StringComparer.Ordinal);
+
+        DbConnection connection = db.Database.GetDbConnection();
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index'";
+
+        await using DbDataReader reader =
+            await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            names.Add(reader.GetString(0));
+        }
+
+        return names;
+    }
+
 
     /// <summary>Reads the table name out of a CREATE TABLE statement, or null.</summary>
     private static string? TableNameOf(string statement)

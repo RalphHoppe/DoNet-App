@@ -40,6 +40,13 @@ public sealed class VpsRecord
     /// <summary>The account on that site, if any; cleared when the account is deleted.</summary>
     public int? AccountId { get; set; }
 
+    /// <summary>
+    /// The wallet this VPS was paid with, if any; cleared when the wallet is
+    /// deleted. The payment already happened, so the pointer is history, not
+    /// membership - the VPS stays when the wallet goes.
+    /// </summary>
+    public int? WalletId { get; set; }
+
     /// <summary>The record's name, e.g. "A" or "A-N". The one required field.</summary>
     public string Name { get; set; } = string.Empty;
 

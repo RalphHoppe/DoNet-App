@@ -40,6 +40,8 @@ public sealed partial class VpsViewModel : ObservableObject, IDeleteConfirmHost
 
     private readonly IAccountDirectory _accounts;
 
+    private readonly IWalletDirectory _wallets;
+
     private readonly DispatcherQueue? _dispatcher;
 
     /// <summary>
@@ -78,11 +80,13 @@ public sealed partial class VpsViewModel : ObservableObject, IDeleteConfirmHost
     public VpsViewModel(
         IVpsDirectory directory,
         IPersonDirectory people,
-        IAccountDirectory accounts)
+        IAccountDirectory accounts,
+        IWalletDirectory wallets)
     {
         _directory = directory;
         _people = people;
         _accounts = accounts;
+        _wallets = wallets;
         _dispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
@@ -343,11 +347,25 @@ public sealed partial class VpsViewModel : ObservableObject, IDeleteConfirmHost
         IsDialogOpen = true;
     }
 
-    /// <summary>Opens the form read-only, for the card's open action.</summary>
+    /// <summary>
+    /// Opens the form read-only, for the card's open action.
+    /// </summary>
     /// <param name="record">The record to show.</param>
-    public void PreviewRecord(VpsRecord record)
+    /// <remarks>
+    /// The preview's linked labels - person, site, account, wallet - read the
+    /// same id maps the form does, so a preview that arrives before any form
+    /// has ever opened would show them empty. Gathering here costs one quiet
+    /// read and makes the first preview as complete as the fortieth.
+    /// </remarks>
+    public async Task PreviewRecordAsync(VpsRecord record)
     {
-        Dialog.BeginPreview(record, record.System ?? new VpsSystemInfo { VpsId = record.Id });
+        VpsChoiceOptions? choices = await GatherChoicesAsync();
+
+        Dialog.BeginPreview(
+            record,
+            record.System ?? new VpsSystemInfo { VpsId = record.Id },
+            choices);
+
         IsDialogOpen = true;
     }
 
@@ -398,7 +416,7 @@ public sealed partial class VpsViewModel : ObservableObject, IDeleteConfirmHost
     }
 
     /// <summary>
-    /// The three directories' option lists plus every VPS, in one pass. Null
+    /// The directories' option lists plus every VPS and wallet, in one pass. Null
     /// means the store refused - the caller keeps the dialog shut.
     /// </summary>
     private async Task<VpsChoiceOptions?> GatherChoicesAsync()
@@ -410,8 +428,9 @@ public sealed partial class VpsViewModel : ObservableObject, IDeleteConfirmHost
                 await _accounts.GetWebsiteOptionsAsync().ConfigureAwait(true);
             IReadOnlyList<Account> accounts = await _accounts.GetOptionsAsync().ConfigureAwait(true);
             IReadOnlyList<VpsRecord> vps = await _directory.GetAllAsync().ConfigureAwait(true);
+            IReadOnlyList<WalletRecord> wallets = await _wallets.GetAllAsync().ConfigureAwait(true);
 
-            return new VpsChoiceOptions(people, websites, accounts, vps);
+            return new VpsChoiceOptions(people, websites, accounts, vps, wallets);
         }
         catch (Exception error)
         {

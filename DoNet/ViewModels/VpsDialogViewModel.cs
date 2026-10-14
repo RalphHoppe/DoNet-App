@@ -23,11 +23,13 @@ public enum VpsDialogMode
 /// <param name="Sites">The saved websites, for the site picker.</param>
 /// <param name="Accounts">The saved accounts, for the account picker.</param>
 /// <param name="VpsRecords">Every VPS, for the node picker.</param>
+/// <param name="Wallets">Every wallet, for the "paid with" picker.</param>
 public sealed record VpsChoiceOptions(
     IReadOnlyList<Person> Persons,
     IReadOnlyList<Website> Sites,
     IReadOnlyList<Account> Accounts,
-    IReadOnlyList<VpsRecord> VpsRecords);
+    IReadOnlyList<VpsRecord> VpsRecords,
+    IReadOnlyList<WalletRecord> Wallets);
 
 /// <summary>
 /// Backs the VPS dialog in all three of its modes.
@@ -61,6 +63,9 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
     private readonly Dictionary<string, int> _nodeIds = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Label to id, for the wallet the VPS was paid with.</summary>
+    private readonly Dictionary<string, int> _walletIds = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Which of the pair the form last filled on its own.</summary>
     private enum DerivedSide
     {
@@ -92,38 +97,13 @@ public sealed partial class VpsDialogViewModel : ObservableObject
     ];
 
     /// <summary>
-    /// The currencies the balance can be held in. Each entry is the drawer's
-    /// three-part option: the row reads "USD · US Dollar" under a United States
-    /// flag, and the pick commits the bare code - both what the store keeps and
-    /// all the closed field needs to say.
+    /// The currencies the balance can be held in - the crypto list, by the
+    /// user's instruction, shared with the wallets directory through the
+    /// catalog. Each entry is the drawer's three-part option; the pick commits
+    /// the bare code, which is what the store keeps.
     /// </summary>
-    public static readonly string[] Currencies =
-    [
-        "USD · US Dollar\u001FUnited States\u001FUSD",
-        "EUR · Euro\u001FEuropean Union\u001FEUR",
-        "GBP · British Pound\u001FUnited Kingdom\u001FGBP",
-        "TRY · Turkish Lira\u001FTurkey\u001FTRY",
-        "CHF · Swiss Franc\u001FSwitzerland\u001FCHF",
-        "CAD · Canadian Dollar\u001FCanada\u001FCAD",
-        "AUD · Australian Dollar\u001FAustralia\u001FAUD",
-        "JPY · Japanese Yen\u001FJapan\u001FJPY",
-        "CNY · Chinese Yuan\u001FChina\u001FCNY",
-        "INR · Indian Rupee\u001FIndia\u001FINR",
-        "RUB · Russian Ruble\u001FRussia\u001FRUB",
-        "SAR · Saudi Riyal\u001FSaudi Arabia\u001FSAR",
-        "AED · UAE Dirham\u001FUnited Arab Emirates\u001FAED",
-        "QAR · Qatari Riyal\u001FQatar\u001FQAR",
-        "KWD · Kuwaiti Dinar\u001FKuwait\u001FKWD",
-        "EGP · Egyptian Pound\u001FEgypt\u001FEGP",
-        "ILS · Israeli Shekel\u001FIsrael\u001FILS",
-        "SEK · Swedish Krona\u001FSweden\u001FSEK",
-        "NOK · Norwegian Krone\u001FNorway\u001FNOK",
-        "DKK · Danish Krone\u001FDenmark\u001FDKK",
-        "PLN · Polish Zloty\u001FPoland\u001FPLN",
-        "BRL · Brazilian Real\u001FBrazil\u001FBRL",
-        "MXN · Mexican Peso\u001FMexico\u001FMXN",
-        "ZAR · South African Rand\u001FSouth Africa\u001FZAR",
-    ];
+    public static readonly string[] Currencies = Catalogs.CryptoCurrencies;
+
 
     /// <summary>The currency picker's list, as the binding wants it: an instance.</summary>
     public IReadOnlyList<string> CurrencyOptions => Currencies;
@@ -240,6 +220,8 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
     [ObservableProperty] private string _accountLabel = string.Empty;
 
+    [ObservableProperty] private string _walletLabel = string.Empty;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HeroCaption))]
     private string _nodeLabel = MainNodeLabel;
@@ -260,7 +242,7 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
     [ObservableProperty] private string _balanceText = string.Empty;
 
-    [ObservableProperty] private string _currencyCode = "USD";
+    [ObservableProperty] private string _currencyCode = "USDT";
 
     [ObservableProperty] private string _btcText = string.Empty;
 
@@ -322,6 +304,9 @@ public sealed partial class VpsDialogViewModel : ObservableObject
     [ObservableProperty]
     private IReadOnlyList<string> _nodeOptions = new[] { MainNodeLabel };
 
+    [ObservableProperty]
+    private IReadOnlyList<string> _walletOptions = Array.Empty<string>();
+
     /// <summary>
     /// Fills every picker from one gathered set of choices. Called before each
     /// open, so a record added a moment ago is already in the next form's lists.
@@ -350,6 +335,27 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         {
             _nodeIds[$"{vps.Name} · #{vps.Id}"] = vps.Id;
         }
+
+        // The wallet the VPS was paid with: the brand names it, and the number
+        // tells two of the same brand apart.
+        _walletIds.Clear();
+        WalletOptions = LabelsFor(
+            choices.Wallets, WalletPickerLabel, w => w.Id, _walletIds);
+    }
+
+    /// <summary>
+    /// The "paid with" picker's label: the brand, with the number's tail to
+    /// tell two of the same brand apart.
+    /// </summary>
+    private static string WalletPickerLabel(WalletRecord wallet)
+    {
+        string brand = string.IsNullOrWhiteSpace(wallet.Wallet)
+            ? $"Wallet · #{wallet.Id}"
+            : wallet.Wallet;
+
+        return wallet.WalletNumber.Length > 8
+            ? $"{brand} · …{wallet.WalletNumber[^6..]}"
+            : brand;
     }
 
     /// <summary>The account picker's label, the record dialog's own recipe.</summary>
@@ -496,6 +502,7 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         PersonLabel = string.Empty;
         SiteLabel = string.Empty;
         AccountLabel = string.Empty;
+        WalletLabel = string.Empty;
         NodeLabel = MainNodeLabel;
         Country = string.Empty;
         CreatedAt = string.Empty;
@@ -504,7 +511,7 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         CycleUnitCode = string.Empty;
         Note = string.Empty;
         BalanceText = string.Empty;
-        CurrencyCode = "USD";
+        CurrencyCode = "USDT";
         BtcText = string.Empty;
         RateText = string.Empty;
         ClearSystemFields();
@@ -530,15 +537,27 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         OnPropertyChanged(nameof(CanSave));
     }
 
-    /// <summary>Fills the form read-only, for the card's open action.</summary>
+    /// <summary>
+    /// Fills the form read-only, for the card's open action.
+    /// </summary>
     /// <param name="record">The record to show.</param>
     /// <param name="system">Its system row.</param>
-    public void BeginPreview(VpsRecord record, VpsSystemInfo system)
+    /// <param name="choices">
+    /// The directories' current contents, so the linked labels resolve. Null
+    /// when the gather itself failed, in which case the preview opens with
+    /// what it has - a broken directory should not also break the record view.
+    /// </param>
+    public void BeginPreview(VpsRecord record, VpsSystemInfo system, VpsChoiceOptions? choices)
     {
         _original = record;
         _originalSystem = system;
         _derivedSide = DerivedSide.None;
         Mode = VpsDialogMode.Preview;
+
+        if (choices is not null)
+        {
+            ApplyChoices(choices);
+        }
 
         Fill(record, system);
     }
@@ -552,6 +571,7 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         PersonLabel = LabelForId(_personIds, record.PersonId);
         SiteLabel = LabelForId(_siteIds, record.WebsiteId);
         AccountLabel = LabelForId(_accountIds, record.AccountId);
+        WalletLabel = LabelForId(_walletIds, record.WalletId);
         NodeLabel = record.IsMain || record.NodeVpsId == record.Id
             ? MainNodeLabel
             : LabelForId(_nodeIds, record.NodeVpsId);
@@ -562,7 +582,7 @@ public sealed partial class VpsDialogViewModel : ObservableObject
         CycleUnitCode = record.CycleUnit ?? string.Empty;
         Note = record.Note;
         BalanceText = record.Balance is { } balance ? FormatAmount(balance) : string.Empty;
-        CurrencyCode = string.IsNullOrWhiteSpace(record.Currency) ? "USD" : record.Currency;
+        CurrencyCode = string.IsNullOrWhiteSpace(record.Currency) ? "USDT" : record.Currency;
         BtcText = record.BalanceBtc is { } bitcoin ? FormatAmount(bitcoin) : string.Empty;
         RateText = record.ExchangeRate is { } rate ? FormatAmount(rate) : string.Empty;
 
@@ -626,9 +646,10 @@ public sealed partial class VpsDialogViewModel : ObservableObject
             PersonId = ResolveId(_personIds, PersonLabel),
             WebsiteId = ResolveId(_siteIds, SiteLabel),
             AccountId = ResolveId(_accountIds, AccountLabel),
+            WalletId = ResolveId(_walletIds, WalletLabel),
             Name = Name.Trim(),
             Balance = TryParseAmount(BalanceText, out decimal balance) ? balance : null,
-            Currency = string.IsNullOrWhiteSpace(CurrencyCode) ? "USD" : CurrencyCode,
+            Currency = string.IsNullOrWhiteSpace(CurrencyCode) ? "USDT" : CurrencyCode,
             BalanceBtc = TryParseAmount(BtcText, out decimal bitcoin) ? bitcoin : null,
             ExchangeRate = TryParseAmount(RateText, out decimal rate) ? rate : null,
             CreatedAt = CreatedAt.Trim(),

@@ -116,9 +116,11 @@ public partial class App : Application
         services.AddSingleton<IAccountDirectory, AccountDirectoryService>();
         services.AddSingleton<IServiceDirectory, ServiceDirectoryService>();
 
-        // The hand-built VPS type's store. Its records are not ServiceRecords:
-        // the primaries are code, so this is a typed directory of their own.
+        // The hand-built primaries' stores. Their records are not
+        // ServiceRecords: the primaries are code, so each is a typed directory
+        // of its own.
         services.AddSingleton<IVpsDirectory, VpsDirectoryService>();
+        services.AddSingleton<IWalletDirectory, WalletDirectoryService>();
 
         services.AddTransient<CreatePasswordViewModel>();
         services.AddTransient<LockViewModel>();
@@ -135,6 +137,9 @@ public partial class App : Application
         // the search above it and the dialog hosted at the HomePage root are
         // three views onto one VPS directory.
         services.AddSingleton<VpsViewModel>();
+
+        // And the wallets directory, the same three views onto its own screen.
+        services.AddSingleton<WalletViewModel>();
 
         return services.BuildServiceProvider();
     }

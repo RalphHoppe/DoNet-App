@@ -54,6 +54,7 @@ internal static class LineIconData
         "Eye",
         "ArrowLeft",
         "Bitcoin",
+        "Wallet",
     ];
 
     /// <summary>
@@ -62,6 +63,8 @@ internal static class LineIconData
     internal static string? For(string? kind) => kind switch
     {
         "Hash" => "M9.5 3 L7.5 21 M17.5 3 L15.5 21 M3.5 8 H21.5 M2.5 16 H20.5",
+        // A wallet: a folded billfold with its card pocket on the right.
+        "Wallet" => "M3 7 C3 5.9 3.9 5 5 5 H17.5 C18.6 5 19.5 5.9 19.5 7 V8.5 M3 7 V16.5 C3 17.6 3.9 18.5 5 18.5 H16.5 C17.6 18.5 18.5 17.6 18.5 16.5 V9.5 C18.5 8.4 17.6 7.5 16.5 7.5 H3 M13.5 12.75 H18.5 M13.5 15.25 H18.5",
         // A coin with the currency's own glyph: the two-stroke B, ticks and all,
         // drawn as a line icon so it sits beside the field labels like the rest.
         "Bitcoin" => "M21.5 12 C21.5 17.25 17.25 21.5 12 21.5 C6.75 21.5 2.5 17.25 2.5 12 C2.5 6.75 6.75 2.5 12 2.5 C17.25 2.5 21.5 6.75 21.5 12 Z M9.7 6.1 V17.9 M11.1 4.4 V6.1 M11.1 17.9 V19.6 M9.7 7.3 H12.2 C13.9 7.3 13.9 10.3 12.2 10.3 H9.7 M9.7 10.3 H12.7 C14.5 10.3 14.5 13.9 12.7 13.9 H9.7",

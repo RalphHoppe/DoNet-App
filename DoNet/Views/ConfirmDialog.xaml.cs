@@ -28,6 +28,7 @@ public sealed partial class ConfirmDialog : UserControl
             App.Current.Services.GetRequiredService<AccountsViewModel>(),
             App.Current.Services.GetRequiredService<ServicesViewModel>(),
             App.Current.Services.GetRequiredService<VpsViewModel>(),
+            App.Current.Services.GetRequiredService<WalletViewModel>(),
         };
 
         InitializeComponent();

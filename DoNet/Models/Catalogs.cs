@@ -267,4 +267,67 @@ public static class Catalogs
         "Zambia · +260\u001FZambia\u001F+260",
         "Zimbabwe · +263\u001FZimbabwe\u001F+263"
     ];
+
+    /// <summary>
+    /// The currencies a wallet (and, by the user's instruction, a VPS balance)
+    /// can be held in: the crypto list. Each entry is the choice drawer's
+    /// three-part option - the row's label, the flag (a coin has none, so the
+    /// field's own icon leads the row), and the code the pick commits and the
+    /// store keeps.
+    /// </summary>
+    public static readonly string[] CryptoCurrencies =
+    [
+        "BTC \u00B7 Bitcoin\u001F\u001FBTC",
+        "ETH \u00B7 Ethereum\u001F\u001FETH",
+        "USDT \u00B7 Tether\u001F\u001FUSDT",
+        "USDC \u00B7 USD Coin\u001F\u001FUSDC",
+        "BNB \u00B7 BNB\u001F\u001FBNB",
+        "SOL \u00B7 Solana\u001F\u001FSOL",
+        "XRP \u00B7 XRP\u001F\u001FXRP",
+        "ADA \u00B7 Cardano\u001F\u001FADA",
+        "DOGE \u00B7 Dogecoin\u001F\u001FDOGE",
+        "TRX \u00B7 TRON\u001F\u001FTRX",
+        "DOT \u00B7 Polkadot\u001F\u001FDOT",
+        "LTC \u00B7 Litecoin\u001F\u001FLTC",
+        "TON \u00B7 Toncoin\u001F\u001FTON",
+        "AVAX \u00B7 Avalanche\u001F\u001FAVAX",
+        "LINK \u00B7 Chainlink\u001F\u001FLINK",
+        "BCH \u00B7 Bitcoin Cash\u001F\u001FBCH",
+        "XLM \u00B7 Stellar\u001F\u001FXLM",
+        "NEAR \u00B7 NEAR Protocol\u001F\u001FNEAR",
+        "MATIC \u00B7 Polygon\u001F\u001FMATIC",
+        "SHIB \u00B7 Shiba Inu\u001F\u001FSHIB",
+    ];
+
+    /// <summary>
+    /// The wallet drawer's known brands, most known first. Not exhaustive by
+    /// design: the drawer takes a typed answer too, because wallet brands
+    /// arrive faster than any list follows.
+    /// </summary>
+    public static readonly string[] WalletBrands =
+    [
+        "MetaMask",
+        "Trust Wallet",
+        "Ledger",
+        "Trezor",
+        "Exodus",
+        "Phantom",
+        "Coinbase Wallet",
+        "Rabby",
+        "Rainbow",
+        "OKX Wallet",
+        "Binance Wallet",
+        "Bitget Wallet",
+        "SafePal",
+        "Atomic Wallet",
+        "Guarda",
+        "Argent",
+        "MathWallet",
+        "TokenPocket",
+        "MyEtherWallet",
+        "Electrum",
+        "BlueWallet",
+        "Sparrow",
+        "Keplr",
+    ];
 }

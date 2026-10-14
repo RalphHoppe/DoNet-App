@@ -259,6 +259,7 @@
             <views:ServiceDesignerDialog x:Name="ServiceDesignerModal" x:Load="False" />
             <views:ServiceRecordDialog x:Name="ServiceRecordModal" x:Load="False" />
             <views:VpsDialog x:Name="VpsModal" x:Load="False" />
+            <views:WalletDialog x:Name="WalletModal" x:Load="False" />
             <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
         </Grid>
     </Page>

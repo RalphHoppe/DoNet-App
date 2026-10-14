@@ -179,6 +179,12 @@ STRING_LITERAL = r'"(?:\\.|[^"\\])*"'
 # which reads like the receiver is broken when it is the using that is missing.
 EXTENSION_METHODS = {
     "GetRequiredService": "Microsoft.Extensions.DependencyInjection",
+    # Microsoft.EntityFrameworkCore.Metadata
+    "IEntityType": "Microsoft.EntityFrameworkCore.Metadata",
+    "IProperty": "Microsoft.EntityFrameworkCore.Metadata",
+    "StoreObjectIdentifier": "Microsoft.EntityFrameworkCore.Metadata",
+    # System.Linq
+    "IGrouping": "System.Linq",
 }
 
 

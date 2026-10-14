@@ -362,6 +362,30 @@ public sealed partial class FieldCell : UserControl
     }
 
     /// <summary>
+    /// Identifies the <see cref="AllowChoiceCustom"/> property.
+    /// </summary>
+    public static readonly DependencyProperty AllowChoiceCustomProperty = DependencyProperty.Register(
+        nameof(AllowChoiceCustom),
+        typeof(bool),
+        typeof(FieldCell),
+        new PropertyMetadata(false, OnAnyPropertyChanged));
+
+    /// <summary>
+    /// Whether the choice drawer takes an answer its list does not have.
+    /// </summary>
+    /// <remarks>
+    /// The country field has always allowed one - the world's list is the
+    /// world's business. A brand list needs the same door, because wallet
+    /// brands arrive faster than any list follows; a typed answer commits as
+    /// itself. Only meaningful with <see cref="FieldInputKind.Choice"/>.
+    /// </remarks>
+    public bool AllowChoiceCustom
+    {
+        get => (bool)GetValue(AllowChoiceCustomProperty);
+        set => SetValue(AllowChoiceCustomProperty, value);
+    }
+
+    /// <summary>
     /// Identifies the <see cref="UnitValue"/> property.
     /// </summary>
     public static readonly DependencyProperty UnitValueProperty = DependencyProperty.Register(
@@ -546,7 +570,11 @@ public sealed partial class FieldCell : UserControl
                     break;
 
                 case FieldInputKind.Choice:
-                    ShowChoice(value, Options ?? Array.Empty<string>(), allowCustom: false, flags: false);
+                    ShowChoice(
+                        value,
+                        Options ?? Array.Empty<string>(),
+                        allowCustom: AllowChoiceCustom,
+                        flags: false);
                     break;
                 case FieldInputKind.Date:
                     ShowDate(value);

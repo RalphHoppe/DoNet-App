@@ -40,6 +40,8 @@ public sealed partial class HomePage : Page
     // The VPS directory: its dialog and its delete confirm are hosted here too.
     private readonly VpsViewModel _vps;
 
+    private readonly WalletViewModel _wallets;
+
     // Opacity is linear and movement is eased, which is how the rail and the entrance
     // animation already behave. Out is short enough to read as the old section getting
     // out of the way rather than as a wait; in is long enough to be seen.
@@ -91,6 +93,7 @@ public sealed partial class HomePage : Page
         _accounts = App.Current.Services.GetRequiredService<AccountsViewModel>();
         _services = App.Current.Services.GetRequiredService<ServicesViewModel>();
         _vps = App.Current.Services.GetRequiredService<VpsViewModel>();
+        _wallets = App.Current.Services.GetRequiredService<WalletViewModel>();
 
         InitializeComponent();
 
@@ -101,6 +104,7 @@ public sealed partial class HomePage : Page
         _accounts.PropertyChanged += OnAccountsPropertyChanged;
         _services.PropertyChanged += OnServicesPropertyChanged;
         _vps.PropertyChanged += OnVpsPropertyChanged;
+        _wallets.PropertyChanged += OnWalletsPropertyChanged;
         ViewModel.PropertyChanged += OnSectionChanged;
 
         WireSectionTransition();
@@ -434,6 +438,19 @@ public sealed partial class HomePage : Page
         }
     }
 
+    private void OnWalletsPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(WalletViewModel.IsDialogOpen) && _wallets.IsDialogOpen)
+        {
+            Realize("WalletModal");
+        }
+        else if (args.PropertyName == nameof(WalletViewModel.IsConfirmingDelete)
+                 && _wallets.IsConfirmingDelete)
+        {
+            Realize("ConfirmModal");
+        }
+    }
+
     private void OnAccountsPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
         if (args.PropertyName == nameof(AccountsViewModel.IsDialogOpen) && _accounts.IsDialogOpen)
@@ -558,6 +575,7 @@ public sealed partial class HomePage : Page
         _accounts.PropertyChanged -= OnAccountsPropertyChanged;
         _services.PropertyChanged -= OnServicesPropertyChanged;
         _vps.PropertyChanged -= OnVpsPropertyChanged;
+        _wallets.PropertyChanged -= OnWalletsPropertyChanged;
         ViewModel.PropertyChanged -= OnSectionChanged;
 
         // Unsubscribe before stopping, so a transition caught in flight by the lock
@@ -585,6 +603,7 @@ public sealed partial class HomePage : Page
         ServiceDesignerModal?.ReleaseBindings();
         ServiceRecordModal?.ReleaseBindings();
         VpsModal?.ReleaseBindings();
+        WalletModal?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();
