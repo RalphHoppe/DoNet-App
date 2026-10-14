@@ -168,7 +168,7 @@ public sealed class WalletDirectoryService : IWalletDirectory
     private static async Task FillPersonNamesAsync(
         DoNetDbContext db, IReadOnlyList<WalletRecord> records, CancellationToken token)
     {
-        int?[] ids = records
+        int[] ids = records
             .Where(w => w.PersonId is not null)
             .Select(w => w.PersonId!.Value)
             .Distinct()

@@ -70,10 +70,10 @@ public sealed partial class ServiceTypeScreenView : UserControl
     /// </summary>
     public void ReleaseBindings()
     {
-        // The shell dresses itself by listening to the view model; the search
-        // box is the one compiled binding, and its tracking stops with the
-        // rest. The hosted list releases its own holds below.
-        Bindings.StopTracking();
+        // The shell dresses itself by listening to the view model, and the
+        // search box is driven from the code-behind, so this view holds no
+        // compiled bindings to stop - the release is the subscriptions. The
+        // hosted lists release their own holds below.
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         VpsList?.ReleaseBindings();
         WalletsList?.ReleaseBindings();

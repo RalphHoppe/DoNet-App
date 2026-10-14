@@ -556,7 +556,9 @@ public sealed partial class VpsDialogViewModel : ObservableObject
 
         if (choices is not null)
         {
-            ApplyChoices(choices);
+            // Excluding nothing: the exclusion exists so an edit form cannot
+            // pick a VPS as its own node, and a preview picks nothing.
+            ApplyChoices(choices, excluding: null);
         }
 
         Fill(record, system);
