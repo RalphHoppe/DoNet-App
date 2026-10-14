@@ -318,6 +318,8 @@
 
                                                         <controls:FieldCell
      x:Name="BalanceCell"
+     Grid.Row="1"
+     Grid.Column="2"
      Margin="0,0,0,16"
      VerticalAlignment="Top"
      Label="BALANCE"
@@ -334,6 +336,8 @@
 
                                                         <controls:FieldCell
      x:Name="BtcCell"
+     Grid.Row="2"
+     Grid.Column="0"
      Margin="0,0,0,16"
      VerticalAlignment="Top"
      Label="BALANCE IN BTC"
@@ -347,6 +351,8 @@
 
                                                         <controls:FieldCell
      x:Name="RateCell"
+     Grid.Row="2"
+     Grid.Column="1"
      Margin="0,0,0,16"
      VerticalAlignment="Top"
      Label="EXCHANGE-RATE"
@@ -387,6 +393,8 @@
 
                                                         <controls:FieldCell
      x:Name="CycleCell"
+     Grid.Row="3"
+     Grid.Column="1"
      Margin="0,0,0,16"
      VerticalAlignment="Top"
      Label="SUBSCRIPTION CYCLE"
@@ -509,6 +517,8 @@
 
                                                         <controls:FieldCell
      x:Name="IpCell"
+     Grid.Row="0"
+     Grid.Column="2"
      Margin="0,0,0,16"
      VerticalAlignment="Top"
      Label="IP ADDRESS"
@@ -522,6 +532,8 @@
 
                                                         <controls:FieldCell
      x:Name="PortCell"
+     Grid.Row="1"
+     Grid.Column="0"
      Margin="0,0,0,16"
      VerticalAlignment="Top"
      Label="PORT"

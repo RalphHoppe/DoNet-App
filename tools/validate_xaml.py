@@ -336,6 +336,40 @@ def check_grid_indices(path, problems):
                     f"{rel}: {describe(child)} Grid.Column={column} but its Grid defines "
                     + (f"{cols} column(s)" if cols else "no ColumnDefinitions"))
 
+        # A child with no placement at all lands in cell (0,0) - invisible
+        # stacking when its siblings are placed. Exists because the VPS form
+        # shipped six rebuilt cells without their Grid.Row/Grid.Column: they
+        # all piled into the top-left cell, five of them hidden under the
+        # sixth, and the form read as missing fields in the wrong order.
+        #
+        # The (0,0)-omission idiom - the first cell leaves both attributes off -
+        # is legitimate, so the rule fires only on real collisions: an unplaced
+        # child whose grid has a sibling explicitly claiming (0,0), or unplaced
+        # children plural, which stack on each other. Property elements
+        # (Grid.RowDefinitions, VisualStateManager.*, Grid.RenderTransform)
+        # carry a dot in their tag and are not children at all.
+        PLACEMENT = ("Grid.Row", "Grid.Column", "Grid.RowSpan", "Grid.ColumnSpan")
+        kids = [
+            c for c in grid
+            if local(c.tag) not in ("Grid.RowDefinitions", "Grid.ColumnDefinitions")
+            and "." not in local(c.tag)
+        ]
+        unplaced = [c for c in kids if not any(key in c.attrib for key in PLACEMENT)]
+        claims00 = any(
+            any(key in c.attrib for key in PLACEMENT)
+            and (c.get("Grid.Row") or "0") == "0"
+            and (c.get("Grid.Column") or "0") == "0"
+            for c in kids)
+
+        # Only grids that actually divide space - more than one row or column.
+        # A 0x0 or 1x1 grid is the overlay idiom, where stacking is the point.
+        if (rows > 1 or cols > 1) and unplaced and (len(unplaced) > 1 or claims00):
+            for child in unplaced:
+                problems.append(
+                    f"{rel}: {describe(child)} has no Grid.Row/Grid.Column in a "
+                    f"{rows}x{cols} Grid - it lands in cell (0,0) on top of whatever "
+                    "belongs there")
+
 
 def check_content_splits(path, problems):
     """Content children split in two by a property element.
