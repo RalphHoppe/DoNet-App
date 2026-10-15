@@ -116,12 +116,11 @@ public sealed partial class VpsMapDialog : UserControl
                 break;
 
             case nameof(VpsMapViewModel.ImageRect):
+                // The transform moved: the image is seated into its new
+                // rectangle and the pins - the same objects, in new places -
+                // are re-seated onto it. Rebuilding never happens here, so
+                // the dots' arrival never replays under the wheel.
                 ApplyImageRect();
-                break;
-
-            case nameof(VpsMapViewModel.OverlayMoved):
-                // The pins are the same objects in new places: re-seat what
-                // is held, and never replay the dots' arrival.
                 PositionOverlay();
                 break;
         }

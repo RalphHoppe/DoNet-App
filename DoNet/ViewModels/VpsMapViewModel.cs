@@ -292,6 +292,12 @@ public sealed partial class VpsMapViewModel : ObservableObject
     /// The plate's rectangle under the current view, in host pixels: what the
     /// image draws into, and the space the dots and lines are placed in.
     /// </summary>
+    /// <remarks>
+    /// This changes exactly when the view transform does - a resize, a zoom,
+    /// a pan - so its change notification is the view's one cue to re-seat
+    /// everything it holds in host pixels: the image, the dots, the
+    /// connections, the chooser.
+    /// </remarks>
     public (double X, double Y, double W, double H) ImageRect
         => _hostSize.Width <= 0
             ? (0, 0, 0, 0)
@@ -859,7 +865,6 @@ public sealed partial class VpsMapViewModel : ObservableObject
 
         Layout(Pins);
         OnPropertyChanged(nameof(ImageRect));
-        OnPropertyChanged(nameof(OverlayMoved));
     }
 
     // ------------------------------------------------------------------
@@ -971,7 +976,6 @@ public sealed partial class VpsMapViewModel : ObservableObject
     {
         Layout(Pins);
         OnPropertyChanged(nameof(ImageRect));
-        OnPropertyChanged(nameof(OverlayMoved));
     }
 
     /// <summary>Places everything the current view shows.</summary>
