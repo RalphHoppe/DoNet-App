@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DoNet.Views.LockPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DoNet.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{StaticResource AppBackgroundBrush}">
+
+    <Page.Resources>
+        <Storyboard x:Key="IntroStoryboard">
+            <DoubleAnimation Storyboard.TargetName="ContentPanel"
+                             Storyboard.TargetProperty="(UIElement.Opacity)"
+                             From="0" To="1" Duration="0:0:0.30" />
+            <DoubleAnimation Storyboard.TargetName="ContentPanel"
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                             From="10" To="0" Duration="0:0:0.38">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </Page.Resources>
+
+    <Grid>
+        <!--
+            Same fixed 352px column as the create-password screen, so the two onboarding
+            screens sit in exactly the same place and the logo does not shift between them.
+        -->
+        <StackPanel x:Name="ContentPanel"
+                    Width="352"
+                    Margin="0,-24,0,0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+
+            <StackPanel.RenderTransform>
+                <TranslateTransform />
+            </StackPanel.RenderTransform>
+
+            <controls:DoNetLogo Width="118" HorizontalAlignment="Center" />
+
+            <TextBlock Style="{StaticResource SubtitleTextStyle}"
+                       Margin="0,26,0,0"
+                       LineHeight="20"
+                       LineStackingStrategy="BlockLineHeight"
+                       Text="Welcome! Please enter your password to continue." />
+
+            <controls:PasswordField x:Name="PasswordInput"
+                                    Margin="0,20,0,0"
+                                    ShowRevealButton="True"
+                                    PlaceholderText="Enter your password"
+                                    Password="{x:Bind ViewModel.Password, Mode=TwoWay}"
+                                    HasError="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                                    Submitted="OnFieldSubmitted" />
+
+            <!--
+                The error shares this row with the link rather than getting a strip of its
+                own. There is only one thing that can go wrong here - the password was
+                wrong - so a full notice panel would be heavy, and putting it in an
+                existing row means nothing below it moves when it appears.
+            -->
+            <Grid Margin="0,10,0,0" MinHeight="18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Margin="0,0,12,0"
+                           VerticalAlignment="Center"
+                           FontFamily="{StaticResource BalooFont}"
+                           FontSize="{StaticResource LinkFontSize}"
+                           LineHeight="18"
+                           LineStackingStrategy="BlockLineHeight"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="{StaticResource ErrorForegroundBrush}"
+                           Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                           Visibility="{x:Bind ViewModel.HasError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                <HyperlinkButton Grid.Column="1"
+                                 VerticalAlignment="Center"
+                                 Style="{StaticResource LinkButtonStyle}"
+                                 Command="{x:Bind ViewModel.ForgotPasswordCommand}">
+                    <TextBlock Text="Forgot password?"
+                               LineHeight="18"
+                               LineStackingStrategy="BlockLineHeight" />
+                </HyperlinkButton>
+            </Grid>
+
+            <Button Margin="0,22,0,0"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Content="{x:Bind ViewModel.SubmitLabel, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.UnlockCommand}" />
+        </StackPanel>
+    </Grid>
+</Page>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.FlagIcon"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    IsTabStop="False"
+    IsHitTestVisible="False"
+    Width="21"
+    Height="15">
+
+    <!--
+        One country's flag, drawn from the pack in Assets/Flags.
+
+        A rounded Rectangle with an ImageBrush fill, not an Image in a clipping
+        border: nothing in this framework clips its children to a CornerRadius, so a
+        square-cornered bitmap would poke out behind any stroke drawn on top. Filling
+        a rounded shape is the clip - the picture exists only inside the geometry.
+
+        Every flag in the pack shares one 7:5 frame, so the control can be a fixed
+        21 by 15 and the brush's UniformToFill never crops or letterboxes. The
+        source PNG is 63 by 45, three times this size, which keeps it sharp at 200
+        percent scaling.
+
+        Square corners would be truer to how a flag is set in an atlas; rounded ones
+        are truer to this app, where nothing else is square either. The hairline edge
+        stays, because a white flag on a white row needs it far more than it needs
+        the pixels it costs.
+    -->
+
+    <Grid>
+        <Rectangle x:Name="Surface"
+                   RadiusX="4"
+                   RadiusY="4">
+            <Rectangle.Fill>
+                <ImageBrush x:Name="FlagBrush" Stretch="UniformToFill" />
+            </Rectangle.Fill>
+        </Rectangle>
+
+        <!-- Drawn over the flag rather than around it, so it costs no layout. -->
+        <Rectangle x:Name="Edge"
+                   RadiusX="4"
+                   RadiusY="4"
+                   Stroke="{StaticResource FlagEdgeBrush}"
+                   StrokeThickness="1" />
+    </Grid>
+</UserControl>

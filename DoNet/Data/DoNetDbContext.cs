@@ -1,0 +1,279 @@
+using DoNet.Models;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+
+namespace DoNet.Data;
+
+/// <summary>
+/// The encrypted person database.
+/// </summary>
+/// <remarks>
+/// SQLCipher encrypts the whole file - pages, indexes, the schema and therefore the
+/// column names too. That is why the entity below can use readable property names: the
+/// requirement that column names not be legible is met by the file encryption, not by
+/// obfuscating the schema. An attacker with the file and no key sees random bytes.
+///
+/// The context does not own its connection. <see cref="DoNet.Services.PersonDirectoryService"/>
+/// opens and keys one connection for the unlocked session and hands it in here, because
+/// SQLCipher runs 256,000 rounds of PBKDF2 on every open and paying that per context -
+/// which is what happens if the context builds its own connection from a path and a key -
+/// makes the app feel broken. A short-lived context over a long-lived connection keeps
+/// the change-tracker clean without re-deriving the key.
+/// </remarks>
+public sealed class DoNetDbContext : DbContext
+{
+    private readonly SqliteConnection _connection;
+
+    /// <param name="connection">
+    /// An open, keyed connection owned by the caller. EF will not close or dispose a
+    /// connection it did not open, so the handle survives this context.
+    /// </param>
+    public DoNetDbContext(SqliteConnection connection)
+    {
+        _connection = connection;
+    }
+
+    public DbSet<Person> People => Set<Person>();
+
+    public DbSet<Website> Websites => Set<Website>();
+
+    /// <summary>Logins held on the saved websites.</summary>
+    public DbSet<Account> Accounts => Set<Account>();
+
+    /// <summary>Payment methods the user added themselves. The six built-ins are in code.</summary>
+    public DbSet<PaymentMethodOption> PaymentMethodOptions => Set<PaymentMethodOption>();
+
+    /// <summary>Built-in payment methods the user has deleted. The list in code stays.</summary>
+    public DbSet<HiddenPaymentMethod> HiddenPaymentMethods => Set<HiddenPaymentMethod>();
+
+    /// <summary>
+    /// The service-type catalog behind the Services tab. Seeded once, when the table
+    /// is created; from then on entirely the user's.
+    /// </summary>
+    public DbSet<Service> Services => Set<Service>();
+
+    /// <summary>
+    /// The user-designed structure of each service type. One row per type, keyed by
+    /// the same id.
+    /// </summary>
+    public DbSet<ServiceDefinition> ServiceDefinitions => Set<ServiceDefinition>();
+
+    /// <summary>
+    /// The records of the service types, and the rows of their tables.
+    /// </summary>
+    public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
+
+    /// <summary>
+    /// The hand-built VPS type's records. The dynamic machinery above serves the
+    /// types the user adds; the primaries are code, and this is the first one's
+    /// store.
+    /// </summary>
+    public DbSet<VpsRecord> VpsRecords => Set<VpsRecord>();
+
+    /// <summary>The system information rows, one per VPS.</summary>
+    public DbSet<VpsSystemInfo> VpsSystemInfos => Set<VpsSystemInfo>();
+
+    /// <summary>
+    /// The hand-built Wallets type's records - the fourth primary's store.
+    /// </summary>
+    public DbSet<WalletRecord> WalletRecords => Set<WalletRecord>();
+
+    protected override void OnConfiguring(DbContextOptionsBuilder options)
+    {
+        options.UseSqlite(_connection);
+    }
+
+    protected override void OnModelCreating(ModelBuilder model)
+    {
+        model.Entity<Person>(entity =>
+        {
+            entity.ToTable("People");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Id).ValueGeneratedOnAdd();
+
+            // No explicit index on Id. An INTEGER PRIMARY KEY in SQLite *is* the table's
+            // rowid, so ordering and seeking by it are already free; adding an index
+            // would create a second B-tree holding the same keys and charge every insert
+            // and delete to maintain it. The directory's only other access pattern is a
+            // LIKE '%term%' search, which no index can serve.
+        });
+
+        model.Entity<Website>(entity =>
+        {
+            entity.ToTable("Websites");
+            entity.HasKey(w => w.Id);
+            entity.Property(w => w.Id).ValueGeneratedOnAdd();
+
+            // The selected methods are one delimited column; see Website for why a
+            // join table would be the wrong trade here.
+            entity.Property(w => w.PaymentMethodsRaw);
+        });
+
+        model.Entity<Account>(entity =>
+        {
+            entity.ToTable("Accounts");
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.Id).ValueGeneratedOnAdd();
+
+            // The app's first real relationship. Required rather than optional: an
+            // account is a login *on a site*, and one with no site is not a weaker
+            // record, it is a meaningless one.
+            //
+            // Cascade, so deleting a website takes its accounts with it. The
+            // alternative - refusing the delete - turns a confirmed destructive
+            // action into an error the user cannot act on without first hunting down
+            // records the Websites screen never mentions.
+            entity.HasOne(a => a.Website)
+                  .WithMany()
+                  .HasForeignKey(a => a.WebsiteId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Unlike the record tables, this column is both joined and filtered on
+            // every page read, so the index earns its keep.
+            entity.HasIndex(a => a.WebsiteId);
+        });
+
+        model.Entity<PaymentMethodOption>(entity =>
+        {
+            entity.ToTable("PaymentMethodOptions");
+            entity.HasKey(o => o.Id);
+            entity.Property(o => o.Id).ValueGeneratedOnAdd();
+            entity.Property(o => o.Name).IsRequired();
+
+            // Unlike the record tables, this one is looked up by name on every save,
+            // so the index earns its keep.
+            entity.HasIndex(o => o.Name);
+        });
+
+        model.Entity<HiddenPaymentMethod>(entity =>
+        {
+            entity.ToTable("HiddenPaymentMethods");
+            entity.HasKey(h => h.Id);
+            entity.Property(h => h.Id).ValueGeneratedOnAdd();
+            entity.Property(h => h.Name).IsRequired();
+
+            // Read on every catalog load, and written only when a built-in is
+            // deleted or revived.
+            entity.HasIndex(h => h.Name);
+        });
+
+        model.Entity<ServiceDefinition>(entity =>
+        {
+            entity.ToTable("ServiceDefinitions");
+            entity.HasKey(d => d.Id);
+
+            // Deliberately not ValueGeneratedOnAdd: the id mirrors the Services row
+            // it describes, so the pair is one-to-one by construction rather than by
+            // a unique index the store would have to check.
+        });
+
+        model.Entity<ServiceRecord>(entity =>
+        {
+            entity.ToTable("ServiceRecords");
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Id).ValueGeneratedOnAdd();
+
+            // Deleting a type removes its records and their table rows in one go -
+            // every row, top-level or child, carries the type id.
+            entity.HasOne<Service>()
+                  .WithMany()
+                  .HasForeignKey(r => r.ServiceTypeId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // ParentRecordId is a plain column, not a relationship: a self-referencing
+            // cascade next to the type cascade is two delete paths over one row, and
+            // the store already removes a record's children explicitly before it.
+            entity.HasIndex(r => r.ServiceTypeId);
+            entity.HasIndex(r => r.ParentRecordId);
+        });
+
+        model.Entity<VpsRecord>(entity =>
+        {
+            entity.ToTable("VpsRecords");
+            entity.HasKey(v => v.Id);
+            entity.Property(v => v.Id).ValueGeneratedOnAdd();
+
+            // The three directory pointers are optional and outlive nothing: the
+            // directories' deletes clear them rather than taking the VPS with
+            // them, because a VPS is not "on" a person the way an account is on
+            // a site - the pointers are cross-references, not ownership.
+            entity.HasOne<Person>()
+                  .WithMany()
+                  .HasForeignKey(v => v.PersonId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<Website>()
+                  .WithMany()
+                  .HasForeignKey(v => v.WebsiteId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<Account>()
+                  .WithMany()
+                  .HasForeignKey(v => v.AccountId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            // The wallet a VPS was paid with, when it was: a nullable
+            // cross-reference that clears when the wallet goes, because the
+            // payment already happened - the VPS record is history, not a
+            // member of the wallet.
+            entity.HasOne<WalletRecord>()
+                  .WithMany()
+                  .HasForeignKey(v => v.WalletId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            // NodeVpsId is a plain column for the same reason ServiceRecord's
+            // ParentRecordId is: a self-referencing key over a delete the store
+            // performs in the same batch as the reparenting is ordering roulette
+            // on SQLite. The directory keeps the references whole - children are
+            // reparented to null before their main is removed.
+            entity.HasIndex(v => v.NodeVpsId);
+            entity.HasIndex(v => v.WalletId);
+        });
+
+        model.Entity<VpsSystemInfo>(entity =>
+        {
+            entity.ToTable("VpsSystemInfos");
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.Id).ValueGeneratedOnAdd();
+
+            // Owned by its VPS, one row per VPS: the cascade removes the system
+            // with the VPS, and the unique index keeps the pair 1:1 - a database
+            // guarantee for the design's "one system in one VPS".
+            entity.HasOne<VpsRecord>()
+                  .WithOne(v => v.System)
+                  .HasForeignKey<VpsSystemInfo>(s => s.VpsId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(s => s.VpsId).IsUnique();
+        });
+
+        model.Entity<WalletRecord>(entity =>
+        {
+            entity.ToTable("WalletRecords");
+            entity.HasKey(w => w.Id);
+            entity.Property(w => w.Id).ValueGeneratedOnAdd();
+
+            // The owner, when the directory has met them: cleared rather than
+            // cascaded, the same reading as the VPS's own pointers.
+            entity.HasOne<Person>()
+                  .WithMany()
+                  .HasForeignKey(w => w.PersonId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(w => w.PersonId);
+        });
+
+        model.Entity<Service>(entity =>
+        {
+            entity.ToTable("Services");
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.Id).ValueGeneratedOnAdd();
+
+            // No explicit index on Id - an INTEGER PRIMARY KEY is the rowid, the same
+            // reasoning as the record tables. The name index is for the duplicate
+            // check every save makes; the catalog is small enough that this is
+            // politeness rather than need.
+            entity.HasIndex(s => s.Name);
+        });
+    }
+}

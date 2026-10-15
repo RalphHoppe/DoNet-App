@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.LineIcon"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    IsTabStop="False"
+    IsHitTestVisible="False"
+    Width="13"
+    Height="13">
+
+    <!--
+        One line icon, named by Kind and drawn in whatever Foreground it inherits.
+
+        The geometry is always the same 24 unit box, and the Viewbox scales it to
+        whatever Width and Height the host asked for. That is what keeps the stroke
+        honest: at 13 px the 2 unit stroke lands on 1.08 px, at 22 px it lands on
+        1.83 px, so a label mark and a section title mark are visibly the same
+        drawing at two sizes rather than two drawings that have to be kept in step.
+
+        Hit testing is off. These sit next to text and inside buttons, and an icon
+        that swallows a click on its parent is a bug waiting to be filed.
+    -->
+
+    <Viewbox Stretch="Uniform">
+        <Canvas Width="24" Height="24">
+            <Path x:Name="Shape"
+                  StrokeThickness="2"
+                  StrokeLineJoin="Round"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round" />
+        </Canvas>
+    </Viewbox>
+</UserControl>

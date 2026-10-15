@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.AccountCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        A directory card, the same shape as the other two.
+
+        Its own control rather than a DataTemplate because named elements inside a
+        DataTemplate cannot be reached from code, and the hover actions need to be
+        animated. As a control it gets a code-behind and ordinary x:Name access.
+
+        Three of the four columns are previewed. The password is deliberately not one
+        of them: a card sits in a grid that is visible across a room, and a secret
+        that is on screen whenever the directory is has stopped being a secret.
+    -->
+
+    <UserControl.Resources>
+
+        <Style x:Key="FieldValueStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="{StaticResource FieldValueFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="20" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <!--
+            The actions arriving under the pointer. Opacity and a translate are both
+            independent animations, so they run on the compositor thread and stay
+            smooth while the directory is scrolling behind them.
+
+            Out is quicker than in. Arriving wants to feel unhurried; leaving wants to
+            be done before the pointer reaches the next card.
+        -->
+        <Storyboard x:Key="ActionsShow">
+            <DoubleAnimation Storyboard.TargetName="ActionLayer"
+                             Storyboard.TargetProperty="Opacity"
+                             To="1" Duration="0:0:0.18" />
+            <DoubleAnimation Storyboard.TargetName="ActionShift"
+                             Storyboard.TargetProperty="X"
+                             To="0" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Key="ActionsHide">
+            <DoubleAnimation Storyboard.TargetName="ActionLayer"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="ActionShift"
+                             Storyboard.TargetProperty="X"
+                             To="14" Duration="0:0:0.16">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+    </UserControl.Resources>
+
+    <Border x:Name="Shell"
+            Background="{StaticResource CardBackgroundBrush}"
+            BorderBrush="{StaticResource CardBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="26"
+            Padding="20"
+            DoubleTapped="OnDoubleTapped"
+            PointerEntered="OnCardPointerEntered"
+            PointerExited="OnCardPointerExited">
+
+        <Grid RowSpacing="22">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Identity row: the avatar's initial, the username, and the caption. -->
+            <Grid Grid.Row="0" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Width="56"
+                        Height="56"
+                        CornerRadius="28"
+                        Background="{StaticResource CardAvatarBrush}"
+                        BorderBrush="{StaticResource SearchBorderBrush}"
+                        BorderThickness="1">
+                    <TextBlock x:Name="AvatarText"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="20"
+                               Foreground="{StaticResource BrandPrimaryBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="NameText"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="{StaticResource CardTitleFontSize}"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="22" />
+                    <TextBlock x:Name="CaptionText"
+                               Text="Record preview"
+                               FontFamily="{StaticResource BalooFont}"
+                               FontSize="{StaticResource FieldValueFontSize}"
+                               Foreground="{StaticResource CardMetaBrush}"
+                               Margin="0,2,0,0"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="20" />
+                </StackPanel>
+
+            </Grid>
+
+            <!-- Three of the four columns, in the design's two-then-one. -->
+            <Grid Grid.Row="1" RowSpacing="18" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0">
+                    <controls:FieldLabel Text="WEBSITE" IconKind="Globe" />
+                    <TextBlock x:Name="WebsiteValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="1">
+                    <controls:FieldLabel Text="USERNAME/EMAIL" IconKind="Mail" />
+                    <TextBlock x:Name="UsernameValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+
+                <!-- Spans both columns: it is the one field with nothing beside it. -->
+                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
+                    <controls:FieldLabel Text="NOTE" IconKind="Info" />
+                    <TextBlock x:Name="NoteValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+            </Grid>
+
+            <!--
+                Edit and delete, anchored to the bottom-right corner of the card's
+                content box while the pointer is over the card.
+
+                They share the grid's cell instead of taking a column, so the fields
+                keep the card's full width when the actions are not there - a column
+                reserved for them would indent every record permanently for the sake
+                of something visible a fraction of the time.
+
+                They also appear when one of them takes keyboard focus. A hover-only
+                affordance is a mouse-only affordance, and these are the only route to
+                edit and delete.
+            -->
+            <StackPanel x:Name="ActionLayer"
+                        Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Orientation="Horizontal"
+                        Spacing="12"
+                        Opacity="0"
+                        IsHitTestVisible="False"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform x:Name="ActionShift" X="14" />
+                </StackPanel.RenderTransform>
+
+                <Button x:Name="EditAction"
+                        Width="46"
+                        Height="46"
+                        Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Edit"
+                        GotFocus="OnActionGotFocus"
+                        LostFocus="OnActionLostFocus"
+                        PointerEntered="OnActionPointerEntered"
+                        PointerExited="OnActionPointerExited"
+                        Click="OnEditClick">
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
+                            Background="{StaticResource BrandPrimaryBrush}">
+                        <controls:LineIcon Kind="EditSquare"
+                                           Width="21"
+                                           Height="21"
+                                           Foreground="White" />
+                    </Border>
+                </Button>
+
+                <Button x:Name="DeleteAction"
+                        Width="46"
+                        Height="46"
+                        Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Delete"
+                        GotFocus="OnActionGotFocus"
+                        LostFocus="OnActionLostFocus"
+                        PointerEntered="OnActionPointerEntered"
+                        PointerExited="OnActionPointerExited"
+                        Click="OnDeleteClick">
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
+                            Background="{StaticResource DangerBrush}">
+                        <controls:LineIcon Kind="Trash"
+                                           Width="21"
+                                           Height="21"
+                                           Foreground="White" />
+                    </Border>
+                </Button>
+            </StackPanel>
+
+        </Grid>
+    </Border>
+</UserControl>

@@ -1,0 +1,549 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Views.VpsMapDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        The VPS map: the whole earth with the mains dotted on it, and the
+        network under whichever main gets clicked.
+
+        The plate is a rendered equirectangular map - x from longitude, y
+        from latitude, exactly 2:1 - and every dot is placed by that one
+        rule, so the picture and the placement math cannot disagree about
+        where a country is. The dots, their labels and the connections are
+        built in code from the view model's pins: they arrive and leave with
+        the map's two views, and reseat themselves whenever the window is
+        resized.
+
+        The overview dots the mains, one dot per country at the top of the
+        country's shape, a count badge where one country holds several. A
+        click trades the overview for that main's network: its whole chain,
+        each record at its own country, joined to its parent by a line, the
+        main wearing its tag so it cannot be mistaken for one of its own.
+
+        The chooser - the small panel that opens over a badge - is hand-built
+        for the same reason the drawers are: the app has no stock dropdowns.
+    -->
+
+    <UserControl.Resources>
+
+        <!-- The sea the plate sits on, the same tint the image paints. -->
+        <SolidColorBrush x:Key="SeaBrush" Color="#E9EFF6" />
+
+        <!-- The connections: solid for a main's direct children, thinner and
+             dashed for everything deeper, so depth reads at a glance. -->
+        <SolidColorBrush x:Key="ConnectionBrush" Color="#7A8798" />
+        <SolidColorBrush x:Key="DeepConnectionBrush" Color="#9AA5B1" />
+
+        <Style x:Key="LegendTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource CardMetaBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="16" />
+        </Style>
+
+        <Style x:Key="StateTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="20" />
+        </Style>
+
+        <!-- The dialog's entrance, the other dialogs' rise and settle. -->
+        <Storyboard x:Key="OpenStoryboard">
+            <DoubleAnimation Storyboard.TargetName="Scrim"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.16" />
+            <DoubleAnimation Storyboard.TargetName="CardOffset"
+                             Storyboard.TargetProperty="Y"
+                             From="18" To="0" Duration="0:0:0.26">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="CardScale"
+                             Storyboard.TargetProperty="ScaleX"
+                             From="0.985" To="1" Duration="0:0:0.26">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="CardScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="0.985" To="1" Duration="0:0:0.26">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="Card"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.20" />
+        </Storyboard>
+
+        <Storyboard x:Key="CloseStoryboard" Completed="OnCloseCompleted">
+            <DoubleAnimation Storyboard.TargetName="Scrim"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="Card"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="CardOffset"
+                             Storyboard.TargetProperty="Y"
+                             To="12" Duration="0:0:0.14">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+    </UserControl.Resources>
+
+    <Grid x:Name="Root" Visibility="Collapsed">
+
+        <Rectangle x:Name="Scrim" Fill="#59000000" Tapped="OnScrimTapped" />
+
+        <Border x:Name="Card"
+                MaxWidth="1420"
+                Margin="24"
+                CornerRadius="26"
+                Background="{StaticResource CardBackgroundBrush}"
+                BorderBrush="{StaticResource CardBorderBrush}"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5">
+            <Border.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="CardScale" ScaleX="1" ScaleY="1" />
+                    <TranslateTransform x:Name="CardOffset" Y="0" />
+                </TransformGroup>
+            </Border.RenderTransform>
+
+            <Grid Padding="36,26,36,18" RowSpacing="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Header .................................................. -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="14">
+                        <Viewbox Width="40"
+                                 Height="40"
+                                 VerticalAlignment="Center">
+                            <controls:TypeMark Kind="Vps" />
+                        </Viewbox>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="VPS MAP"
+                                       FontFamily="{StaticResource BaumansFont}"
+                                       FontSize="{StaticResource SectionTitleFontSize}"
+                                       Foreground="{StaticResource BrandPrimaryBrush}"
+                                       CharacterSpacing="20"
+                                       LineStackingStrategy="BlockLineHeight"
+                                       LineHeight="40" />
+                            <TextBlock Text="Every main on earth, and the network under it"
+                                       FontFamily="{StaticResource BalooFont}"
+                                       FontSize="{StaticResource SectionSubtitleFontSize}"
+                                       Foreground="{StaticResource SectionSubtitleBrush}"
+                                       LineStackingStrategy="BlockLineHeight"
+                                       LineHeight="20" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            VerticalAlignment="Top"
+                            Style="{StaticResource BareButtonStyle}"
+                            ToolTipService.ToolTip="Close"
+                            Click="OnCloseClick">
+                        <Border Width="22"
+                                Height="22"
+                                Margin="8"
+                                CornerRadius="11"
+                                Background="#FF5F57" />
+                    </Button>
+                </Grid>
+
+                <!-- The map ............................................... -->
+                <Border Grid.Row="1"
+                        CornerRadius="18"
+                        Background="{StaticResource SeaBrush}"
+                        BorderBrush="{StaticResource CardBorderBrush}"
+                        BorderThickness="1">
+                    <!--
+                        The wheel zooms about the pointer; a drag from the map
+                        itself - the sea or the land, not a dot or a panel -
+                        carries the view. Presses on the dots, the header, the
+                        chooser and these very handlers' panels never start a
+                        drag; the code-behind checks where a press began.
+                    -->
+                    <Grid x:Name="MapHost"
+                          Height="320"
+                          SizeChanged="OnMapHostSizeChanged"
+                          PointerWheelChanged="OnMapWheel"
+                          PointerPressed="OnMapPointerPressed"
+                          PointerMoved="OnMapPointerMoved"
+                          PointerReleased="OnMapPointerReleased"
+                          PointerCanceled="OnMapPointerReleased">
+
+                        <!-- Everything that belongs to the plate is clipped to
+                             it: the connections that cross the edge where the
+                             map ends and restarts leave the map, not the
+                             dialog. -->
+                        <Grid x:Name="MapClip">
+                            <!--
+                                The plate and its connections share one
+                                canvas, in host pixels: the image is seated
+                                and sized by the view model's transform, and
+                                the lines run between the transformed
+                                positions. The image is exactly 2:1 and so is
+                                the rect it is given, so Fill distorts
+                                nothing.
+                            -->
+                            <Canvas x:Name="MapCanvas">
+                                <Image x:Name="MapImage"
+                                       Source="ms-appx:///Assets/Maps/world-map.png"
+                                       Stretch="Fill"
+                                       Width="0"
+                                       Height="0" />
+                            </Canvas>
+
+                            <!--
+                                The dots sit above the lines and keep their
+                                own size at every zoom - a dot does not grow
+                                with the map, or at 8x it would be a plate
+                                itself. The layer's transparent background is
+                                the map's drag surface.
+                            -->
+                            <Canvas x:Name="DotLayer"
+                                    Background="Transparent"
+                                    Tapped="OnMapBackgroundTapped" />
+                        </Grid>
+
+                        <!-- The open network's header: the way back, and the
+                             main the network belongs to. -->
+                        <Border x:Name="FocusedHeader"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                Margin="14"
+                                Padding="16,12,16,12"
+                                CornerRadius="16"
+                                Background="#F2FFFFFF"
+                                BorderBrush="{StaticResource CardBorderBrush}"
+                                BorderThickness="1"
+                                MaxWidth="380"
+                                Visibility="{x:Bind ViewModel.IsFocused, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Spacing="8">
+                                <Button Style="{StaticResource BareButtonStyle}"
+                                        HorizontalAlignment="Left"
+                                        Click="OnBackClick">
+                                    <Border Height="34"
+                                            CornerRadius="17"
+                                            Padding="14,0"
+                                            Background="{StaticResource HeaderActionFillBrush}"
+                                            BorderBrush="{StaticResource SearchBorderBrush}"
+                                            BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <controls:LineIcon Kind="ArrowLeft"
+                                                               Width="15"
+                                                               Height="15"
+                                                               Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBlock Text="ALL MAINS"
+                                                       FontFamily="{StaticResource BalooSemiBoldFont}"
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       CharacterSpacing="60"
+                                                       VerticalAlignment="Center"
+                                                       LineStackingStrategy="BlockLineHeight"
+                                                       LineHeight="16" />
+                                        </StackPanel>
+                                    </Border>
+                                </Button>
+
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Viewbox Width="26"
+                                             Height="19"
+                                             VerticalAlignment="Center">
+                                        <controls:FlagIcon Country="{x:Bind ViewModel.FocusedFlagCountry, Mode=OneWay}" />
+                                    </Viewbox>
+                                    <TextBlock Text="{x:Bind ViewModel.FocusedName, Mode=OneWay}"
+                                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                                               FontSize="16"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxWidth="280"
+                                               VerticalAlignment="Center"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               LineHeight="21" />
+                                </StackPanel>
+
+                                <TextBlock Text="{x:Bind ViewModel.FocusedCountryLabel, Mode=OneWay}"
+                                           FontFamily="{StaticResource BalooFont}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource CardMetaBrush}"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           LineHeight="16" />
+                                <TextBlock Text="{x:Bind ViewModel.FocusedSummary, Mode=OneWay}"
+                                           FontFamily="{StaticResource BalooSemiBoldFont}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource BrandPrimaryBrush}"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           LineHeight="16" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- The chooser, seated beside its dot in code. -->
+                        <Canvas x:Name="ChooserLayer">
+                            <Border x:Name="ChooserCard"
+                                    Width="300"
+                                    Padding="14"
+                                    CornerRadius="16"
+                                    Background="{StaticResource CardBackgroundBrush}"
+                                    BorderBrush="{StaticResource CardBorderBrush}"
+                                    BorderThickness="1"
+                                    Visibility="Collapsed">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Viewbox Grid.Column="0"
+                                                 Width="22"
+                                                 Height="16"
+                                                 VerticalAlignment="Center">
+                                            <controls:FlagIcon x:Name="ChooserFlag" />
+                                        </Viewbox>
+                                        <TextBlock x:Name="ChooserTitle"
+                                                   Grid.Column="1"
+                                                   FontFamily="{StaticResource BalooSemiBoldFont}"
+                                                   FontSize="12.5"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextWrapping="Wrap"
+                                                   VerticalAlignment="Center"
+                                                   LineStackingStrategy="BlockLineHeight"
+                                                   LineHeight="17" />
+                                        <Button Grid.Column="2"
+                                                Style="{StaticResource BareButtonStyle}"
+                                                VerticalAlignment="Top"
+                                                Click="OnChooserCloseClick">
+                                            <Border Width="20"
+                                                    Height="20"
+                                                    CornerRadius="10"
+                                                    Background="#F1F3F6">
+                                                <TextBlock Text="&#215;"
+                                                           FontFamily="{StaticResource BalooSemiBoldFont}"
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource CardMetaBrush}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           LineStackingStrategy="BlockLineHeight"
+                                                           LineHeight="12" />
+                                            </Border>
+                                        </Button>
+                                    </Grid>
+
+                                    <StackPanel x:Name="ChooserRows" Spacing="6" />
+                                </StackPanel>
+                            </Border>
+                        </Canvas>
+
+                        <!--
+                            ZOOM: closer, further, and the whole earth back.
+                            The wheel zooms about the pointer and a drag
+                            carries the view; these are the same trip with
+                            somewhere definite to land.
+                        -->
+                        <StackPanel HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Margin="14"
+                                    Spacing="8">
+                            <Button Style="{StaticResource BareButtonStyle}"
+                                    ToolTipService.ToolTip="Zoom in"
+                                    IsEnabled="{x:Bind ViewModel.CanZoomIn, Mode=OneWay}"
+                                    Click="OnZoomInClick">
+                                <Border Width="36"
+                                        Height="36"
+                                        CornerRadius="18"
+                                        Background="#F2FFFFFF"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1">
+                                    <Viewbox Width="15"
+                                             Height="15">
+                                        <Canvas Width="18" Height="18">
+                                            <Path Data="M9 3.75 V14.25 M3.75 9 H14.25"
+                                                  Stroke="#5C6066"
+                                                  StrokeThickness="2.2"
+                                                  StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                            </Button>
+
+                            <Button Style="{StaticResource BareButtonStyle}"
+                                    ToolTipService.ToolTip="Zoom out"
+                                    IsEnabled="{x:Bind ViewModel.CanZoomOut, Mode=OneWay}"
+                                    Click="OnZoomOutClick">
+                                <Border Width="36"
+                                        Height="36"
+                                        CornerRadius="18"
+                                        Background="#F2FFFFFF"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1">
+                                    <Viewbox Width="15"
+                                             Height="15">
+                                        <Canvas Width="18" Height="18">
+                                            <Path Data="M3.75 9 H14.25"
+                                                  Stroke="#5C6066"
+                                                  StrokeThickness="2.2"
+                                                  StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                            </Button>
+
+                            <Button Style="{StaticResource BareButtonStyle}"
+                                    ToolTipService.ToolTip="Back to the whole earth"
+                                    Click="OnZoomResetClick">
+                                <Border Width="36"
+                                        Height="36"
+                                        CornerRadius="18"
+                                        Background="#F2FFFFFF"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1">
+                                    <Viewbox Width="15"
+                                             Height="15">
+                                        <Canvas Width="18" Height="18">
+                                            <Path Data="M3 6.6 V4.8 Q3 3 4.8 3 H6.6 M11.4 3 H13.2 Q15 3 15 4.8 V6.6 M15 11.4 V13.2 Q15 15 13.2 15 H11.4 M6.6 15 H4.8 Q3 15 3 13.2 V11.4"
+                                                          Stroke="#5C6066"
+                                                          StrokeThickness="2"
+                                                          StrokeStartLineCap="Round"
+                                                          StrokeEndLineCap="Round"
+                                                          StrokeLineJoin="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- The states, centred on the plate. -->
+                        <Border HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                CornerRadius="14"
+                                Padding="18,10"
+                                Background="#F2FFFFFF"
+                                BorderBrush="{StaticResource CardBorderBrush}"
+                                BorderThickness="1"
+                                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Plotting the network..."
+                                       Style="{StaticResource StateTextStyle}" />
+                        </Border>
+
+                        <Border HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                CornerRadius="14"
+                                Padding="18,10"
+                                Background="#F2FFFFFF"
+                                BorderBrush="{StaticResource CardBorderBrush}"
+                                BorderThickness="1"
+                                Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="The directory refused - close and try again."
+                                       Style="{StaticResource StateTextStyle}" />
+                        </Border>
+
+                        <Border HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                CornerRadius="14"
+                                Padding="18,10"
+                                Background="#F2FFFFFF"
+                                BorderBrush="{StaticResource CardBorderBrush}"
+                                BorderThickness="1"
+                                Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="No VPS records yet"
+                                           Style="{StaticResource StateTextStyle}" />
+                                <TextBlock Text="Add one, and it lands on the map."
+                                           Style="{StaticResource StateTextStyle}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Footer: the legend, and the honest footnote about the
+                     records that could not be placed. -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Ellipse Width="15"
+                                     Height="15"
+                                     Fill="#FFFFFF"
+                                     Stroke="#FF5F57"
+                                     StrokeThickness="2.5"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Text="MAIN VPS" Style="{StaticResource LegendTextStyle}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Ellipse Width="12"
+                                     Height="12"
+                                     Fill="#FFFFFF"
+                                     Stroke="#A0A5AB"
+                                     StrokeThickness="2"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Text="CONNECTED VPS" Style="{StaticResource LegendTextStyle}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Border CornerRadius="8"
+                                    Padding="5,0"
+                                    Background="#FEBC2E"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="&#215;3"
+                                           FontFamily="{StaticResource JerseyFont}"
+                                           FontSize="11"
+                                           Foreground="#8A5B12"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           LineHeight="13" />
+                            </Border>
+                            <TextBlock Text="MAINS IN ONE COUNTRY" Style="{StaticResource LegendTextStyle}" />
+                        </StackPanel>
+                        <TextBlock Text="Click a main to open its network"
+                                   Style="{StaticResource LegendTextStyle}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="7"
+                                Visibility="{x:Bind ViewModel.HasOffMap, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        <controls:LineIcon Kind="Info"
+                                           Width="14"
+                                           Height="14"
+                                           Foreground="{StaticResource CardMetaBrush}"
+                                           VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Bind ViewModel.OffMapNote, Mode=OneWay}"
+                                   Style="{StaticResource LegendTextStyle}" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

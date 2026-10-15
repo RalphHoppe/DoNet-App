@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.StateArt"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    mc:Ignorable="d"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+
+    <!--
+        The four directory states, drawn rather than iconified.
+
+        Every animation here moves opacity or a transform and nothing else. That is not
+        a style preference: opacity and transform animations are "independent", so the
+        compositor runs them on its own thread and they keep their frame rate even when
+        the UI thread is saturated. The loading state in particular plays at the exact
+        moment the app is busiest, and a loading indicator that stutters while it waits
+        is worse than none. Animating Width, Height or StrokeDashOffset would make these
+        dependent animations, tied to the UI thread, and would do precisely that.
+
+        Each illustration is x:Load="False" and realised on demand, so an instance of
+        this control builds only the one picture it was asked for - four of these sit on
+        the Persons screen at once and only one is ever shown.
+
+        Shared motif: a 92x60 record card on a 120x92 canvas, so the four states read as
+        the same object in different conditions rather than four unrelated pictures.
+    -->
+    <Viewbox Stretch="Uniform">
+        <Grid Width="120" Height="92">
+
+            <!-- ============================ LOADING ============================
+                 A record card whose contents have not arrived. The placeholder rows
+                 breathe in sequence, left to right, which reads as progress without
+                 claiming to know how much is left - the directory open is a key
+                 derivation of unknown duration, so a percentage would be a lie.
+            -->
+            <Canvas x:Name="LoadingArt" x:Load="False" Width="120" Height="92">
+                <Canvas.Resources>
+                    <Storyboard x:Key="Play" RepeatBehavior="Forever">
+                        <DoubleAnimation Storyboard.TargetName="LoadAvatar"
+                                         Storyboard.TargetProperty="Opacity"
+                                         From="0.35" To="1" Duration="0:0:0.6"
+                                         AutoReverse="True" BeginTime="0:0:0" />
+                        <DoubleAnimation Storyboard.TargetName="LoadBarA"
+                                         Storyboard.TargetProperty="Opacity"
+                                         From="0.35" To="1" Duration="0:0:0.6"
+                                         AutoReverse="True" BeginTime="0:0:0.15" />
+                        <DoubleAnimation Storyboard.TargetName="LoadBarB"
+                                         Storyboard.TargetProperty="Opacity"
+                                         From="0.35" To="1" Duration="0:0:0.6"
+                                         AutoReverse="True" BeginTime="0:0:0.3" />
+                        <DoubleAnimation Storyboard.TargetName="LoadBarC"
+                                         Storyboard.TargetProperty="Opacity"
+                                         From="0.35" To="1" Duration="0:0:0.6"
+                                         AutoReverse="True" BeginTime="0:0:0.45" />
+                    </Storyboard>
+                </Canvas.Resources>
+
+                <Rectangle Canvas.Left="14" Canvas.Top="16" Width="92" Height="60"
+                           RadiusX="10" RadiusY="10"
+                           Fill="#FFFFFF" Stroke="#CBD5E1" StrokeThickness="2" />
+
+                <Ellipse x:Name="LoadAvatar" Canvas.Left="26" Canvas.Top="30"
+                         Width="20" Height="20" Fill="#D9E1EA" Opacity="0.35" />
+
+                <Rectangle x:Name="LoadBarA" Canvas.Left="54" Canvas.Top="33"
+                           Width="40" Height="6" RadiusX="3" RadiusY="3"
+                           Fill="#D9E1EA" Opacity="0.35" />
+                <Rectangle x:Name="LoadBarB" Canvas.Left="54" Canvas.Top="45"
+                           Width="26" Height="6" RadiusX="3" RadiusY="3"
+                           Fill="#D9E1EA" Opacity="0.35" />
+                <Rectangle x:Name="LoadBarC" Canvas.Left="26" Canvas.Top="60"
+                           Width="68" Height="6" RadiusX="3" RadiusY="3"
+                           Fill="#D9E1EA" Opacity="0.35" />
+            </Canvas>
+
+            <!-- ============================= EMPTY =============================
+                 An outlined card waiting to be filled, with the add badge drawing the
+                 eye. Dashed, because a dashed outline reads as a slot rather than as a
+                 thing that failed to load.
+            -->
+            <Canvas x:Name="EmptyArt" x:Load="False" Width="120" Height="92">
+                <Canvas.Resources>
+                    <Storyboard x:Key="Play" RepeatBehavior="Forever">
+                        <DoubleAnimation Storyboard.TargetName="EmptyBadgeScale"
+                                         Storyboard.TargetProperty="ScaleX"
+                                         From="1" To="1.12" Duration="0:0:1.1"
+                                         AutoReverse="True">
+                            <DoubleAnimation.EasingFunction>
+                                <SineEase EasingMode="EaseInOut" />
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                        <DoubleAnimation Storyboard.TargetName="EmptyBadgeScale"
+                                         Storyboard.TargetProperty="ScaleY"
+                                         From="1" To="1.12" Duration="0:0:1.1"
+                                         AutoReverse="True">
+                            <DoubleAnimation.EasingFunction>
+                                <SineEase EasingMode="EaseInOut" />
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                    </Storyboard>
+                </Canvas.Resources>
+
+                <Rectangle Canvas.Left="14" Canvas.Top="16" Width="92" Height="60"
+                           RadiusX="10" RadiusY="10"
+                           Fill="#FBFDFC" Stroke="#BBDFD8" StrokeThickness="2"
+                           StrokeDashArray="5,4" StrokeDashCap="Round" />
+
+                <!-- Person: head and shoulders, the same silhouette the cards use. -->
+                <Ellipse Canvas.Left="48" Canvas.Top="30" Width="17" Height="17"
+                         Fill="#CBD5E1" />
+                <Path Data="M44 64C44 56.8 49.4 51 56.5 51C63.6 51 69 56.8 69 64"
+                      Stroke="#CBD5E1" StrokeThickness="3.4"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+
+                <!-- Add badge, breathing to point at the ADD PERSON button. -->
+                <Canvas x:Name="EmptyBadge" Canvas.Left="74" Canvas.Top="48"
+                        Width="26" Height="26" RenderTransformOrigin="0.5,0.5">
+                    <Canvas.RenderTransform>
+                        <ScaleTransform x:Name="EmptyBadgeScale" CenterX="13" CenterY="13" />
+                    </Canvas.RenderTransform>
+                    <Ellipse Width="26" Height="26" Fill="#4BAA98" />
+                    <Path Data="M7.5 13H18.5 M13 7.5V18.5"
+                          Stroke="#FFFFFF" StrokeThickness="2.4"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                </Canvas>
+            </Canvas>
+
+            <!-- ============================ NO MATCH ===========================
+                 The records are there; the search passed over them. The lens sweeps
+                 across the card and finds nothing, which says "your term is wrong",
+                 not "your directory is empty" - two states users confuse constantly.
+            -->
+            <Canvas x:Name="NoMatchArt" x:Load="False" Width="120" Height="92">
+                <Canvas.Resources>
+                    <Storyboard x:Key="Play" RepeatBehavior="Forever">
+                        <DoubleAnimation Storyboard.TargetName="LensShift"
+                                         Storyboard.TargetProperty="X"
+                                         From="-17" To="17" Duration="0:0:1.6"
+                                         AutoReverse="True">
+                            <DoubleAnimation.EasingFunction>
+                                <SineEase EasingMode="EaseInOut" />
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                    </Storyboard>
+                </Canvas.Resources>
+
+                <Rectangle Canvas.Left="14" Canvas.Top="16" Width="92" Height="60"
+                           RadiusX="10" RadiusY="10"
+                           Fill="#FFFFFF" Stroke="#CBD5E1" StrokeThickness="2" />
+
+                <Rectangle Canvas.Left="26" Canvas.Top="28" Width="46" Height="6"
+                           RadiusX="3" RadiusY="3" Fill="#EDF1F5" />
+                <Rectangle Canvas.Left="26" Canvas.Top="42" Width="62" Height="6"
+                           RadiusX="3" RadiusY="3" Fill="#EDF1F5" />
+                <Rectangle Canvas.Left="26" Canvas.Top="56" Width="34" Height="6"
+                           RadiusX="3" RadiusY="3" Fill="#EDF1F5" />
+
+                <Canvas x:Name="Lens" Canvas.Left="42" Canvas.Top="22" Width="48" Height="52">
+                    <Canvas.RenderTransform>
+                        <TranslateTransform x:Name="LensShift" />
+                    </Canvas.RenderTransform>
+                    <!-- Filled, so the lens occludes the rows it passes over. -->
+                    <Ellipse Canvas.Left="2" Canvas.Top="2" Width="32" Height="32"
+                             Fill="#FFFFFF" Stroke="#8C9196" StrokeThickness="3.2" />
+                    <Path Data="M29.5 29.5L41 41"
+                          Stroke="#8C9196" StrokeThickness="4"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                </Canvas>
+            </Canvas>
+
+            <!-- ============================== ERROR ============================
+                 The store could not be opened, so the card stays shut. One short
+                 shake on appearance and then stillness - a looping error animation
+                 keeps shouting at someone who has already understood.
+            -->
+            <Canvas x:Name="ErrorArt" x:Load="False" Width="120" Height="92">
+                <Canvas.Resources>
+                    <Storyboard x:Key="Play">
+                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ErrorShift"
+                                                       Storyboard.TargetProperty="X">
+                            <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                            <LinearDoubleKeyFrame KeyTime="0:0:0.07" Value="-4" />
+                            <LinearDoubleKeyFrame KeyTime="0:0:0.17" Value="4" />
+                            <LinearDoubleKeyFrame KeyTime="0:0:0.27" Value="-3" />
+                            <LinearDoubleKeyFrame KeyTime="0:0:0.36" Value="2" />
+                            <LinearDoubleKeyFrame KeyTime="0:0:0.45" Value="0" />
+                        </DoubleAnimationUsingKeyFrames>
+                    </Storyboard>
+                </Canvas.Resources>
+
+                <Canvas x:Name="ErrorGroup" Width="120" Height="92">
+                    <Canvas.RenderTransform>
+                        <TranslateTransform x:Name="ErrorShift" />
+                    </Canvas.RenderTransform>
+
+                    <Rectangle Canvas.Left="14" Canvas.Top="16" Width="92" Height="60"
+                               RadiusX="10" RadiusY="10"
+                               Fill="#FDECEA" Stroke="#F3C6C0" StrokeThickness="2" />
+
+                    <!-- Padlock: the store is encrypted and stayed that way. -->
+                    <Path Data="M52 46V39.5C52 34.8 55.6 31 60 31C64.4 31 68 34.8 68 39.5V46"
+                          Stroke="#C0392B" StrokeThickness="3.4"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    <Rectangle Canvas.Left="46" Canvas.Top="45" Width="28" Height="22"
+                               RadiusX="5" RadiusY="5" Fill="#C0392B" />
+                    <Ellipse Canvas.Left="57.5" Canvas.Top="52.5" Width="5" Height="5"
+                             Fill="#FDECEA" />
+                </Canvas>
+            </Canvas>
+
+        </Grid>
+    </Viewbox>
+</UserControl>

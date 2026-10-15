@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Views.PersonsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:DoNet.Models"
+    xmlns:controls="using:DoNet.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        The Persons directory, hosted inside the home screen's content surface.
+
+        Two surfaces are in play and they are easy to confuse: the grey #F5F5F5 plate
+        belongs to HomePage and is already behind this control, so the header sits
+        directly on it. The white rounded panel below the header belongs to this screen
+        and holds the cards.
+    -->
+
+    <UserControl.Resources>
+
+        <!--
+            Strips the chrome off the search TextBox. The overrides are scoped to the
+            hosting Border so no other TextBox in the app is affected, and the types
+            matter: the thickness and padding keys are Thickness, the two size keys are
+            Double, and supplying the wrong type for a key that is actually used throws
+            at load rather than being ignored.
+        -->
+        <Style x:Key="SearchBoxStyle" TargetType="TextBox" BasedOn="{StaticResource BareTextBoxStyle}">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="{StaticResource FieldValueFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- Shared by the three message states so they cannot drift apart. -->
+        <Style x:Key="StateTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
+            <Setter Property="FontSize" Value="{StaticResource CardTitleFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="22" />
+        </Style>
+
+        <Style x:Key="StateBodyStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="{StaticResource SectionSubtitleFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource CardMetaBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="MaxWidth" Value="360" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="22" />
+        </Style>
+
+        <!--
+            The card is its own control: a menu that animates needs named elements, and
+            names inside a DataTemplate cannot be reached from code.
+        -->
+        <DataTemplate x:Key="PersonCardTemplate" x:DataType="models:Person">
+            <controls:PersonCard Person="{x:Bind}"
+                                 OpenRequested="OnCardOpen"
+                                 EditRequested="OnCardEdit"
+                                 DeleteRequested="OnCardDelete" />
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <Grid x:Name="Root" Padding="32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header ........................................................... -->
+        <Grid x:Name="Header" Grid.Row="0" Margin="0,0,0,24" ColumnSpacing="24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="HeaderTitleColumn" Width="*" />
+                <ColumnDefinition x:Name="HeaderActionColumn" Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--
+                The disc sits beside a two-line block rather than beside the title
+                alone, so the heading and its subtitle read as one unit - the same
+                arrangement the record cards use for an avatar next to a name and
+                its caption.
+            -->
+            <Grid Grid.Row="0"
+                  Grid.Column="0"
+                  VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <!--
+                        Star, not Auto. A horizontal StackPanel measures its children
+                        with unbounded width, so the text would never trim - it would
+                        simply run under the search box and be clipped. A constrained
+                        column is what makes TextTrimming do anything at all.
+                    -->
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Width="{StaticResource SectionDiscSize}"
+                        Height="{StaticResource SectionDiscSize}"
+                        CornerRadius="{StaticResource SectionDiscCorner}"
+                        Margin="0,0,14,0"
+                        VerticalAlignment="Center"
+                        Background="{StaticResource CardAvatarBrush}"
+                        BorderBrush="{StaticResource SearchBorderBrush}"
+                        BorderThickness="1">
+                    <controls:LineIcon Kind="Users"
+                                       Width="{StaticResource SectionDiscIconSize}"
+                                       Height="{StaticResource SectionDiscIconSize}"
+                                       Foreground="{StaticResource BrandPrimaryBrush}" />
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <!--
+                        Baumans is set in caps here, so a line box tighter than the
+                        font's natural leading clips nothing and keeps the subtitle
+                        attached to the title instead of floating under it.
+                    -->
+                    <TextBlock Text="PERSONS"
+                               FontFamily="{StaticResource BaumansFont}"
+                               FontSize="{StaticResource SectionTitleFontSize}"
+                               Foreground="{StaticResource BrandPrimaryBrush}"
+                               CharacterSpacing="20"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="36" />
+                    <TextBlock Text="Everyone saved in your vault"
+                               FontFamily="{StaticResource BalooFont}"
+                               FontSize="{StaticResource SectionSubtitleFontSize}"
+                               Foreground="{StaticResource SectionSubtitleBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="20" />
+                </StackPanel>
+            </Grid>
+
+            <!--
+                Search and the add action. The whole row moves to its own line on narrow
+                windows, which is why it is a separate element placed by the visual
+                states rather than part of the title stack.
+            -->
+            <Grid x:Name="HeaderActions"
+                  Grid.Row="0"
+                  Grid.Column="1"
+                  VerticalAlignment="Center"
+                  ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="SearchColumn" Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="SearchHost"
+                        Grid.Column="0"
+                        Width="304"
+                        Height="42"
+                        CornerRadius="21"
+                        Padding="16,0,16,0"
+                        Background="{StaticResource CardBackgroundBrush}"
+                        BorderBrush="{StaticResource SearchBorderBrush}"
+                        BorderThickness="1">
+                    <Border.Resources>
+                        <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                        <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                        <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="Transparent" />
+                        <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                        <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                        <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="Transparent" />
+            
+            <!--
+                Without these the focused and pointer-over visual states in the stock
+                TextBox template set Foreground to the theme brush, which on a machine
+                running Windows in dark mode is white - white text on a white card, so
+                you cannot see what you are typing. RequestedTheme="Light" on the
+                Application fixes the root cause; these make the control independent of
+                it regardless.
+            -->
+            <SolidColorBrush x:Key="TextControlForeground" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#2B2F33" />
+            <SolidColorBrush x:Key="TextControlForegroundDisabled" Color="#8C9196" />
+            <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
+                        <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                        <Thickness x:Key="TextControlThemePadding">0</Thickness>
+                        <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
+                        <x:Double x:Key="TextControlThemeMinWidth">0</x:Double>
+                    </Border.Resources>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Viewbox Grid.Column="0"
+                                 Width="18"
+                                 Height="18"
+                                 VerticalAlignment="Center">
+                            <Canvas Width="18" Height="18">
+                                <Path Data="M13.5 8A5.5 5.5 0 1 1 2.5 8A5.5 5.5 0 1 1 13.5 8 M12.2 12.2L16 16"
+                                      Stroke="{StaticResource SearchPlaceholderBrush}"
+                                      StrokeThickness="1.8"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round" />
+                            </Canvas>
+                        </Viewbox>
+
+                        <TextBox Grid.Column="1"
+                                 Style="{StaticResource SearchBoxStyle}"
+                                 PlaceholderText="SEARCH DIRECTORY"
+                                 PlaceholderForeground="{StaticResource SearchPlaceholderBrush}"
+                                 Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+                </Border>
+
+                <!--
+                    ADD PERSON. The icon is the supplied 18x18 artwork reproduced exactly:
+                    a teal rounded square with a white round-capped cross.
+                -->
+                <Button x:Name="AddPersonButton"
+                        Grid.Column="1"
+                        Style="{StaticResource BareButtonStyle}"
+                        Command="{x:Bind ViewModel.AddPersonCommand}">
+                    <Border CornerRadius="21"
+                            Padding="14,0,18,0"
+                            Height="42"
+                            Background="{StaticResource CardBackgroundBrush}"
+                            BorderBrush="{StaticResource AddActionBorderBrush}"
+                            BorderThickness="1">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="10"
+                                    VerticalAlignment="Center">
+                            <Grid Width="18" Height="18" VerticalAlignment="Center">
+                                <Rectangle Width="18"
+                                           Height="18"
+                                           RadiusX="6"
+                                           RadiusY="6"
+                                           Fill="{StaticResource BrandPrimaryBrush}" />
+                                <Viewbox Width="18" Height="18">
+                                    <Canvas Width="18" Height="18">
+                                        <Path Data="M3.74951 8.99999H14.2507 M9.00011 3.74939V14.2506"
+                                              Stroke="#FFFFFF"
+                                              StrokeThickness="2"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round" />
+                                    </Canvas>
+                                </Viewbox>
+                            </Grid>
+                            <TextBlock Text="ADD PERSON"
+                                       VerticalAlignment="Center"
+                                       FontFamily="{StaticResource JerseyFont}"
+                                       FontSize="{StaticResource ButtonFontSize}"
+                                       Foreground="{StaticResource BrandPrimaryBrush}"
+                                       CharacterSpacing="40" />
+                        </StackPanel>
+                    </Border>
+                </Button>
+            </Grid>
+        </Grid>
+
+        <!-- Card surface ..................................................... -->
+        <Border x:Name="CardSurface"
+                Grid.Row="1"
+                CornerRadius="26"
+                Padding="24"
+                Background="{StaticResource CardBackgroundBrush}">
+
+            <Grid>
+
+                <!--
+                    The four state panels below are mutually exclusive by construction:
+                    each binds to a flag computed from a single state field, so no
+                    combination of them can put a spinner on top of an error. They are
+                    opaque and stack above the card scroller, which stays visible.
+                -->
+
+                <!-- Loaded -->
+                <!--
+                    Deliberately always visible. An ItemsRepeater inside a collapsed
+                    ScrollViewer has no measured viewport, and a collection change
+                    reaching it in that state fails with COMException: Unspecified
+                    error. With nothing in People it draws nothing anyway, and the
+                    state panels below paint over it.
+                -->
+                <ScrollViewer x:Name="CardScroller"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollMode="Disabled"
+                              ViewChanged="OnCardScrollChanged"
+                              Padding="0,0,4,0">
+                    <ItemsRepeater x:Name="CardRepeater"
+                                   ItemsSource="{x:Bind ViewModel.People}"
+                                   ItemTemplate="{StaticResource PersonCardTemplate}">
+                        <ItemsRepeater.Layout>
+                            <!--
+                                MinItemWidth is what makes the grid responsive: two
+                                columns while they both fit, one column below that,
+                                with no size-watching code.
+                            -->
+                            <UniformGridLayout MinItemWidth="430"
+                                               MinColumnSpacing="20"
+                                               MinRowSpacing="20"
+                                               ItemsStretch="Fill" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+                </ScrollViewer>
+
+                <!-- Loading -->
+                <Border Background="{StaticResource CardBackgroundBrush}"
+                        Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                           Kind="Loading"
+                                           IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+                        <TextBlock Text="Opening the directory"
+                                   Style="{StaticResource StateTitleStyle}"
+                                   Margin="0,16,0,0" />
+                        <TextBlock Text="Just a moment." Style="{StaticResource StateBodyStyle}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Empty: no records at all -->
+                <Border Background="{StaticResource CardBackgroundBrush}"
+                        Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                           Kind="Empty"
+                                           IsActive="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
+                        <TextBlock Text="No persons yet"
+                                   Style="{StaticResource StateTitleStyle}"
+                                   Margin="0,16,0,0" />
+                        <TextBlock Text="Records you add will appear here."
+                                   Style="{StaticResource StateBodyStyle}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Empty: records exist, the search excluded them -->
+                <Border Background="{StaticResource CardBackgroundBrush}"
+                        Visibility="{x:Bind ViewModel.HasNoMatches, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                           Kind="NoMatch"
+                                           IsActive="{x:Bind ViewModel.HasNoMatches, Mode=OneWay}" />
+                        <TextBlock Text="Nothing matches that search"
+                                   Style="{StaticResource StateTitleStyle}"
+                                   Margin="0,16,0,0" />
+                        <TextBlock Text="Try a shorter term, or clear the search to see every record."
+                                   Style="{StaticResource StateBodyStyle}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Error -->
+                <Border Background="{StaticResource CardBackgroundBrush}"
+                        Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                           Kind="Error"
+                                           IsActive="{x:Bind ViewModel.IsError, Mode=OneWay}" />
+                        <TextBlock Text="The directory could not be opened"
+                                   Style="{StaticResource StateTitleStyle}"
+                                   Margin="0,16,0,0" />
+                        <TextBlock Text="Nothing was changed. You can try again."
+                                   Style="{StaticResource StateBodyStyle}" />
+                        <Button Margin="0,20,0,0"
+                                HorizontalAlignment="Center"
+                                Style="{StaticResource BareButtonStyle}"
+                                Command="{x:Bind ViewModel.RetryCommand}">
+                            <Border CornerRadius="20"
+                                    Height="40"
+                                    Padding="22,0,22,0"
+                                    Background="{StaticResource BrandPrimaryBrush}">
+                                <TextBlock Text="TRY AGAIN"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource JerseyFont}"
+                                           FontSize="{StaticResource ButtonFontSize}"
+                                           Foreground="#FFFFFF"
+                                           CharacterSpacing="40" />
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+        </Border>
+
+        <!--
+            Adaptive layout. The thresholds are window widths, not control widths, which
+            is sound here because this control's width tracks the window minus the fixed
+            rail. Below 820 the search row cannot sit beside the title without crushing
+            one of them, so it drops to its own line and the search field stretches.
+        -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WidthStates">
+
+                <VisualState x:Name="WideState">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="820" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+
+                <VisualState x:Name="NarrowState">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="Root.Padding" Value="12" />
+                        <Setter Target="CardSurface.Padding" Value="12" />
+                        <Setter Target="CardSurface.CornerRadius" Value="18" />
+                        <Setter Target="Header.Margin" Value="0,0,0,16" />
+
+                        <!-- Actions move under the title and span the full width. -->
+                        <Setter Target="HeaderActions.(Grid.Row)" Value="1" />
+                        <Setter Target="HeaderActions.(Grid.Column)" Value="0" />
+                        <Setter Target="HeaderActions.Margin" Value="0,14,0,0" />
+                        <Setter Target="HeaderActionColumn.Width" Value="0" />
+                        <Setter Target="SearchColumn.Width" Value="*" />
+                        <Setter Target="SearchHost.Width" Value="NaN" />
+                    </VisualState.Setters>
+                </VisualState>
+
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+</UserControl>

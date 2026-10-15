@@ -4,16 +4,93 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:DoNet"
+    xmlns:controls="using:DoNet.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Title="DoNet">
 
-    <Window.SystemBackdrop>
-        <MicaBackdrop />
-    </Window.SystemBackdrop>
+    <!--
+        No SystemBackdrop: the design is flat white edge to edge, and Mica would tint it.
+        The system title bar is removed entirely in the code-behind, so the pages own the
+        whole window and the caption buttons below are the only window chrome.
+    -->
+    <Grid Background="{StaticResource AppBackgroundBrush}">
 
-    <Grid>
+        <Frame x:Name="RootFrame" />
 
+        <!--
+            Overlays the frame rather than taking a row of its own, so removing it would
+            not shift any page: every screen centres its content in the full window and
+            none of them put anything in the top strip.
+        -->
+        <!--
+            Declared to the window manager as the caption region in the code-behind,
+            which is what makes dragging, double-click maximise, the right-click system
+            menu and edge snapping work. There is deliberately no PointerPressed
+            handler: emulating a drag from one is what broke all of the above.
+        -->
+        <Grid x:Name="DragRegion"
+              Height="48"
+              VerticalAlignment="Top"
+              Background="Transparent">
+
+            <!--
+                Home only. Every other screen already presents a large centred lockup
+                and a second one up here would read as a duplication rather than as
+                branding, so the code-behind toggles this off the navigation service's
+                Navigated event. Smaller than the 118 the centred screens use, because
+                here it is chrome rather than the focal point.
+
+                80 is not arbitrary. The lockup's tallest element is the ring, and the
+                ring measures 111 against the control's declared canvas width of
+                447.99 - so the rendered height is Width x 0.2478, which at 80 is
+                19.82. That leaves 14.09 clear above and below, matching the 14 inset
+                on the left: the same margin on every side the logo touches.
+
+                Note the 0.2478, not the 103.4/447.99 = 0.2308 the canvas implies. The
+                ring overflows the declared canvas by 7.3% and Viewbox does not clip,
+                so the box the control reserves is slightly shorter than what it draws.
+
+                Not hit-testable: the drag region has to receive the press, or the
+                window would stop moving wherever the logo happens to sit.
+            -->
+            <controls:DoNetLogo x:Name="TitleLogo"
+                                Width="80"
+                                Margin="14,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsHitTestVisible="False"
+                                Visibility="Collapsed" />
+
+            <StackPanel x:Name="CaptionButtons"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Margin="0,0,10,0"
+                        Spacing="0">
+
+                <Button x:Name="MinimizeButton"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        Background="{StaticResource CaptionMinimizeBrush}"
+                        AutomationProperties.Name="Minimize"
+                        ToolTipService.ToolTip="Minimize"
+                        Click="OnMinimizeClick" />
+
+                <Button x:Name="MaximizeButton"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        Background="{StaticResource CaptionMaximizeBrush}"
+                        AutomationProperties.Name="Maximize"
+                        ToolTipService.ToolTip="Maximize"
+                        Click="OnMaximizeClick" />
+
+                <Button x:Name="CloseButton"
+                        Style="{StaticResource CaptionButtonStyle}"
+                        Background="{StaticResource CaptionCloseBrush}"
+                        AutomationProperties.Name="Close"
+                        ToolTipService.ToolTip="Close"
+                        Click="OnCloseClick" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

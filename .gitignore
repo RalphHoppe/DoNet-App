@@ -4,6 +4,16 @@
 # Build output
 bin/
 obj/
+installer/
+
+# The MSIX packaging wizard's output; the installer is a build artefact, not source.
+AppPackages/
+
+# The signing certificate the packaging wizard creates in the project folder. A
+# signing key is a machine-local secret, not source - the same one has to sign
+# every update, which makes it a thing to back up privately, not to publish.
+*.pfx
+*.cer
 
 # User-specific files
 *.user
@@ -14,3 +24,9 @@ obj/
 
 # Build/log files
 *.log
+# Python tooling
+__pycache__/
+*.pyc
+
+# Generated installer files
+installer/Output/

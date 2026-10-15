@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.ServiceRecordCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        One record of a designed service type. The shell is every other card in the
+        app - identity row, fields, hover actions - and the middle of it is built in
+        code, because what a record carries was decided by the user, in the
+        structure designer, not by this markup.
+    -->
+
+    <UserControl.Resources>
+
+        <Style x:Key="FieldValueStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="{StaticResource FieldValueFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="20" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Storyboard x:Key="ActionsShow">
+            <DoubleAnimation Storyboard.TargetName="ActionLayer"
+                             Storyboard.TargetProperty="Opacity"
+                             To="1" Duration="0:0:0.18" />
+            <DoubleAnimation Storyboard.TargetName="ActionShift"
+                             Storyboard.TargetProperty="X"
+                             To="0" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Key="ActionsHide">
+            <DoubleAnimation Storyboard.TargetName="ActionLayer"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="ActionShift"
+                             Storyboard.TargetProperty="X"
+                             To="14" Duration="0:0:0.16">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+    </UserControl.Resources>
+
+    <Border x:Name="Shell"
+            Background="{StaticResource CardBackgroundBrush}"
+            BorderBrush="{StaticResource CardBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="26"
+            Padding="20"
+            DoubleTapped="OnDoubleTapped"
+            PointerEntered="OnCardPointerEntered"
+            PointerExited="OnCardPointerExited">
+
+        <Grid RowSpacing="22">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Identity row: the record's title, not a field. -->
+            <Grid Grid.Row="0" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Width="56"
+                        Height="56"
+                        CornerRadius="28"
+                        Background="{StaticResource CardAvatarBrush}"
+                        BorderBrush="{StaticResource SearchBorderBrush}"
+                        BorderThickness="1">
+                    <TextBlock x:Name="AvatarText"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="20"
+                               Foreground="{StaticResource BrandPrimaryBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="{StaticResource CardTitleFontSize}"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="22" />
+                    <TextBlock x:Name="CaptionText"
+                               Text="Record"
+                               FontFamily="{StaticResource BalooFont}"
+                               FontSize="{StaticResource FieldValueFontSize}"
+                               Foreground="{StaticResource CardMetaBrush}"
+                               Margin="0,2,0,0"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="20" />
+                </StackPanel>
+            </Grid>
+
+            <!-- The record's fields, built in code from the type's structure. -->
+            <Grid x:Name="FieldsHost"
+                  Grid.Row="1"
+                  RowSpacing="18"
+                  ColumnSpacing="12" />
+
+            <!--
+                Open, edit and delete, anchored to the bottom-right corner while the
+                pointer is over the card. Open is first because it is the most
+                common thing to want; edit and delete follow it, as on every card.
+            -->
+            <StackPanel x:Name="ActionLayer"
+                        Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Orientation="Horizontal"
+                        Spacing="12"
+                        Opacity="0"
+                        IsHitTestVisible="False"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform x:Name="ActionShift" X="14" />
+                </StackPanel.RenderTransform>
+
+                <Button x:Name="OpenAction"
+                        Width="46"
+                        Height="46"
+                        Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Open"
+                        GotFocus="OnActionGotFocus"
+                        LostFocus="OnActionLostFocus"
+                        PointerEntered="OnActionPointerEntered"
+                        PointerExited="OnActionPointerExited"
+                        Click="OnOpenClick">
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
+                            Background="{StaticResource BrandPrimaryBrush}">
+                        <controls:LineIcon Kind="Eye"
+                                           Width="21"
+                                           Height="21"
+                                           Foreground="White" />
+                    </Border>
+                </Button>
+
+                <Button x:Name="EditAction"
+                        Width="46"
+                        Height="46"
+                        Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Edit"
+                        GotFocus="OnActionGotFocus"
+                        LostFocus="OnActionLostFocus"
+                        PointerEntered="OnActionPointerEntered"
+                        PointerExited="OnActionPointerExited"
+                        Click="OnEditClick">
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
+                            Background="{StaticResource BrandPrimaryBrush}">
+                        <controls:LineIcon Kind="EditSquare"
+                                           Width="21"
+                                           Height="21"
+                                           Foreground="White" />
+                    </Border>
+                </Button>
+
+                <Button x:Name="DeleteAction"
+                        Width="46"
+                        Height="46"
+                        Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Delete"
+                        GotFocus="OnActionGotFocus"
+                        LostFocus="OnActionLostFocus"
+                        PointerEntered="OnActionPointerEntered"
+                        PointerExited="OnActionPointerExited"
+                        Click="OnDeleteClick">
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
+                            Background="{StaticResource DangerBrush}">
+                        <controls:LineIcon Kind="Trash"
+                                           Width="21"
+                                           Height="21"
+                                           Foreground="White" />
+                    </Border>
+                </Button>
+            </StackPanel>
+
+        </Grid>
+    </Border>
+</UserControl>
