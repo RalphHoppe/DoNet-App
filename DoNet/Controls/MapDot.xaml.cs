@@ -5,12 +5,14 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Windows.Foundation;
 
 namespace DoNet.Controls;
 
 /// <summary>
 /// One dot on the VPS map. See the XAML for how the dot carries its flag,
-/// its count, its MAIN tag, its label and its hover card.
+/// its count, its MAIN tag, its label and its hover card - and why the
+/// overhang lives on a canvas rather than in the root grid.
 /// </summary>
 public sealed partial class MapDot : UserControl
 {
@@ -112,9 +114,16 @@ public sealed partial class MapDot : UserControl
     /// hover card.
     /// </summary>
     /// <remarks>
-    /// The margins that put the tag above and the label below the coin are
-    /// recomputed from the dot's size, so a 28-pixel node and a 40-pixel
-    /// main carry their extras at the same breathing distance.
+    /// <para>
+    /// The coin is the root's own square; everything else is seated on the
+    /// overhang canvas, measured first so it can be centred on the coin
+    /// without the canvas constraining it. A canvas measures its children
+    /// against infinity, so the measure is the element's honest size.
+    /// </para>
+    /// <para>
+    /// The seats are computed from the dot's size, so a 28-pixel node and a
+    /// 40-pixel main carry their extras at the same breathing distance.
+    /// </para>
     /// </remarks>
     private void Apply()
     {
@@ -124,19 +133,20 @@ public sealed partial class MapDot : UserControl
         }
 
         bool isMainKind = pin.Kind is MapPinKind.Main or MapPinKind.Cluster or MapPinKind.TreeMain;
+        double size = pin.DotSize;
 
         // The coin and its halo.
-        Root.Width = pin.DotSize;
-        Root.Height = pin.DotSize;
-        Coin.Width = pin.DotSize;
-        Coin.Height = pin.DotSize;
+        Root.Width = size;
+        Root.Height = size;
+        Coin.Width = size;
+        Coin.Height = size;
         Coin.Stroke = (Brush)Resources[isMainKind ? "MainRingBrush" : "NodeRingBrush"];
         Coin.StrokeThickness = isMainKind ? 3 : 2.25;
 
         if (isMainKind)
         {
-            Halo.Width = pin.DotSize + 8;
-            Halo.Height = pin.DotSize + 8;
+            Halo.Width = size + 8;
+            Halo.Height = size + 8;
             Halo.Opacity = 1;
         }
         else
@@ -152,32 +162,46 @@ public sealed partial class MapDot : UserControl
         if (hasFlag)
         {
             Flag.Country = pin.FlagCountry;
-            double flagWidth = pin.DotSize >= 34 ? 21 : 18;
+            double flagWidth = size >= 34 ? 21 : 18;
             FlagBox.Width = flagWidth;
             FlagBox.Height = flagWidth * 15.0 / 21.0;
         }
 
-        // The count badge, only on a country holding several mains.
+        // The count badge, only on a country holding several mains: hung off
+        // the coin's top-right shoulder.
         bool isCluster = pin.Kind == MapPinKind.Cluster && pin.Cluster is { Count: > 1 };
         CountBadge.Visibility = isCluster ? Visibility.Visible : Visibility.Collapsed;
 
-        if (isCluster && pin.Cluster is { } cluster)
+        if (isCluster)
         {
-            CountText.Text = $"\u00D7{cluster.Count}";
+            CountText.Text = $"\u00D7{pin.Cluster!.Count}";
+            SeatOverhang(CountBadge, right: 20, top: -8, fromRight: true);
         }
 
-        // The MAIN tag, only on the root of an open network.
+        // The MAIN tag, only on the root of an open network: centred above
+        // the coin, clear of the halo.
         MainTag.Visibility = pin.Kind == MapPinKind.TreeMain
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        // The label under the coin.
-        LabelText.Text = pin.Label;
-        LabelText.FontFamily = (FontFamily)Application.Current.Resources[isMainKind
-            ? "BalooSemiBoldFont"
-            : "BalooFont"];
-        LabelText.FontSize = pin.Kind == MapPinKind.TreeMain ? 12.5 : 12;
-        LabelPill.Margin = new Thickness(0, 0, 0, -(pin.DotSize / 2 + 13));
+        if (pin.Kind == MapPinKind.TreeMain)
+        {
+            SeatOverhang(MainTag, centre: true, top: -26);
+        }
+
+        // The label under the coin, when there is one.
+        bool hasLabel = pin.Label.Trim().Length > 0;
+        LabelPill.Visibility = hasLabel ? Visibility.Visible : Visibility.Collapsed;
+
+        if (hasLabel)
+        {
+            LabelText.Text = pin.Label;
+            LabelText.FontFamily = (FontFamily)Application.Current.Resources[isMainKind
+                ? "BalooSemiBoldFont"
+                : "BalooFont"];
+            LabelText.FontSize = pin.Kind == MapPinKind.TreeMain ? 12.5 : 12;
+            SeatOverhang(LabelPill, centre: true, bottom: size / 2 + 13, fromBottom: true);
+        }
 
         // The hover card, above by default and under when the dot sits near
         // the top of the map.
@@ -185,26 +209,72 @@ public sealed partial class MapDot : UserControl
         TipDetail.Text = pin.TooltipDetail;
         TipMeta.Text = pin.TooltipMeta;
         TipFlagBox.Visibility = hasFlag ? Visibility.Visible : Visibility.Collapsed;
+        TipCard.Visibility = Visibility.Visible;
 
         if (hasFlag)
         {
             TipFlag.Country = pin.FlagCountry;
         }
 
-        // The clearance the card needs above the coin: past the MAIN tag when
-        // there is one, past the badge's shoulder when there is not.
+        // The clearance the card needs: past the MAIN tag when there is one,
+        // past the badge's shoulder when there is not - and past the label
+        // when it opens downward instead.
         double above = pin.Kind == MapPinKind.TreeMain ? 134 : 96;
-        double below = pin.DotSize / 2 + 41 + 84;
+        double below = size / 2 + 41 + 84;
+
+        // The card is measured against infinity, so its honest size is
+        // known before it is seated: centred on the coin, hanging down from
+        // its clearance above or standing on it below.
+        TipCard.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 
         if (pin.TooltipAbove)
         {
-            TipCard.VerticalAlignment = VerticalAlignment.Top;
-            TipCard.Margin = new Thickness(0, -above, 0, 0);
+            Canvas.SetLeft(TipCard, size / 2 - TipCard.DesiredSize.Width / 2);
+            Canvas.SetTop(TipCard, -above);
         }
         else
         {
-            TipCard.VerticalAlignment = VerticalAlignment.Bottom;
-            TipCard.Margin = new Thickness(0, 0, 0, -below);
+            Canvas.SetLeft(TipCard, size / 2 - TipCard.DesiredSize.Width / 2);
+            Canvas.SetTop(TipCard, size + below - TipCard.DesiredSize.Height);
+        }
+    }
+
+    /// <summary>
+    /// Seats an overhang element on its canvas: centred on the coin, or hung
+    /// off one of its corners.
+    /// </summary>
+    /// <remarks>
+    /// The element is measured against infinity first - a canvas does not
+    /// size its children, so the measure is the only way to know how wide the
+    /// words are.
+    /// </remarks>
+    private void SeatOverhang(
+        FrameworkElement element,
+        bool centre = false,
+        double right = 0,
+        double top = 0,
+        double bottom = 0,
+        bool fromRight = false,
+        bool fromBottom = false)
+    {
+        element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        if (centre)
+        {
+            Canvas.SetLeft(element, Root.Width / 2 - element.DesiredSize.Width / 2);
+        }
+        else if (fromRight)
+        {
+            Canvas.SetLeft(element, Root.Width + right - element.DesiredSize.Width);
+        }
+
+        if (fromBottom)
+        {
+            Canvas.SetTop(element, Root.Height + bottom - element.DesiredSize.Height);
+        }
+        else
+        {
+            Canvas.SetTop(element, top);
         }
     }
 

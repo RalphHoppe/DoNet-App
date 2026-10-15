@@ -182,19 +182,51 @@
                         Background="{StaticResource SeaBrush}"
                         BorderBrush="{StaticResource CardBorderBrush}"
                         BorderThickness="1">
+                    <!--
+                        The wheel zooms about the pointer; a drag from the map
+                        itself - the sea or the land, not a dot or a panel -
+                        carries the view. Presses on the dots, the header, the
+                        chooser and these very handlers' panels never start a
+                        drag; the code-behind checks where a press began.
+                    -->
                     <Grid x:Name="MapHost"
                           Height="320"
-                          SizeChanged="OnMapHostSizeChanged">
+                          SizeChanged="OnMapHostSizeChanged"
+                          PointerWheelChanged="OnMapWheel"
+                          PointerPressed="OnMapPointerPressed"
+                          PointerMoved="OnMapPointerMoved"
+                          PointerReleased="OnMapPointerReleased"
+                          PointerCanceled="OnMapPointerReleased">
 
                         <!-- Everything that belongs to the plate is clipped to
                              it: the connections that cross the edge where the
                              map ends and restarts leave the map, not the
                              dialog. -->
                         <Grid x:Name="MapClip">
-                            <Image x:Name="MapImage"
-                                   Source="ms-appx:///Assets/Maps/world-map.png"
-                                   Stretch="Uniform" />
-                            <Canvas x:Name="LineLayer" />
+                            <!--
+                                The plate and its connections share one
+                                canvas, in host pixels: the image is seated
+                                and sized by the view model's transform, and
+                                the lines run between the transformed
+                                positions. The image is exactly 2:1 and so is
+                                the rect it is given, so Fill distorts
+                                nothing.
+                            -->
+                            <Canvas x:Name="MapCanvas">
+                                <Image x:Name="MapImage"
+                                       Source="ms-appx:///Assets/Maps/world-map.png"
+                                       Stretch="Fill"
+                                       Width="0"
+                                       Height="0" />
+                            </Canvas>
+
+                            <!--
+                                The dots sit above the lines and keep their
+                                own size at every zoom - a dot does not grow
+                                with the map, or at 8x it would be a plate
+                                itself. The layer's transparent background is
+                                the map's drag surface.
+                            -->
                             <Canvas x:Name="DotLayer"
                                     Background="Transparent"
                                     Tapped="OnMapBackgroundTapped" />
@@ -329,6 +361,86 @@
                                 </StackPanel>
                             </Border>
                         </Canvas>
+
+                        <!--
+                            ZOOM: closer, further, and the whole earth back.
+                            The wheel zooms about the pointer and a drag
+                            carries the view; these are the same trip with
+                            somewhere definite to land.
+                        -->
+                        <StackPanel HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Margin="14"
+                                    Spacing="8">
+                            <Button Style="{StaticResource BareButtonStyle}"
+                                    ToolTipService.ToolTip="Zoom in"
+                                    IsEnabled="{x:Bind ViewModel.CanZoomIn, Mode=OneWay}"
+                                    Click="OnZoomInClick">
+                                <Border Width="36"
+                                        Height="36"
+                                        CornerRadius="18"
+                                        Background="#F2FFFFFF"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1">
+                                    <Viewbox Width="15"
+                                             Height="15">
+                                        <Canvas Width="18" Height="18">
+                                            <Path Data="M9 3.75 V14.25 M3.75 9 H14.25"
+                                                  Stroke="#5C6066"
+                                                  StrokeThickness="2.2"
+                                                  StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                            </Button>
+
+                            <Button Style="{StaticResource BareButtonStyle}"
+                                    ToolTipService.ToolTip="Zoom out"
+                                    IsEnabled="{x:Bind ViewModel.CanZoomOut, Mode=OneWay}"
+                                    Click="OnZoomOutClick">
+                                <Border Width="36"
+                                        Height="36"
+                                        CornerRadius="18"
+                                        Background="#F2FFFFFF"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1">
+                                    <Viewbox Width="15"
+                                             Height="15">
+                                        <Canvas Width="18" Height="18">
+                                            <Path Data="M3.75 9 H14.25"
+                                                  Stroke="#5C6066"
+                                                  StrokeThickness="2.2"
+                                                  StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                            </Button>
+
+                            <Button Style="{StaticResource BareButtonStyle}"
+                                    ToolTipService.ToolTip="Back to the whole earth"
+                                    Click="OnZoomResetClick">
+                                <Border Width="36"
+                                        Height="36"
+                                        CornerRadius="18"
+                                        Background="#F2FFFFFF"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1">
+                                    <Viewbox Width="15"
+                                             Height="15">
+                                        <Canvas Width="18" Height="18">
+                                            <Path Data="M3 6.6 V4.8 Q3 3 4.8 3 H6.6 M11.4 3 H13.2 Q15 3 15 4.8 V6.6 M15 11.4 V13.2 Q15 15 13.2 15 H11.4 M6.6 15 H4.8 Q3 15 3 13.2 V11.4"
+                                                          Stroke="#5C6066"
+                                                          StrokeThickness="2"
+                                                          StrokeStartLineCap="Round"
+                                                          StrokeEndLineCap="Round"
+                                                          StrokeLineJoin="Round" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                            </Button>
+                        </StackPanel>
 
                         <!-- The states, centred on the plate. -->
                         <Border HorizontalAlignment="Center"

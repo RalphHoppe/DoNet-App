@@ -200,6 +200,12 @@ public sealed partial class MapChooser : ObservableObject
 ///</remarks>
 public sealed partial class VpsMapViewModel : ObservableObject
 {
+    /// <summary>The view's zoom limits: one is the whole plate, eight the closest.</summary>
+    private const double MaxZoom = 8;
+
+    /// <summary>One step of the zoom buttons.</summary>
+    private const double ZoomStep = 1.5;
+
     /// <summary>The dot diameters, by job.</summary>
     private const int MainDot = 34;
 
@@ -232,8 +238,14 @@ public sealed partial class VpsMapViewModel : ObservableObject
     /// <summary>The host's size, the last time the view reported it.</summary>
     private (double Width, double Height) _hostSize;
 
-    /// <summary>The map's rectangle inside the host, in pixels.</summary>
+    /// <summary>The map's rectangle inside the host at rest, in pixels.</summary>
     private (double X, double Y, double W, double H) _mapRect;
+
+    /// <summary>The view's pan, in pixels, away from the resting rectangle.</summary>
+    private double _panX;
+
+    /// <summary>The view's pan, in pixels, away from the resting rectangle.</summary>
+    private double _panY;
 
     public VpsMapViewModel(IVpsDirectory directory)
     {
@@ -264,6 +276,27 @@ public sealed partial class VpsMapViewModel : ObservableObject
     [ObservableProperty]
     private bool _isFocused;
 
+    /// <summary>True while the view can go closer.</summary>
+    public bool CanZoomIn => Zoom < MaxZoom - 0.001;
+
+    /// <summary>True while the view can pull back further.</summary>
+    public bool CanZoomOut => Zoom > 1.0 + 0.001;
+
+    partial void OnZoomChanged(double value)
+    {
+        OnPropertyChanged(nameof(CanZoomIn));
+        OnPropertyChanged(nameof(CanZoomOut));
+    }
+
+    /// <summary>
+    /// The plate's rectangle under the current view, in host pixels: what the
+    /// image draws into, and the space the dots and lines are placed in.
+    /// </summary>
+    public (double X, double Y, double W, double H) ImageRect
+        => _hostSize.Width <= 0
+            ? (0, 0, 0, 0)
+            : (_mapRect.X + _panX, _mapRect.Y + _panY, _mapRect.W * Zoom, _mapRect.H * Zoom);
+
     /// <summary>The open chooser, or null when none is open.</summary>
     [ObservableProperty]
     private MapChooser? _chooser;
@@ -283,6 +316,10 @@ public sealed partial class VpsMapViewModel : ObservableObject
     /// <summary>The focused main's counts, as a line of text.</summary>
     [ObservableProperty]
     private string _focusedSummary = string.Empty;
+
+    /// <summary>The view's zoom: one is the whole plate, MaxZoom the closest.</summary>
+    [ObservableProperty]
+    private double _zoom = 1.0;
 
     /// <summary>How many mains could not be placed, for the footer's note.</summary>
     [ObservableProperty]
@@ -334,6 +371,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
         IsEmpty = false;
 
         CloseChooser();
+        ResetView();
 
         try
         {
@@ -817,7 +855,123 @@ public sealed partial class VpsMapViewModel : ObservableObject
         double height = width / 2;
         _mapRect = ((hostWidth - width) / 2, (hostHeight - height) / 2, width, height);
 
+        ClampPan();
+
         Layout(Pins);
+        OnPropertyChanged(nameof(ImageRect));
+        OnPropertyChanged(nameof(OverlayMoved));
+    }
+
+    // ------------------------------------------------------------------
+    // The view: zoom and pan
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Zooms by a factor about a point: whatever the map holds under that
+    /// point stays under it, which is what makes the wheel feel attached to
+    /// the pointer.
+    /// </summary>
+    public void ZoomAt(double factor, double anchorX, double anchorY)
+    {
+        if (_hostSize.Width <= 0)
+        {
+            return;
+        }
+
+        double next = Math.Clamp(Zoom * factor, 1.0, MaxZoom);
+
+        if (Math.Abs(next - Zoom) < 0.0001)
+        {
+            return;
+        }
+
+        (double rx, double ry, double rw, double rh) = _mapRect;
+
+        // The map point under the anchor, in the plate's own terms.
+        double nx = (anchorX - rx - _panX) / (rw * Zoom);
+        double ny = (anchorY - ry - _panY) / (rh * Zoom);
+
+        Zoom = next;
+        _panX = anchorX - rx - nx * rw * next;
+        _panY = anchorY - ry - ny * rh * next;
+
+        ClampPan();
+        OnViewMoved();
+    }
+
+    /// <summary>Zooms in a step, on the middle of the view.</summary>
+    public void ZoomIn() => ZoomAt(ZoomStep, _hostSize.Width / 2, _hostSize.Height / 2);
+
+    /// <summary>Zooms out a step, on the middle of the view.</summary>
+    public void ZoomOut() => ZoomAt(1 / ZoomStep, _hostSize.Width / 2, _hostSize.Height / 2);
+
+    /// <summary>
+    /// Carries the map by a drag's delta. At rest there is nowhere to carry
+    /// it to - the whole plate is already on show.
+    /// </summary>
+    public void PanBy(double deltaX, double deltaY)
+    {
+        if (Zoom <= 1.0)
+        {
+            return;
+        }
+
+        _panX += deltaX;
+        _panY += deltaY;
+
+        ClampPan();
+        OnViewMoved();
+    }
+
+    /// <summary>
+    /// Returns the view to the whole earth. Called when the map opens, so
+    /// every visit starts from the whole picture.
+    /// </summary>
+    public void ResetView()
+    {
+        _panX = 0;
+        _panY = 0;
+        Zoom = 1;
+
+        ClampPan();
+        OnViewMoved();
+    }
+
+    /// <summary>
+    /// Keeps the scaled plate over its viewport: centred when it is narrower,
+    /// edge to edge when it is wider - the map never drags past its own edge
+    /// and leaves a gutter on one side.
+    /// </summary>
+    private void ClampPan()
+    {
+        if (_hostSize.Width <= 0)
+        {
+            return;
+        }
+
+        (double rx, double ry, double rw, double rh) = _mapRect;
+        double scaledW = rw * Zoom;
+        double scaledH = rh * Zoom;
+
+        _panX = scaledW <= _hostSize.Width
+            ? (_hostSize.Width - scaledW) / 2 - rx
+            : Math.Clamp(_panX, _hostSize.Width - rx - scaledW, -rx);
+
+        _panY = scaledH <= _hostSize.Height
+            ? (_hostSize.Height - scaledH) / 2 - ry
+            : Math.Clamp(_panY, _hostSize.Height - ry - scaledH, -ry);
+    }
+
+    /// <summary>
+    /// Notifies everything that watches the view transform: the pixels move,
+    /// but the pins are the same objects - the view re-seats what it holds
+    /// rather than rebuilding it, so zooming never replays the dots' arrival.
+    /// </summary>
+    private void OnViewMoved()
+    {
+        Layout(Pins);
+        OnPropertyChanged(nameof(ImageRect));
+        OnPropertyChanged(nameof(OverlayMoved));
     }
 
     /// <summary>Places everything the current view shows.</summary>
@@ -834,10 +988,17 @@ public sealed partial class VpsMapViewModel : ObservableObject
 
         (double rx, double ry, double rw, double rh) = _mapRect;
 
+        // The view transform: the plate scaled by the zoom and carried by the
+        // pan. At rest - zoom one, pan zero - this is the letterboxed fit.
+        double left = rx + _panX;
+        double top = ry + _panY;
+        double scaledW = rw * Zoom;
+        double scaledH = rh * Zoom;
+
         foreach (MapPin pin in pins)
         {
-            pin.X = Clamp(rx + pin.Nx * rw, rx + 20, rx + rw - 20);
-            pin.Y = Clamp(ry + pin.Ny * rh, ry + 22, ry + rh - 22);
+            pin.X = Clamp(left + pin.Nx * scaledW, left + 20, left + scaledW - 20);
+            pin.Y = Clamp(top + pin.Ny * scaledH, top + 22, top + scaledH - 22);
         }
 
         SpreadSharedAnchors(pins);
@@ -932,7 +1093,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
             // The direct connections draw solid; everything deeper draws
             // thinner and dashed, so the chain's depth reads at a glance.
             List<MapLine> into = level <= 1 ? direct : deep;
-            double width = _mapRect.W;
+            double width = _mapRect.W * Zoom;
 
             // The short way across: when the straight span crosses more than
             // half the map, the connection leaves one edge and re-enters the

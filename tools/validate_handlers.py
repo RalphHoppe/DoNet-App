@@ -172,6 +172,12 @@ def main() -> int:
                 name = match.group(1)
                 if name in {"null", "value", "true", "false"}:
                     continue
+
+                # A handler is a method, and methods here are PascalCase; a
+                # camelCase name on the right of a += is arithmetic on a local
+                # (pan += delta), not a subscription to check.
+                if not name[0].isupper():
+                    continue
                 checked += 1
                 if name not in available:
                     line = text.count("\n", 0, match.start()) + 1

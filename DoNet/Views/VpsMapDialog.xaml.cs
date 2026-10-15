@@ -44,6 +44,12 @@ public sealed partial class VpsMapDialog : UserControl
     /// <summary>The connections, paired with the segments that draw them.</summary>
     private readonly List<(Line Shape, MapLine Model)> _lines = new();
 
+    /// <summary>Where a drag began, in host pixels, or null when there is no drag.</summary>
+    private Point? _dragStart;
+
+    /// <summary>Whether the pointer has moved far enough to count as a drag.</summary>
+    private bool _dragging;
+
     public VpsMapDialog()
     {
         // Resolved before InitializeComponent, as everywhere else here: x:Bind
@@ -107,6 +113,16 @@ public sealed partial class VpsMapDialog : UserControl
 
             case nameof(VpsMapViewModel.Chooser):
                 RebuildChooser();
+                break;
+
+            case nameof(VpsMapViewModel.ImageRect):
+                ApplyImageRect();
+                break;
+
+            case nameof(VpsMapViewModel.OverlayMoved):
+                // The pins are the same objects in new places: re-seat what
+                // is held, and never replay the dots' arrival.
+                PositionOverlay();
                 break;
         }
     }
@@ -194,16 +210,161 @@ public sealed partial class VpsMapDialog : UserControl
     private void OnMapHostSizeChanged(object sender, SizeChangedEventArgs args)
     {
         // The clip keeps the plate's overflows - the connections that cross
-        // the edge where the map ends and restarts - inside the map's own
-        // bounds.
+        // the edge where the map ends and restarts, the view panned past an
+        // edge - inside the map's own bounds.
         MapClip.Clip = new RectangleGeometry
         {
             Rect = new Rect(0, 0, args.NewSize.Width, args.NewSize.Height),
         };
 
         ViewModel.SetMapSize(args.NewSize.Width, args.NewSize.Height);
+        ApplyImageRect();
         PositionOverlay();
     }
+
+    /// <summary>
+    /// Seats the plate's image in its transformed rectangle: the view model
+    /// owns where everything on the map is, the image included.
+    /// </summary>
+    private void ApplyImageRect()
+    {
+        (double x, double y, double width, double height) = ViewModel.ImageRect;
+
+        Canvas.SetLeft(MapImage, x);
+        Canvas.SetTop(MapImage, y);
+        MapImage.Width = width;
+        MapImage.Height = height;
+    }
+
+    // ------------------------------------------------------------------
+    // Zoom and pan
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// The wheel zooms about the pointer: whatever the map holds under the
+    /// cursor stays under it, a notch at a time.
+    /// </summary>
+    private void OnMapWheel(object sender, PointerRoutedEventArgs args)
+    {
+        var point = args.GetCurrentPoint(MapHost);
+        double delta = point.Properties.MouseWheelDelta;
+
+        if (delta == 0)
+        {
+            return;
+        }
+
+        args.Handled = true;
+
+        ViewModel.ZoomAt(
+            Math.Pow(1.15, delta / 120.0),
+            point.Position.X,
+            point.Position.Y);
+    }
+
+    /// <summary>
+    /// A press on the map itself - the sea or the land, not a dot or a panel
+    /// - may become a drag of the view.
+    /// </summary>
+    private void OnMapPointerPressed(object sender, PointerRoutedEventArgs args)
+    {
+        if (!args.GetCurrentPoint(MapHost).Properties.IsLeftButtonPressed
+            || !PressStartsOnMap(args.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        _dragStart = args.GetCurrentPoint(MapHost).Position;
+        _dragging = false;
+        MapHost.CapturePointer(args.Pointer);
+    }
+
+    /// <summary>
+    /// The drag itself: six pixels of slack before it counts, so a press
+    /// released where it began still reads as a tap.
+    /// </summary>
+    private void OnMapPointerMoved(object sender, PointerRoutedEventArgs args)
+    {
+        if (_dragStart is not { } start)
+        {
+            return;
+        }
+
+        Point position = args.GetCurrentPoint(MapHost).Position;
+
+        if (!_dragging
+            && Math.Abs(position.X - start.X) + Math.Abs(position.Y - start.Y) > 6)
+        {
+            _dragging = true;
+        }
+
+        if (!_dragging)
+        {
+            return;
+        }
+
+        ViewModel.PanBy(position.X - start.X, position.Y - start.Y);
+        _dragStart = position;
+    }
+
+    /// <summary>
+    /// The end of a press. One that never became a drag still reads as a tap
+    /// on the map - the capture it took can swallow the ordinary tapped
+    /// event, so the tap is delivered here.
+    /// </summary>
+    private void OnMapPointerReleased(object sender, PointerRoutedEventArgs args)
+    {
+        if (_dragStart is null)
+        {
+            return;
+        }
+
+        bool wasDrag = _dragging;
+        _dragStart = null;
+        _dragging = false;
+        MapHost.ReleasePointerCapture(args.Pointer);
+
+        if (!wasDrag)
+        {
+            ViewModel.HandleBackgroundTap();
+        }
+    }
+
+    /// <summary>
+    /// Whether a press began on the map itself: the climb from where it began
+    /// reaches the plate's canvas or the dot layer's background before any of
+    /// the panels that sit over them.
+    /// </summary>
+    private bool PressStartsOnMap(DependencyObject? node)
+    {
+        while (node is not null)
+        {
+            if (node is MapDot || node == FocusedHeader || node == ChooserLayer)
+            {
+                return false;
+            }
+
+            if (node == DotLayer || node == MapCanvas)
+            {
+                return true;
+            }
+
+            if (node == MapHost)
+            {
+                return false;
+            }
+
+            node = VisualTreeHelper.GetParent(node);
+        }
+
+        return false;
+    }
+
+    private void OnZoomInClick(object sender, RoutedEventArgs args) => ViewModel.ZoomIn();
+
+    private void OnZoomOutClick(object sender, RoutedEventArgs args) => ViewModel.ZoomOut();
+
+    private void OnZoomResetClick(object sender, RoutedEventArgs args) => ViewModel.ResetView();
 
     // ------------------------------------------------------------------
     // The overlay
@@ -250,7 +411,7 @@ public sealed partial class VpsMapDialog : UserControl
     {
         foreach ((Line shape, _) in _lines)
         {
-            LineLayer.Children.Remove(shape);
+            MapCanvas.Children.Remove(shape);
         }
 
         _lines.Clear();
@@ -285,7 +446,7 @@ public sealed partial class VpsMapDialog : UserControl
             }
 
             _lines.Add((shape, segment));
-            LineLayer.Children.Add(shape);
+            MapCanvas.Children.Add(shape);
         }
     }
 

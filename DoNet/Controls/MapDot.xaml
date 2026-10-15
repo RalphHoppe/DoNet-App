@@ -13,17 +13,18 @@
 
         The dot itself is a white coin carrying the country's flag, with the
         ring saying what the record is: the VPS's own red for a main, the
-        app's slate for a VPS connected into an open network. The extras hang
-        off the coin rather than sizing it, so the hit target stays the dot
-        and nothing else: the count badge for a country holding several
-        mains, the MAIN tag so a network's root can never be mistaken for
-        one of its own children, the label under the dot, and the hover card
-        that says in words what the colours just said.
+        app's slate for a VPS connected into an open network.
 
-        The control is sized and filled from its pin in code, in the Apply
-        pattern the cards use, because the pin is a plain object refreshed by
-        replacement rather than one that raises changes. The caller positions
-        it on the map canvas; this control only ever owns its own square.
+        Everything that hangs off the coin - the count badge, the MAIN tag,
+        the label, the hover card - lives in an overhang canvas, not in the
+        root grid. A grid hands its children its own size, and this root is
+        the coin's little square, so a label measured inside it would wrap to
+        one letter a line. A canvas measures its children against infinity,
+        which is what a thing that overhangs its box needs; the elements are
+        seated on it in code, in the Apply pattern the cards use, because the
+        pin is a plain object refreshed by replacement. The caller positions
+        the control on the map canvas; this control only ever owns its own
+        square.
     -->
 
     <UserControl.Resources>
@@ -95,9 +96,9 @@
     </UserControl.Resources>
 
     <!--
-        The root is exactly the coin's square; the badge, the tag, the label
-        and the hover card overhang it on negative margins, which a Grid
-        allows without clipping.
+        The root is exactly the coin's square - the hit target is the dot and
+        nothing else. The scale transforms belong to the whole visual, so the
+        overhang grows with the coin on hover.
     -->
     <Grid x:Name="Root"
           Width="34"
@@ -145,97 +146,96 @@
             </Grid>
         </Button>
 
-        <!-- A country holding several mains wears its count. -->
-        <Border x:Name="CountBadge"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Right"
-                Margin="2,-8,-20,0"
-                CornerRadius="10"
-                Padding="7,1"
-                Background="#FEBC2E"
-                BorderBrush="#FFFFFF"
-                BorderThickness="1.5"
-                Visibility="Collapsed"
+        <!--
+            The overhang: zero-sized on purpose, a canvas measures its
+            children against infinity and never clips them, so the badge, the
+            tag, the label and the hover card can be as wide as their words.
+            Seated in code; none of them is a hit target.
+        -->
+        <Canvas x:Name="Overhang"
+                Width="0"
+                Height="0"
                 IsHitTestVisible="False">
-            <TextBlock x:Name="CountText"
-                       FontFamily="{StaticResource JerseyFont}"
-                       FontSize="13"
-                       Foreground="#8A5B12"
-                       LineStackingStrategy="BlockLineHeight"
-                       LineHeight="14" />
-        </Border>
 
-        <!-- The network's root, named so it cannot be mistaken for a child. -->
-        <Border x:Name="MainTag"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Center"
-                Margin="0,-26,0,0"
-                CornerRadius="8"
-                Padding="8,1"
-                Background="#FF5F57"
-                Visibility="Collapsed"
-                IsHitTestVisible="False">
-            <TextBlock Text="MAIN"
-                       FontFamily="{StaticResource BalooSemiBoldFont}"
-                       FontSize="10.5"
-                       Foreground="#FFFFFF"
-                       CharacterSpacing="80"
-                       LineStackingStrategy="BlockLineHeight"
-                       LineHeight="13" />
-        </Border>
+            <!-- A country holding several mains wears its count. -->
+            <Border x:Name="CountBadge"
+                    CornerRadius="10"
+                    Padding="7,1"
+                    Background="#FEBC2E"
+                    BorderBrush="#FFFFFF"
+                    BorderThickness="1.5"
+                    Visibility="Collapsed">
+                <TextBlock x:Name="CountText"
+                           FontFamily="{StaticResource JerseyFont}"
+                           FontSize="13"
+                           Foreground="#8A5B12"
+                           LineStackingStrategy="BlockLineHeight"
+                           LineHeight="14" />
+            </Border>
 
-        <!-- The words under the dot: a country in the overview, a name in a
-             network. A pill, so it stays readable over land and sea alike. -->
-        <Border x:Name="LabelPill"
-                VerticalAlignment="Bottom"
-                HorizontalAlignment="Center"
-                Margin="0,0,0,-30"
-                CornerRadius="10"
-                Padding="9,2"
-                Background="#D8FFFFFF"
-                IsHitTestVisible="False">
-            <TextBlock x:Name="LabelText"
-                       FontFamily="{StaticResource BalooFont}"
-                       FontSize="12"
-                       Foreground="#5C6066"
-                       TextTrimming="CharacterEllipsis"
-                       MaxWidth="150"
-                       LineStackingStrategy="BlockLineHeight"
-                       LineHeight="15" />
-        </Border>
+            <!-- The network's root, named so it cannot be mistaken for a
+                 child. -->
+            <Border x:Name="MainTag"
+                    CornerRadius="8"
+                    Padding="8,1"
+                    Background="#FF5F57"
+                    Visibility="Collapsed">
+                <TextBlock Text="MAIN"
+                           FontFamily="{StaticResource BalooSemiBoldFont}"
+                           FontSize="10.5"
+                           Foreground="#FFFFFF"
+                           CharacterSpacing="80"
+                           LineStackingStrategy="BlockLineHeight"
+                           LineHeight="13" />
+            </Border>
 
-        <!-- The hover card: the country in words, the record's name, and its
-             place in the network. -->
-        <Border x:Name="TipCard"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Center"
-                Margin="0,-64,0,0"
-                CornerRadius="12"
-                Padding="12,10"
-                Background="{StaticResource TooltipBackgroundBrush}"
-                Opacity="0"
-                IsHitTestVisible="False">
-            <StackPanel Spacing="3">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Viewbox x:Name="TipFlagBox"
-                             Width="18"
-                             Height="13"
-                             VerticalAlignment="Center">
-                        <controls:FlagIcon x:Name="TipFlag" />
-                    </Viewbox>
-                    <TextBlock x:Name="TipTitle"
-                               FontFamily="{StaticResource BalooSemiBoldFont}"
-                               FontSize="13"
-                               Foreground="#FFFFFF"
-                               TextTrimming="CharacterEllipsis"
-                               MaxWidth="200"
-                               VerticalAlignment="Center"
-                               LineStackingStrategy="BlockLineHeight"
-                               LineHeight="17" />
+            <!-- The words under the dot: a country in the overview, a name in
+                 a network. A pill, so it stays readable over land and sea
+                 alike. -->
+            <Border x:Name="LabelPill"
+                    CornerRadius="10"
+                    Padding="9,2"
+                    Background="#D8FFFFFF"
+                    Visibility="Collapsed">
+                <TextBlock x:Name="LabelText"
+                           FontFamily="{StaticResource BalooFont}"
+                           FontSize="12"
+                           Foreground="#5C6066"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="150"
+                           LineStackingStrategy="BlockLineHeight"
+                           LineHeight="15" />
+            </Border>
+
+            <!-- The hover card: the country in words, the record's name, and
+                 its place in the network. -->
+            <Border x:Name="TipCard"
+                    CornerRadius="12"
+                    Padding="12,10"
+                    Background="{StaticResource TooltipBackgroundBrush}"
+                    Opacity="0">
+                <StackPanel Spacing="3">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Viewbox x:Name="TipFlagBox"
+                                 Width="18"
+                                 Height="13"
+                                 VerticalAlignment="Center">
+                            <controls:FlagIcon x:Name="TipFlag" />
+                        </Viewbox>
+                        <TextBlock x:Name="TipTitle"
+                                   FontFamily="{StaticResource BalooSemiBoldFont}"
+                                   FontSize="13"
+                                   Foreground="#FFFFFF"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxWidth="200"
+                                   VerticalAlignment="Center"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   LineHeight="17" />
+                    </StackPanel>
+                    <TextBlock x:Name="TipDetail" Style="{StaticResource TipTextStyle}" />
+                    <TextBlock x:Name="TipMeta" Style="{StaticResource TipTextStyle}" />
                 </StackPanel>
-                <TextBlock x:Name="TipDetail" Style="{StaticResource TipTextStyle}" />
-                <TextBlock x:Name="TipMeta" Style="{StaticResource TipTextStyle}" />
-            </StackPanel>
-        </Border>
+            </Border>
+        </Canvas>
     </Grid>
 </UserControl>
