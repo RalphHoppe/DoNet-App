@@ -6,20 +6,40 @@
     <RootNamespace>DoNet</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
-    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+    <!--
+      One runtime per platform, resolved at build time: the self-contained
+      Release build needs to know which runtime to carry, and the installer
+      packages the build output directly - the folder the exe lands in is the
+      folder the setup installs.
+    -->
+    <RuntimeIdentifier Condition="'$(Platform)'=='x86'">win-x86</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(Platform)'=='x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(Platform)'=='ARM64'">win-arm64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
-    <EnableMsixTooling>true</EnableMsixTooling>
+
+    <!--
+      Unpackaged. The app ships as plain files - a setup.exe that installs into
+      Program Files - not as an MSIX. No package identity, no certificate, no
+      developer mode, no Windows policy between the recipient and the app; it
+      runs on any Windows 10 1809+ machine, offline included. Assets still
+      resolve through ms-appx because MRT Core reads them from the app's own
+      .pri, which the build drops beside the exe.
+    -->
+    <WindowsPackageType>None</WindowsPackageType>
+
+    <!-- The taskbar and window icon: with no package to carry one, the exe is
+         the icon. -->
+    <ApplicationIcon>Assets\DoNet.ico</ApplicationIcon>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <!--
-    Hand-over packaging. A Release package carries both runtimes the app needs -
-    the .NET one and the Windows App SDK one - so the single .msix installs on
-    any Windows 10 1809+ machine with nothing else present: no Dependencies
-    folder, no runtime downloads, no internet. It is what makes the installer a
-    file you can hand over rather than a folder of prerequisites. Debug builds
-    stay framework-dependent, which keeps the inner loop fast.
+    Hand-over build. A Release build carries both runtimes the app needs - the
+    .NET one and the Windows App SDK one - so the build output folder is the
+    whole app: copy it to any Windows 10 1809+ machine and the exe runs, with
+    nothing else present, no runtime downloads, no internet. The setup.exe is
+    little more than that folder with an installer wrapped around it. Debug
+    builds stay framework-dependent, which keeps the inner loop fast.
   -->
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <SelfContained>true</SelfContained>
@@ -71,14 +91,6 @@
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <!--
-    Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
-    Tools extension to be activated for this project even if the Windows App SDK Nuget
-    package has not yet been restored.
-  -->
-  <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-    <ProjectCapability Include="Msix" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
@@ -100,15 +112,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.31" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
   </ItemGroup>
-
-  <!--
-    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
-    Explorer "Package and Publish" context menu entry to be enabled for this project even if
-    the Windows App SDK Nuget package has not yet been restored.
-  -->
-  <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-    <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
-  </PropertyGroup>
 
   <!--
     Runtime tuning. These are the settings a desktop app wants and the defaults do not
@@ -155,13 +158,5 @@
       packaged build, which is the worst place to discover it.
     -->
     <PublishTrimmed>False</PublishTrimmed>
-    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-    <PackageCertificateKeyFile>DoNet_TemporaryKey.pfx</PackageCertificateKeyFile>
-    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
-    <GenerateTestArtifacts>True</GenerateTestArtifacts>
-    <AppxBundle>Never</AppxBundle>
-    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
   </PropertyGroup>
 </Project>

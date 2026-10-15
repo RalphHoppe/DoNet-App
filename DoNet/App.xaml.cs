@@ -18,6 +18,13 @@ public partial class App : Application
 
     public App()
     {
+        // First of all, before any path is touched: an MSIX install of an
+        // earlier version kept its data under the package's own folder, which
+        // Windows deletes with the package, and this app runs unpackaged out
+        // of %LOCALAPPDATA%\DoNet. The move is once, never overwrites, and
+        // never throws - see AppPaths.MigratePackagedData.
+        AppPaths.MigratePackagedData();
+
         // Multicore JIT, before anything else runs so it records as much as possible.
         //
         // The runtime writes down which methods it just-in-time compiled during

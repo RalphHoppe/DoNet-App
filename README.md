@@ -34,110 +34,70 @@ is true once a vault exists on disk.
 
 ## Handing it over
 
-The app ships as one MSIX: a setup file Windows installs natively - a Start-menu
-entry with the app's own mark, an Add/Remove Programs entry, and an uninstall
-that takes the vault with it.
+The app ships **unpackaged**: plain files with a setup.exe around them. The
+recipient double-clicks `DoNet-Setup.exe`, gets one Windows permission prompt
+(the same UAC every installer raises), a progress bar, and DoNet on the Start
+menu. No MSIX, no certificate, no developer mode, no internet - the build
+carries both runtimes the app needs (.NET and the Windows App SDK), so the one
+setup.exe is the whole install on any Windows 10 1809+ machine.
 
 ### Building the installer
 
-1. Configuration **Release**, platform **x64**. Both are the two dropdowns in
-   the main toolbar, right of the green Start button - the left one says
-   `Debug`, the right one `x64` (or `Any CPU`); set the left one to `Release`.
-   (Or **Build &rarr; Configuration Manager**, and set both there.) This matters
-   before anything else: the self-contained settings in `DoNet.csproj` are
-   conditioned on Release, so the wizard only bakes the runtimes into the
-   installer if it runs under Release.
-2. Right-click the **DoNet** project in Solution Explorer (the project, not the
-   solution), then **Package and Publish &rarr; Create App Packages...** - in
-   older Visual Studio versions the menu is named **Publish** instead.
-3. First wizard page: choose **sideloading**; this build is not going to the
-   Store. No automatic updates.
-4. Signing page: **Create...** a certificate, leave the publisher name as
-   pre-filled and the password blank, OK. The wizard drops a `.pfx` into the
-   project folder - keep it: the same certificate has to sign every later
-   update, or Windows refuses to install it over the existing app. (It is
-   gitignored on purpose; back it up privately.)
-5. Packages page: tick **x64 only** and untick x86/ARM64 - every extra
-   architecture is another full copy of the runtimes - and leave version and
-   output location as they are.
-6. **Create**. This build is the slow one: it is producing a Release build with
-   two runtimes folded in. The kit lands in
-   `DoNet/AppPackages/DoNet_1.0.0.0_x64_Test/`: the `.msix` (the installer),
-   the `.cer` (the certificate to trust on the target machine), and
-   `Add-AppDevPackage.ps1` (the install script).
-7. Copy **`Setup-DoNet.cmd`** from the repository root into that folder, then
-   zip the folder. That zip is the no-extra-tools hand-over - but there is a
-   better one:
+1. In Visual Studio, set Configuration **Release** and platform **x64** (the
+   two dropdowns right of the green Start button), then **Build &rarr;
+   Rebuild Solution**. This is the slow build: it folds both runtimes into
+   the output.
+2. Optional but worth it once: open
+   `DoNet/bin/x64/Release/net8.0-windows10.0.19041.0/win-x64/` and
+   double-click `DoNet.exe` - that folder *is* the whole app, exactly what
+   the setup installs. If it runs there, it runs anywhere.
+3. Install **Inno Setup 6** once, from
+   [jrsoftware.org](https://jrsoftware.org/isinfo.php) - free, and the tool
+   behind a large share of the setup.exe files you have ever downloaded.
+4. Open **`installer/DoNet.iss`** in Inno Setup (double-clicking the file
+   does it) and press **Compile** (Ctrl+F9). Bump `AppVersion` at the top
+   whenever the app's version moves.
+5. The output is **`installer/Output/DoNet-Setup.exe`** - one executable with
+   the whole app inside it. That single file is the hand-over.
 
-### The single setup.exe (recommended)
+Upgrades: build and compile the same way, send the new `DoNet-Setup.exe`, the
+recipient runs it over the existing install. Same install location, same
+entry in Settings &rarr; Apps, files replaced in place.
 
-The classic internet-download experience - one file, double-click, it installs
-everything - is one more step on top of the wizard:
+### Coming from the old MSIX version
 
-1. Once, install **Inno Setup 6** from [jrsoftware.org](https://jrsoftware.org/isinfo.php)
-   - free, and the tool behind a large share of the setup.exe files you have
-   ever downloaded.
-2. Each release: run the packaging wizard as above, then open
-   **`installer/DoNet.iss`** in Inno Setup (double-clicking the file does it)
-   and press **Compile** (Ctrl+F9). Bump `AppVersion` at the top of the script
-   whenever the manifest's version moves.
-3. The output is **`installer/Output/DoNet-Setup.exe`** - one executable with
-   the app, the certificate and the whole install inside it. That single file
-   is the hand-over.
+If a machine still has the old MSIX build on it (the one that needed
+developer mode), the order matters:
 
-What the recipient sees: double-click, one Windows permission prompt (the same
-UAC every installer raises), a progress bar, and DoNet on the Start menu - with
-an optional "Launch DoNet" at the end. Re-running the setup over an existing
-install reinstalls it rather than erroring. Windows owns the app's entry and
-its uninstall (Settings &rarr; Apps &rarr; DoNet); the setup.exe deliberately
-leaves no second entry behind.
+1. Run the new `DoNet-Setup.exe` and **launch DoNet once**. The app moves its
+   own data out of the old package's folder on that first launch - the vault
+   and the encrypted database land in `%LOCALAPPDATA%\DoNet`.
+2. Then uninstall the old copy: Settings &rarr; Apps &rarr; DoNet. If two
+   entries show, remove the one with the older install date.
 
-Release packages are self-contained - see `DoNet.csproj` - so the one `.msix`
-carries the .NET and Windows App SDK runtimes and installs on any Windows 10
-1809+ machine with nothing else present. That is the whole point of the size.
-
-### Installing it on another machine
-
-With **`DoNet-Setup.exe`**: double-click it, say yes to the Windows prompt,
-wait for the progress bar. That is the whole install.
-
-With the folder zip instead: unzip, double-click **`Setup-DoNet.cmd`**, accept
-the PowerShell and administrator prompts. It trusts the certificate and
-installs the app.
-
-Without the script, by hand: right-click `Add-AppDevPackage.ps1` &rarr;
-**Run with PowerShell**; or double-click the `.cer`, **Install Certificate**
-into **Local Machine** &rarr; **Trusted People**, then double-click the `.msix`
-(which opens Windows' own installer window - the `.msix` *is* an installer,
-double-clickable, once the certificate is trusted).
-
-The certificate is self-signed, so Windows calls the publisher unknown - that is
-what a hand-made certificate looks like, not a fault. If the machine refuses the
-install outright, Settings &rarr; Privacy & security &rarr; For developers has
-the sideloading switch.
+Do not uninstall the old MSIX *first* - Windows deletes the package's data
+folder with it, and that is where the vault still lives until step 1.
 
 ### Worth knowing before you send it
 
-- **The vault is per machine.** The installer carries no data; the recipient
-  gets the create-password screen on first run. Uninstalling removes the vault
-  with the app.
-- **The password is not recoverable.** Forgot-password resets the vault - the
-  file is encrypted under a key derived from the password, which is the design.
-- **Upgrades need three things unchanged**: the same certificate, the same
-  Identity in `Package.appxmanifest`, and a higher Version. Bump the Version for
-  each hand-over that should install over the previous one.
-- **The Start menu entry is "DoNet"**, under All apps (Windows 11 also lists it
-  under Recently added right after installing), carrying the title bar's ring as
-  its icon. A freshly reinstalled app can show a stale or missing icon for a
-  while - Windows caches these per user; signing out and back in, or restarting
-  Explorer, refreshes it. An install over a Visual Studio-deployed copy should
-  be preceded by uninstalling that copy first, so nothing old is left to show.
+- **The vault is per machine**, in `%LOCALAPPDATA%\DoNet`. The installer
+  carries no data; the recipient gets the create-password screen on first
+  run. Uninstalling the app leaves the vault in place - the data survives
+  the app.
+- **The password is not recoverable.** Forgot-password resets the vault -
+  the file is encrypted under a key derived from the password, which is the
+  design.
+- **The first launch on a new machine is the slow one.** The runtime files
+  are scanned by Defender the first time each is touched; every launch after
+  that is the app's own, fast startup. That is Windows caching, not the app.
+- **The Start menu entry is "DoNet"**, carrying the title bar's ring as its
+  icon, and the same icon sits on the taskbar.
 
 ## Running it
 
 This is a Windows-only project. Open `DoNet.sln` in Visual Studio 2022 (workload:
 *.NET desktop development* + *Windows App SDK*), let NuGet restore, then F5. The
-`DoNet (Package)` launch profile is the one to use.
+app runs unpackaged, so F5 starts it directly - no package deployment step.
 
 Two packages are added on top of the template:
 
