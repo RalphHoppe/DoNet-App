@@ -69,7 +69,7 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"
 
 [Files]
-Source: "{#BinRoot}\*"; DestDir: "{app}"; Recursesubdirs; Flags: ignoreversion
+Source: "{#BinRoot}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{autoprograms}\DoNet"; Filename: "{app}\DoNet.exe"
