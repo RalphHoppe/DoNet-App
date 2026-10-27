@@ -42,7 +42,13 @@ public sealed partial class VpsMapDialog : UserControl
     private readonly List<MapDot> _dots = new();
 
     /// <summary>The connections, paired with the segments that draw them.</summary>
-    private readonly List<(Line Shape, MapLine Model)> _lines = new();
+    private readonly List<(Path Shape, MapLine Model)> _lines = new();
+
+    /// <summary>
+    /// The connections' flow: one storyboard drifting every arc's dashes along
+    /// it, so an open network reads as traffic rather than wiring.
+    /// </summary>
+    private Storyboard? _flow;
 
     /// <summary>Where a drag began, in host pixels, or null when there is no drag.</summary>
     private Point? _dragStart;
@@ -159,6 +165,11 @@ public sealed partial class VpsMapDialog : UserControl
 
     private void OnCloseCompleted(object? sender, object args)
     {
+        // An invisible animation is still an animation: the flow stops with
+        // the panel.
+        _flow?.Stop();
+        _flow = null;
+
         Root.Visibility = Visibility.Collapsed;
 
         // Reset the transforms the exit left behind, or the next open starts
@@ -408,20 +419,25 @@ public sealed partial class VpsMapDialog : UserControl
     /// </summary>
     private void RebuildLines()
     {
-        foreach ((Line shape, _) in _lines)
+        foreach ((Path shape, _) in _lines)
         {
             MapCanvas.Children.Remove(shape);
         }
 
         _lines.Clear();
 
-        AddLines(ViewModel.DeepLines, dashed: true);
-        AddLines(ViewModel.Lines, dashed: false);
+        AddConnections(ViewModel.DeepLines, deep: true);
+        AddConnections(ViewModel.Lines, deep: false);
 
         PositionOverlay();
+        StartFlow();
     }
 
-    private void AddLines(IReadOnlyList<MapLine>? segments, bool dashed)
+    /// <summary>
+    /// One connection per segment: a curved arc, dashed, its dashes left to
+    /// the flow storyboard to carry.
+    /// </summary>
+    private void AddConnections(IReadOnlyList<MapLine>? segments, bool deep)
     {
         if (segments is null)
         {
@@ -430,23 +446,106 @@ public sealed partial class VpsMapDialog : UserControl
 
         foreach (MapLine segment in segments)
         {
-            Line shape = new()
+            Path shape = new()
             {
-                Stroke = (Brush)Resources[dashed ? "DeepConnectionBrush" : "ConnectionBrush"],
-                StrokeThickness = dashed ? 1.5 : 2,
+                Stroke = (Brush)Resources[deep ? "DeepConnectionBrush" : "ConnectionBrush"],
+                StrokeThickness = deep ? 1.5 : 2.25,
                 StrokeStartLineCap = PenLineCap.Round,
                 StrokeEndLineCap = PenLineCap.Round,
+                StrokeDashArray = deep ? new DoubleCollection { 3, 4 } : new DoubleCollection { 2, 3 },
                 UseLayoutRounding = true,
             };
-
-            if (dashed)
-            {
-                shape.StrokeDashArray = new DoubleCollection { 4, 2.5 };
-            }
 
             _lines.Add((shape, segment));
             MapCanvas.Children.Add(shape);
         }
+    }
+
+    /// <summary>
+    /// An arc between two points: the straight line's midpoint pushed along
+    /// its perpendicular, bowing upward, by a fraction of the distance - the
+    /// route-map curve, capped so a long haul does not loop the world.
+    /// </summary>
+    private static PathGeometry ArcGeometry(double x1, double y1, double x2, double y2)
+    {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double length = Math.Sqrt((dx * dx) + (dy * dy));
+
+        // The unit perpendicular; when the points coincide any will do.
+        double nx = dy;
+        double ny = -dx;
+        double norm = Math.Sqrt((nx * nx) + (ny * ny));
+
+        if (norm < 0.001)
+        {
+            nx = 0;
+            ny = -1;
+        }
+        else
+        {
+            nx /= norm;
+            ny /= norm;
+        }
+
+        // Always bow upward: the perpendicular that points up wins.
+        if (ny > 0)
+        {
+            nx = -nx;
+            ny = -ny;
+        }
+
+        double bow = Math.Min(0.22 * length, 110);
+
+        PathFigure figure = new() { StartPoint = new Point(x1, y1) };
+
+        figure.Segments.Add(new QuadraticBezierSegment
+        {
+            Point1 = new Point((x1 + x2) / 2 + (nx * bow), (y1 + y2) / 2 + (ny * bow)),
+            Point2 = new Point(x2, y2),
+        });
+
+        PathGeometry geometry = new();
+        geometry.Figures.Add(figure);
+        return geometry;
+    }
+
+    /// <summary>
+    /// Starts the dashes drifting along every connection, one dash period per
+    /// second - a loop, so the flow never pops. The previous flow stops
+    /// first; a rebuild owns the screen.
+    /// </summary>
+    private void StartFlow()
+    {
+        _flow?.Stop();
+        _flow = null;
+
+        if (_lines.Count == 0)
+        {
+            return;
+        }
+
+        Storyboard flow = new();
+
+        foreach ((Path shape, _) in _lines)
+        {
+            DoubleCollection dashes = shape.StrokeDashArray ?? new DoubleCollection { 2, 3 };
+            double period = dashes.Count > 1 ? dashes[0] + dashes[1] : dashes[0];
+
+            DoubleAnimation drift = new()
+            {
+                From = 0,
+                To = -period,
+                Duration = new Duration(TimeSpan.FromSeconds(1)),
+                RepeatBehavior = new RepeatBehavior(double.PositiveInfinity),
+            };
+            Storyboard.SetTarget(drift, shape);
+            Storyboard.SetTargetProperty(drift, "StrokeDashOffset");
+            flow.Children.Add(drift);
+        }
+
+        flow.Begin();
+        _flow = flow;
     }
 
     /// <summary>
@@ -467,12 +566,9 @@ public sealed partial class VpsMapDialog : UserControl
             Canvas.SetTop(dot, pin.Y - pin.DotSize / 2);
         }
 
-        foreach ((Line shape, MapLine model) in _lines)
+        foreach ((Path shape, MapLine model) in _lines)
         {
-            shape.X1 = model.X1;
-            shape.Y1 = model.Y1;
-            shape.X2 = model.X2;
-            shape.Y2 = model.Y2;
+            shape.Data = ArcGeometry(model.X1, model.Y1, model.X2, model.Y2);
         }
 
         if (ViewModel.Chooser is { } chooser)
@@ -556,8 +652,8 @@ public sealed partial class VpsMapDialog : UserControl
             Height = 54,
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(14, 6, 14, 6),
-            Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xF4, 0xF6, 0xF9)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xE4, 0xE6, 0xE9)),
+            Background = new SolidColorBrush(Color.FromArgb(0xFF, 0x1A, 0x2A, 0x44)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0x33, 0x45, 0x5F)),
             BorderThickness = new Thickness(1),
         };
 
@@ -594,7 +690,7 @@ public sealed partial class VpsMapDialog : UserControl
             Text = row.Label,
             FontFamily = (FontFamily)Application.Current.Resources["BalooSemiBoldFont"],
             FontSize = 13.5,
-            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x2B, 0x2F, 0x33)),
+            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0xED, 0xF2, 0xF9)),
             TextTrimming = TextTrimming.CharacterEllipsis,
             MaxWidth = 200,
         };
@@ -603,7 +699,7 @@ public sealed partial class VpsMapDialog : UserControl
             Text = row.Detail,
             FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
             FontSize = 11.5,
-            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x7A, 0x87, 0x98)),
+            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x8F, 0xA3, 0xBF)),
         };
         texts.Children.Add(name);
         texts.Children.Add(detail);

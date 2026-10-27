@@ -29,10 +29,11 @@
 
     <UserControl.Resources>
 
-        <!-- The two rings a dot can wear, here so the code can hand them to
-             the coin without building colours itself. -->
+        <!-- The rings a dot can wear, here so the code can hand them to the
+             coin without building colours itself. On the dark plate the main
+        keeps the VPS's own red and a connected VPS goes silver. -->
         <SolidColorBrush x:Key="MainRingBrush" Color="#FF5F57" />
-        <SolidColorBrush x:Key="NodeRingBrush" Color="#A0A5AB" />
+        <SolidColorBrush x:Key="NodeRingBrush" Color="#9FB2CC" />
 
         <Style x:Key="TipTextStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
@@ -56,6 +57,35 @@
             <DoubleAnimation Storyboard.TargetName="TipCard"
                              Storyboard.TargetProperty="Opacity"
                              To="0" Duration="0:0:0.08" />
+        </Storyboard>
+
+        <!--
+            The main's heartbeat: a red ring swelling out of the coin and
+            fading, over and over. Only the root of an open network wears it -
+            the pulse is how the eye finds the centre of the network.
+        -->
+        <Storyboard x:Key="PulseStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="PulseScale"
+                             Storyboard.TargetProperty="ScaleX"
+                             From="1" To="1.85" Duration="0:0:1.7">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PulseScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="1" To="1.85" Duration="0:0:1.7">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PulseRing"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0.6" To="0" Duration="0:0:1.7">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
         </Storyboard>
 
         <!-- The dot leaning toward the pointer. -->
@@ -113,13 +143,30 @@
             </TransformGroup>
         </Grid.RenderTransform>
 
+        <!-- The main's heartbeat ring, behind everything, never a hit target. -->
+        <Ellipse x:Name="PulseRing"
+                 Stroke="#FF5F57"
+                 StrokeThickness="2"
+                 Opacity="0"
+                 IsHitTestVisible="False"
+                 RenderTransformOrigin="0.5,0.5">
+            <Ellipse.RenderTransform>
+                <ScaleTransform x:Name="PulseScale" ScaleX="1" ScaleY="1" />
+            </Ellipse.RenderTransform>
+        </Ellipse>
+
         <Button Style="{StaticResource BareButtonStyle}"
                 Click="OnClick">
             <Grid>
-                <!-- The main's halo: a soft ring outside the coin. -->
+                <!-- The main's glow on the dark plate: a wide soft wash and a
+                     bright ring just outside the coin. -->
+                <Ellipse x:Name="HaloWash"
+                         Opacity="0"
+                         Stroke="#24FF5F57"
+                         StrokeThickness="10" />
                 <Ellipse x:Name="Halo"
                          Opacity="0"
-                         Stroke="#47FF5F57"
+                         Stroke="#59FF5F57"
                          StrokeThickness="1.5" />
 
                 <!-- The coin: white fill, the ring saying what the record is. -->
@@ -195,12 +242,14 @@
             <Border x:Name="LabelPill"
                     CornerRadius="10"
                     Padding="9,2"
-                    Background="#D8FFFFFF"
+                    Background="#B30E1626"
+                    BorderBrush="#2E4058"
+                    BorderThickness="1"
                     Visibility="Collapsed">
                 <TextBlock x:Name="LabelText"
                            FontFamily="{StaticResource BalooFont}"
                            FontSize="12"
-                           Foreground="#5C6066"
+                           Foreground="#E8EEF7"
                            TextTrimming="CharacterEllipsis"
                            MaxWidth="150"
                            LineStackingStrategy="BlockLineHeight"

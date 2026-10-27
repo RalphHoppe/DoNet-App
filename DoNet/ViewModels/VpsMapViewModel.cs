@@ -247,6 +247,12 @@ public sealed partial class VpsMapViewModel : ObservableObject
     /// <summary>The view's pan, in pixels, away from the resting rectangle.</summary>
     private double _panY;
 
+    /// <summary>
+    /// Whether a network was built before the view had a size to be fitted
+    /// into, and the fit is still owed.
+    /// </summary>
+    private bool _fitPending;
+
     public VpsMapViewModel(IVpsDirectory directory)
     {
         _directory = directory;
@@ -658,6 +664,11 @@ public sealed partial class VpsMapViewModel : ObservableObject
 
         _edges = edges;
 
+        // The network frames itself: whatever the view was showing, the new
+        // network's dots decide where it looks. A fit before the layout, so
+        // the pins are placed once, already in their framed positions.
+        FitToPins(pins);
+
         Layout(pins);
 
         Pins = pins;
@@ -790,8 +801,15 @@ public sealed partial class VpsMapViewModel : ObservableObject
         }
     }
 
-    /// <summary>Back from a network to the overview of all mains.</summary>
-    public void BackToOverview() => BuildOverview();
+    /// <summary>
+    /// Back from a network to the overview of all mains - and to the whole
+    /// earth, because the overview is the whole earth's view.
+    /// </summary>
+    public void BackToOverview()
+    {
+        ResetView();
+        BuildOverview();
+    }
 
     /// <summary>A tap on the map itself, away from any dot: the chooser steps aside.</summary>
     public void HandleBackgroundTap() => CloseChooser();
@@ -861,7 +879,16 @@ public sealed partial class VpsMapViewModel : ObservableObject
         double height = width / 2;
         _mapRect = ((hostWidth - width) / 2, (hostHeight - height) / 2, width, height);
 
-        ClampPan();
+        if (_fitPending && IsFocused && Pins is { Count: > 0 } current)
+        {
+            // The network arrived before the view had a size; the fit it
+            // asked for happens now that there is one.
+            FitToPins(current);
+        }
+        else
+        {
+            ClampPan();
+        }
 
         Layout(Pins);
         OnPropertyChanged(nameof(ImageRect));
@@ -926,6 +953,65 @@ public sealed partial class VpsMapViewModel : ObservableObject
 
         ClampPan();
         OnViewMoved();
+    }
+
+    /// <summary>
+    /// Frames a set of pins: the zoom that holds their box with room to
+    /// breathe, and the pan that centres it.
+    /// </summary>
+    /// <remarks>
+    /// A network scattered across a continent at whole-earth zoom is a row of
+    /// specks; the same network framed is a picture of itself. The fit is
+    /// capped at five so a single lonely main does not fill the screen with
+    /// ocean, and floored at one so a worldwide network simply shows the
+    /// earth. Later pans and zooms are the user's - the fit happens once,
+    /// when the network opens.
+    /// </remarks>
+    private void FitToPins(IReadOnlyList<MapPin> pins)
+    {
+        if (_hostSize.Width <= 0 || pins.Count == 0)
+        {
+            _fitPending = true;
+            return;
+        }
+
+        _fitPending = false;
+
+        double minNx = 1, maxNx = 0, minNy = 1, maxNy = 0;
+
+        foreach (MapPin pin in pins)
+        {
+            minNx = Math.Min(minNx, pin.Nx);
+            maxNx = Math.Max(maxNx, pin.Nx);
+            minNy = Math.Min(minNy, pin.Ny);
+            maxNy = Math.Max(maxNy, pin.Ny);
+        }
+
+        // Breathing room, clamped to the plate.
+        const double pad = 0.045;
+        minNx = Math.Max(0, minNx - pad);
+        maxNx = Math.Min(1, maxNx + pad);
+        minNy = Math.Max(0, minNy - pad);
+        maxNy = Math.Min(1, maxNy + pad);
+
+        (double rx, double ry, double rw, double rh) = _mapRect;
+        double boxW = Math.Max(0.02, maxNx - minNx) * rw;
+        double boxH = Math.Max(0.02, maxNy - minNy) * rh;
+
+        double zoom = Math.Clamp(
+            Math.Min((_hostSize.Width * 0.82) / boxW, (_hostSize.Height * 0.78) / boxH),
+            1.0,
+            5.0);
+
+        Zoom = zoom;
+
+        // The box's centre lands in the host's centre.
+        double cnx = (minNx + maxNx) / 2;
+        double cny = (minNy + maxNy) / 2;
+        _panX = (_hostSize.Width / 2) - rx - (cnx * rw * zoom);
+        _panY = (_hostSize.Height / 2) - ry - (cny * rh * zoom);
+
+        ClampPan();
     }
 
     /// <summary>

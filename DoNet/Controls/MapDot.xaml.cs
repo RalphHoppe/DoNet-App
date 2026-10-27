@@ -19,6 +19,9 @@ public sealed partial class MapDot : UserControl
     /// <summary>Whether the pointer is over the dot, debounced for the bubbling exits.</summary>
     private bool _entered;
 
+    /// <summary>Whether the heartbeat storyboard is running.</summary>
+    private bool _pulsing;
+
     public MapDot()
     {
         InitializeComponent();
@@ -148,11 +151,19 @@ public sealed partial class MapDot : UserControl
             Halo.Width = size + 8;
             Halo.Height = size + 8;
             Halo.Opacity = 1;
+            HaloWash.Width = size + 18;
+            HaloWash.Height = size + 18;
+            HaloWash.Opacity = 1;
         }
         else
         {
             Halo.Opacity = 0;
+            HaloWash.Opacity = 0;
         }
+
+        // The heartbeat belongs to the root of an open network alone: the
+        // pulse is how the eye finds the centre of the network.
+        SetPulse(pin.Kind == MapPinKind.TreeMain, size);
 
         // The flag inside the coin, or the globe when there is no country.
         bool hasFlag = pin.FlagCountry is not null;
@@ -236,6 +247,36 @@ public sealed partial class MapDot : UserControl
         {
             Canvas.SetLeft(TipCard, size / 2 - TipCard.DesiredSize.Width / 2);
             Canvas.SetTop(TipCard, size + below - TipCard.DesiredSize.Height);
+        }
+    }
+
+    /// <summary>
+    /// Starts or stops the main's heartbeat, sized to its coin.
+    /// </summary>
+    private void SetPulse(bool on, double size)
+    {
+        if (on == _pulsing && on && Math.Abs(PulseRing.Width - size) < 0.5)
+        {
+            return;
+        }
+
+        if (on && Resources["PulseStoryboard"] is Storyboard pulse)
+        {
+            PulseRing.Width = size;
+            PulseRing.Height = size;
+            PulseRing.Opacity = 0.6;
+            pulse.Begin();
+            _pulsing = true;
+        }
+        else
+        {
+            if (_pulsing && Resources["PulseStoryboard"] is Storyboard pulse)
+            {
+                pulse.Stop();
+            }
+
+            PulseRing.Opacity = 0;
+            _pulsing = false;
         }
     }
 

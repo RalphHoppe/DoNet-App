@@ -32,18 +32,29 @@
 
     <UserControl.Resources>
 
-        <!-- The sea the plate sits on, the same tint the image paints. -->
-        <SolidColorBrush x:Key="SeaBrush" Color="#E9EFF6" />
+        <!--
+            The control-room palette. The map dialog is the one dark panel in
+            the app: the plate is the dark the dots and their light stand on,
+            so the chrome around it joins it rather than boxing it in white.
+        -->
+        <SolidColorBrush x:Key="SeaBrush" Color="#0E1626" />
+        <SolidColorBrush x:Key="PanelInkBrush" Color="#E9EFF8" />
+        <SolidColorBrush x:Key="PanelMutedBrush" Color="#8FA3BF" />
+        <SolidColorBrush x:Key="PanelFillBrush" Color="#1A2A44" />
+        <SolidColorBrush x:Key="PanelEdgeBrush" Color="#33455F" />
 
-        <!-- The connections: solid for a main's direct children, thinner and
-             dashed for everything deeper, so depth reads at a glance. -->
-        <SolidColorBrush x:Key="ConnectionBrush" Color="#7A8798" />
-        <SolidColorBrush x:Key="DeepConnectionBrush" Color="#9AA5B1" />
+        <!--
+            The connections: curved arcs now, bright and flowing for a main's
+            direct children, quieter for everything deeper, so depth reads at
+            a glance and the network feels alive.
+        -->
+        <SolidColorBrush x:Key="ConnectionBrush" Color="#E1FF6B5E" />
+        <SolidColorBrush x:Key="DeepConnectionBrush" Color="#9EB0C8" />
 
         <Style x:Key="LegendTextStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{StaticResource CardMetaBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource PanelMutedBrush}" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             <Setter Property="LineHeight" Value="16" />
@@ -52,7 +63,7 @@
         <Style x:Key="StateTextStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
             <Setter Property="FontSize" Value="14" />
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource PanelInkBrush}" />
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             <Setter Property="LineHeight" Value="20" />
@@ -115,8 +126,8 @@
                 MaxWidth="1420"
                 Margin="24"
                 CornerRadius="26"
-                Background="{StaticResource CardBackgroundBrush}"
-                BorderBrush="{StaticResource CardBorderBrush}"
+                Background="#0F1726"
+                BorderBrush="#263650"
                 BorderThickness="1"
                 RenderTransformOrigin="0.5,0.5">
             <Border.RenderTransform>
@@ -150,14 +161,14 @@
                             <TextBlock Text="VPS MAP"
                                        FontFamily="{StaticResource BaumansFont}"
                                        FontSize="{StaticResource SectionTitleFontSize}"
-                                       Foreground="{StaticResource BrandPrimaryBrush}"
+                                       Foreground="{StaticResource PanelInkBrush}"
                                        CharacterSpacing="20"
                                        LineStackingStrategy="BlockLineHeight"
                                        LineHeight="40" />
                             <TextBlock Text="Every main on earth, and the network under it"
                                        FontFamily="{StaticResource BalooFont}"
                                        FontSize="{StaticResource SectionSubtitleFontSize}"
-                                       Foreground="{StaticResource SectionSubtitleBrush}"
+                                       Foreground="{StaticResource PanelMutedBrush}"
                                        LineStackingStrategy="BlockLineHeight"
                                        LineHeight="20" />
                         </StackPanel>
@@ -180,7 +191,7 @@
                 <Border Grid.Row="1"
                         CornerRadius="18"
                         Background="{StaticResource SeaBrush}"
-                        BorderBrush="{StaticResource CardBorderBrush}"
+                        BorderBrush="#263650"
                         BorderThickness="1">
                     <!--
                         The wheel zooms about the pointer; a drag from the map
@@ -240,8 +251,8 @@
                                 Margin="14"
                                 Padding="16,12,16,12"
                                 CornerRadius="16"
-                                Background="#F2FFFFFF"
-                                BorderBrush="{StaticResource CardBorderBrush}"
+                                Background="#E60E1626"
+                                BorderBrush="{StaticResource PanelEdgeBrush}"
                                 BorderThickness="1"
                                 MaxWidth="380"
                                 Visibility="{x:Bind ViewModel.IsFocused, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
@@ -252,18 +263,18 @@
                                     <Border Height="34"
                                             CornerRadius="17"
                                             Padding="14,0"
-                                            Background="{StaticResource HeaderActionFillBrush}"
-                                            BorderBrush="{StaticResource SearchBorderBrush}"
+                                            Background="{StaticResource PanelFillBrush}"
+                                            BorderBrush="{StaticResource PanelEdgeBrush}"
                                             BorderThickness="1">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <controls:LineIcon Kind="ArrowLeft"
                                                                Width="15"
                                                                Height="15"
-                                                               Foreground="{StaticResource TextSecondaryBrush}" />
+                                                               Foreground="{StaticResource PanelInkBrush}" />
                                             <TextBlock Text="ALL MAINS"
                                                        FontFamily="{StaticResource BalooSemiBoldFont}"
                                                        FontSize="12"
-                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       Foreground="{StaticResource PanelInkBrush}"
                                                        CharacterSpacing="60"
                                                        VerticalAlignment="Center"
                                                        LineStackingStrategy="BlockLineHeight"
@@ -281,7 +292,7 @@
                                     <TextBlock Text="{x:Bind ViewModel.FocusedName, Mode=OneWay}"
                                                FontFamily="{StaticResource BalooSemiBoldFont}"
                                                FontSize="16"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="#F2F6FC"
                                                TextTrimming="CharacterEllipsis"
                                                MaxWidth="280"
                                                VerticalAlignment="Center"
@@ -292,13 +303,13 @@
                                 <TextBlock Text="{x:Bind ViewModel.FocusedCountryLabel, Mode=OneWay}"
                                            FontFamily="{StaticResource BalooFont}"
                                            FontSize="12"
-                                           Foreground="{StaticResource CardMetaBrush}"
+                                           Foreground="{StaticResource PanelMutedBrush}"
                                            LineStackingStrategy="BlockLineHeight"
                                            LineHeight="16" />
                                 <TextBlock Text="{x:Bind ViewModel.FocusedSummary, Mode=OneWay}"
                                            FontFamily="{StaticResource BalooSemiBoldFont}"
                                            FontSize="12"
-                                           Foreground="{StaticResource BrandPrimaryBrush}"
+                                           Foreground="#6BC5B2"
                                            LineStackingStrategy="BlockLineHeight"
                                            LineHeight="16" />
                             </StackPanel>
@@ -310,8 +321,8 @@
                                     Width="300"
                                     Padding="14"
                                     CornerRadius="16"
-                                    Background="{StaticResource CardBackgroundBrush}"
-                                    BorderBrush="{StaticResource CardBorderBrush}"
+                                    Background="#F20E1626"
+                                    BorderBrush="{StaticResource PanelEdgeBrush}"
                                     BorderThickness="1"
                                     Visibility="Collapsed">
                                 <StackPanel Spacing="10">
@@ -332,7 +343,7 @@
                                                    Grid.Column="1"
                                                    FontFamily="{StaticResource BalooSemiBoldFont}"
                                                    FontSize="12.5"
-                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   Foreground="{StaticResource PanelInkBrush}"
                                                    TextWrapping="Wrap"
                                                    VerticalAlignment="Center"
                                                    LineStackingStrategy="BlockLineHeight"
@@ -344,11 +355,11 @@
                                             <Border Width="20"
                                                     Height="20"
                                                     CornerRadius="10"
-                                                    Background="#F1F3F6">
+                                                    Background="{StaticResource PanelFillBrush}">
                                                 <TextBlock Text="&#215;"
                                                            FontFamily="{StaticResource BalooSemiBoldFont}"
                                                            FontSize="12"
-                                                           Foreground="{StaticResource CardMetaBrush}"
+                                                           Foreground="{StaticResource PanelMutedBrush}"
                                                            HorizontalAlignment="Center"
                                                            VerticalAlignment="Center"
                                                            LineStackingStrategy="BlockLineHeight"
@@ -379,14 +390,14 @@
                                 <Border Width="36"
                                         Height="36"
                                         CornerRadius="18"
-                                        Background="#F2FFFFFF"
-                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        Background="#C01A2A44"
+                                        BorderBrush="{StaticResource PanelEdgeBrush}"
                                         BorderThickness="1">
                                     <Viewbox Width="15"
                                              Height="15">
                                         <Canvas Width="18" Height="18">
                                             <Path Data="M9 3.75 V14.25 M3.75 9 H14.25"
-                                                  Stroke="#5C6066"
+                                                  Stroke="#D6E1F0"
                                                   StrokeThickness="2.2"
                                                   StrokeStartLineCap="Round"
                                                   StrokeEndLineCap="Round" />
@@ -402,14 +413,14 @@
                                 <Border Width="36"
                                         Height="36"
                                         CornerRadius="18"
-                                        Background="#F2FFFFFF"
-                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        Background="#C01A2A44"
+                                        BorderBrush="{StaticResource PanelEdgeBrush}"
                                         BorderThickness="1">
                                     <Viewbox Width="15"
                                              Height="15">
                                         <Canvas Width="18" Height="18">
                                             <Path Data="M3.75 9 H14.25"
-                                                  Stroke="#5C6066"
+                                                  Stroke="#D6E1F0"
                                                   StrokeThickness="2.2"
                                                   StrokeStartLineCap="Round"
                                                   StrokeEndLineCap="Round" />
@@ -424,14 +435,14 @@
                                 <Border Width="36"
                                         Height="36"
                                         CornerRadius="18"
-                                        Background="#F2FFFFFF"
-                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        Background="#C01A2A44"
+                                        BorderBrush="{StaticResource PanelEdgeBrush}"
                                         BorderThickness="1">
                                     <Viewbox Width="15"
                                              Height="15">
                                         <Canvas Width="18" Height="18">
                                             <Path Data="M3 6.6 V4.8 Q3 3 4.8 3 H6.6 M11.4 3 H13.2 Q15 3 15 4.8 V6.6 M15 11.4 V13.2 Q15 15 13.2 15 H11.4 M6.6 15 H4.8 Q3 15 3 13.2 V11.4"
-                                                          Stroke="#5C6066"
+                                                          Stroke="#D6E1F0"
                                                           StrokeThickness="2"
                                                           StrokeStartLineCap="Round"
                                                           StrokeEndLineCap="Round"
@@ -447,8 +458,8 @@
                                 VerticalAlignment="Center"
                                 CornerRadius="14"
                                 Padding="18,10"
-                                Background="#F2FFFFFF"
-                                BorderBrush="{StaticResource CardBorderBrush}"
+                                Background="#E60E1626"
+                                BorderBrush="{StaticResource PanelEdgeBrush}"
                                 BorderThickness="1"
                                 Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="Plotting the network..."
@@ -459,8 +470,8 @@
                                 VerticalAlignment="Center"
                                 CornerRadius="14"
                                 Padding="18,10"
-                                Background="#F2FFFFFF"
-                                BorderBrush="{StaticResource CardBorderBrush}"
+                                Background="#E60E1626"
+                                BorderBrush="{StaticResource PanelEdgeBrush}"
                                 BorderThickness="1"
                                 Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="The directory refused - close and try again."
@@ -471,8 +482,8 @@
                                 VerticalAlignment="Center"
                                 CornerRadius="14"
                                 Padding="18,10"
-                                Background="#F2FFFFFF"
-                                BorderBrush="{StaticResource CardBorderBrush}"
+                                Background="#E60E1626"
+                                BorderBrush="{StaticResource PanelEdgeBrush}"
                                 BorderThickness="1"
                                 Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel Spacing="2">
@@ -507,7 +518,7 @@
                             <Ellipse Width="12"
                                      Height="12"
                                      Fill="#FFFFFF"
-                                     Stroke="#A0A5AB"
+                                     Stroke="#9FB2CC"
                                      StrokeThickness="2"
                                      VerticalAlignment="Center" />
                             <TextBlock Text="CONNECTED VPS" Style="{StaticResource LegendTextStyle}" />
@@ -537,7 +548,7 @@
                         <controls:LineIcon Kind="Info"
                                            Width="14"
                                            Height="14"
-                                           Foreground="{StaticResource CardMetaBrush}"
+                                           Foreground="{StaticResource PanelMutedBrush}"
                                            VerticalAlignment="Center" />
                         <TextBlock Text="{x:Bind ViewModel.OffMapNote, Mode=OneWay}"
                                    Style="{StaticResource LegendTextStyle}" />
