@@ -167,6 +167,18 @@ public sealed partial class MapDot : UserControl
         // means the same thing to every binding of the name Point.
         Root.RenderTransformOrigin = new Windows.Foundation.Point(0.5f, (float)(tipY / Root.Height));
 
+        // The selected pin's ring, circling the head, a breath outside it.
+        double headY = tipY - (head * 1.9);
+        double ringSize = (head + 4) * 2;
+        SelectHalo.Width = ringSize + 2.5;
+        SelectHalo.Height = ringSize + 2.5;
+        SelectRing.Width = ringSize;
+        SelectRing.Height = ringSize;
+        Canvas.SetLeft(SelectHalo, cx - head - 5.25);
+        Canvas.SetTop(SelectHalo, headY - head - 5.25);
+        Canvas.SetLeft(SelectRing, cx - head - 4);
+        Canvas.SetTop(SelectRing, headY - head - 4);
+
         // The body: a circle of the head's radius, its sides curving to the
         // tip. Built as a path in the pin's own coordinates.
         PinBody.Data = PinGeometry(cx, tipY, head);
@@ -234,7 +246,7 @@ public sealed partial class MapDot : UserControl
                 : "BalooFont"];
             LabelPill.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             Canvas.SetLeft(LabelPill, cx - (LabelPill.DesiredSize.Width / 2));
-            Canvas.SetTop(LabelPill, Root.Height + 2 + pin.LabelDrop);
+            Canvas.SetTop(LabelPill, tipY + 6 + pin.LabelDrop);
         }
 
         // The hover card: the country in words, the record's name, its place
@@ -392,6 +404,17 @@ public sealed partial class MapDot : UserControl
         {
             hover.Begin();
         }
+    }
+
+    /// <summary>
+    /// Marks this pin as the one whose story the panel is telling: a quiet
+    /// teal ring around its head. Also called by the map when the selection
+    /// changes, so the page and the panel agree on who is being read.
+    /// </summary>
+    public void SetSelected(bool on)
+    {
+        SelectHalo.Opacity = on ? 1 : 0;
+        SelectRing.Opacity = on ? 1 : 0;
     }
 
     private void ShowTip()

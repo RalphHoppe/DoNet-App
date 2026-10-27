@@ -319,21 +319,72 @@ public sealed partial class VpsMapViewModel : ObservableObject
     [ObservableProperty]
     private MapChooser? _chooser;
 
-    /// <summary>The focused main's name, for the header card.</summary>
+    /// <summary>
+    /// The VPS whose story the panel tells: the network's main, or any of its
+    /// connected records once clicked.
+    /// </summary>
     [ObservableProperty]
-    private string _focusedName = string.Empty;
+    private VpsRecord? _selectedRecord;
 
-    /// <summary>The focused main's country's flag, when it has one.</summary>
+    /// <summary>The selected VPS's name, for the panel's header card.</summary>
     [ObservableProperty]
-    private string? _focusedFlagCountry;
+    private string _selectedName = string.Empty;
 
-    /// <summary>The focused main's country as a line of text.</summary>
+    /// <summary>The selected VPS's country's flag, when it has one.</summary>
     [ObservableProperty]
-    private string _focusedCountryLabel = string.Empty;
+    private string? _selectedFlagCountry;
 
-    /// <summary>The focused main's counts, as a line of text.</summary>
+    /// <summary>The selected VPS's country as a line of text.</summary>
     [ObservableProperty]
-    private string _focusedSummary = string.Empty;
+    private string _selectedCountryLabel = string.Empty;
+
+    /// <summary>The selected VPS's place in the network, as a line of text.</summary>
+    [ObservableProperty]
+    private string _selectedSummary = string.Empty;
+
+    /// <summary>
+    /// Carries a selection into the panel's header: the record's own words,
+    /// and its place in the network.
+    /// </summary>
+    private void ApplySelection(VpsRecord? record)
+    {
+        if (record is null)
+        {
+            SelectedName = string.Empty;
+            SelectedFlagCountry = null;
+            SelectedCountryLabel = string.Empty;
+            SelectedSummary = string.Empty;
+            return;
+        }
+
+        SelectedName = string.IsNullOrWhiteSpace(record.Name) ? "VPS" : record.Name;
+        SelectedFlagCountry = CountryOrNull(record.Country);
+        SelectedCountryLabel = string.IsNullOrWhiteSpace(record.Country)
+            ? "No country set"
+            : record.Country;
+
+        MapNode? node = _nodesById.TryGetValue(record.Id, out MapNode? found) ? found : null;
+
+        if (record.IsMain)
+        {
+            SelectedSummary = node is { TotalCount: 0 }
+                ? "No connected VPSs yet"
+                : node is { } main
+                    ? $"{main.Children.Count} direct \u00B7 {main.TotalCount} in the network"
+                    : string.Empty;
+        }
+        else
+        {
+            SelectedSummary = (string.IsNullOrWhiteSpace(record.NodeName)
+                    ? "Connected VPS"
+                    : $"Connected to {record.NodeName}")
+                + (node is { Children.Count: > 0 }
+                    ? $" \u00B7 {node.Children.Count} of its own"
+                    : string.Empty);
+        }
+    }
+
+    partial void OnSelectedRecordChanged(VpsRecord? value) => ApplySelection(value);
 
     /// <summary>The view's zoom: one is the whole plate, MaxZoom the closest.</summary>
     [ObservableProperty]
@@ -428,6 +479,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
         IsError = false;
         IsEmpty = false;
         IsFocused = false;
+        SelectedRecord = null;
         CloseChooser();
         Pins = null;
         Lines = null;
@@ -556,10 +608,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
     private void BuildOverview()
     {
         IsFocused = false;
-        FocusedName = string.Empty;
-        FocusedFlagCountry = null;
-        FocusedCountryLabel = string.Empty;
-        FocusedSummary = string.Empty;
+        SelectedRecord = null;
 
         List<MapPin> pins = new();
         int offMap = 0;
@@ -653,14 +702,6 @@ public sealed partial class VpsMapViewModel : ObservableObject
     private void BuildNetwork(MapNode main)
     {
         IsFocused = true;
-        FocusedName = main.Record.Name;
-        FocusedFlagCountry = CountryOrNull(main.Record.Country);
-        FocusedCountryLabel = string.IsNullOrWhiteSpace(main.Record.Country)
-            ? "No country set"
-            : main.Record.Country;
-        FocusedSummary = main.TotalCount == 0
-            ? "No connected VPSs yet"
-            : $"{main.Children.Count} direct \u00B7 {main.TotalCount} in the network";
 
         List<MapPin> pins = new() { NetworkPin(main, main, index: 0) };
         List<(MapPin, MapPin, int)> edges = new();
@@ -678,6 +719,10 @@ public sealed partial class VpsMapViewModel : ObservableObject
         Layout(pins);
 
         Pins = pins;
+
+        // The network opens on its main's story; a click on any of its
+        // connected pins will trade it for that record's.
+        SelectedRecord = main.Record;
     }
 
     /// <summary>Collects a main's chain, depth first, in reading order.</summary>
@@ -791,7 +836,12 @@ public sealed partial class VpsMapViewModel : ObservableObject
                 break;
 
             default:
-                // A connected VPS in an open network: its tooltip is its story.
+                // A connected VPS in an open network: its story joins the
+                // panel, its important details with it.
+                if (pin.Record is { } chosen)
+                {
+                    SelectedRecord = chosen;
+                }
                 break;
         }
     }
@@ -1136,15 +1186,24 @@ public sealed partial class VpsMapViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Keeps labels out of each other: each is placed under its pin's tip,
-    /// and pushed down past any it would cover.
+    /// Keeps labels out of each other: each is placed just under its pin's
+    /// tip, and pushed down past any it would cover.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Widths are estimated rather than measured - the view model has no
     /// text services - which is enough for the nudge's job: labels in a busy
     /// Europe or Caribbean step onto their own lines instead of piling up.
     /// The drop it lands on is handed to the pin, so the control draws the
     /// label where the nudge put it rather than at its rest.
+    /// </para>
+    /// <para>
+    /// The rest is where the control really seats the pill - a breath under
+    /// the tip, clear of the ground shadow - because the nudge must reason
+    /// about the boxes as they will actually be drawn. A rest deeper than
+    /// that made every push land the label far from its own pin, which read
+    /// as labels floating loose of the map.
+    /// </para>
     /// </remarks>
     private static void NudgeLabels(IReadOnlyList<MapPin> pins)
     {
@@ -1152,11 +1211,12 @@ public sealed partial class VpsMapViewModel : ObservableObject
 
         foreach (MapPin pin in pins.OrderBy(pin => pin.Y).ThenBy(pin => pin.X))
         {
-            double width = Math.Min(150, 16 + pin.Label.Length * 7.4);
+            double width = Math.Min(170, 18 + pin.Label.Length * 7.6);
             double left = pin.X - width / 2;
 
-            // A teardrop's label rests under its tip, clear of the whole pin.
-            double rest = pin.Y + (pin.DotSize * 1.5) + 10;
+            // A teardrop's label rests just under its tip: below the anchor
+            // there is no pin to stay clear of, only the ground shadow.
+            double rest = pin.Y + 6;
             double top = rest;
 
             for (int attempt = 0; attempt < 6; attempt++)
@@ -1165,17 +1225,17 @@ public sealed partial class VpsMapViewModel : ObservableObject
                     box => left >= box.Right
                           || left + width <= box.Left
                           || top >= box.Bottom
-                          || top + 20 <= box.Top);
+                          || top + 21 <= box.Top);
 
                 if (clear)
                 {
                     break;
                 }
 
-                top += 21;
+                top += 22;
             }
 
-            placed.Add((left, top, left + width, top + 20));
+            placed.Add((left, top, left + width, top + 21));
             pin.LabelDrop = top - rest;
             pin.TooltipAbove = pin.Y > 150;
         }

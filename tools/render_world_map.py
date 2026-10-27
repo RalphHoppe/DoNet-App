@@ -187,6 +187,18 @@ def anchor_of(rings: list[list[list[float]]]) -> tuple[float, float]:
 
 def main() -> None:
     features = json.loads(GEO.read_text(encoding="utf-8"))["features"]
+
+    # Antarctica is left off the page entirely. The dataset clips its shape
+    # at about -85.6 degrees, so anything drawn from it is a band rather
+    # than a continent, and completing it to the bottom edge - the earlier
+    # approach - painted a land strip along the map's foot that read as a
+    # rendering mistake. No record is ever placed there: the anchors table
+    # has no Antarctic entry, so the far south is open paper sea.
+    features = [
+        f for f in features
+        if f["properties"]["name"] != "Antarctica"
+    ]
+
     by_geo_name: dict[str, dict] = {
         f["properties"]["name"]: f for f in features
     }
@@ -223,15 +235,6 @@ def main() -> None:
                 if points:
                     draw.polygon(
                         points, fill=LAND, outline=BORDER, width=2 * SS)
-
-    # Antarctica closes at the latitude the dataset clips it to (about
-    # -85.6), which would leave the pole itself painted as sea. The ice
-    # sheet is completed to the bottom edge: same fill, same border, the
-    # seam landing on the closure line the polygon already draws.
-    clip_y = px(0, -85.55)[1]
-    draw.rectangle(
-        [(-40, clip_y), (ws + 40, hs + 40)], fill=LAND)
-    draw.line([(-40, clip_y), (ws + 40, clip_y)], fill=BORDER, width=2 * SS)
 
     image = image.resize((W, H), Image.LANCZOS)
 

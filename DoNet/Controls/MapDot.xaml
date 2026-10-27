@@ -185,6 +185,18 @@
                 Height="0"
                 IsHitTestVisible="False">
 
+            <!-- The selected pin's mark: a quiet teal ring around its head,
+                 a white halo under it so it reads over any land. Shown when
+                 this is the VPS whose story the panel is telling. -->
+            <Ellipse x:Name="SelectHalo"
+                     Stroke="#FFFFFF"
+                     StrokeThickness="5"
+                     Opacity="0" />
+            <Ellipse x:Name="SelectRing"
+                     Stroke="#4BAA98"
+                     StrokeThickness="2.5"
+                     Opacity="0" />
+
             <!-- The focused main's ping, planted at the tip. -->
             <Ellipse x:Name="PulseRing"
                      Stroke="#FF5F57"

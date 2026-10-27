@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using DoNet.Controls;
+using DoNet.Models;
 using DoNet.Services;
 using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,9 +32,9 @@ namespace DoNet.Views;
 /// replays the pins' arrival.
 /// </para>
 /// <para>
-/// The chain rows in the story panel are built here too, by hand as the
-/// drawers are: each row is its record's pin in words, and hovering one
-/// lights the pin itself, so the list and the page speak with one voice.
+/// The story panel's detail rows are built here too, as the preview's
+/// read-only cells: the selected VPS's important information in the app's
+/// own vocabulary, and a click on any pin trades the story to that record.
 /// </para>
 /// <para>
 /// The map's height is the one size the dialog computes for itself: the
@@ -117,14 +117,21 @@ public sealed partial class VpsMapDialog : UserControl
 
             case nameof(VpsMapViewModel.Pins):
                 RebuildDots();
-                RebuildChain();
+                RebuildPanel();
                 break;
 
             case nameof(VpsMapViewModel.IsFocused):
                 // The panel arrives sliding when a network opens and leaves
                 // at once when the view goes back to the whole earth.
                 ShowNetworkPanel();
-                RebuildChain();
+                UpdateSelectedDots();
+                break;
+
+            case nameof(VpsMapViewModel.SelectedRecord):
+                // The story traded: the panel retells, the page's selection
+                // ring moves.
+                RebuildPanel();
+                UpdateSelectedDots();
                 break;
 
             case nameof(VpsMapViewModel.Lines):
@@ -442,6 +449,7 @@ public sealed partial class VpsMapDialog : UserControl
         }
 
         PositionOverlay();
+        UpdateSelectedDots();
     }
 
     private void OnPinTapped(object? sender, MapPin pin) => ViewModel.HandlePinClick(pin);
@@ -685,138 +693,100 @@ public sealed partial class VpsMapDialog : UserControl
     }
 
     /// <summary>
-    /// Fills the story panel's list from the open network: one row per
-    /// record after the main itself, which the panel's header already
-    /// carries.
+    /// Marks the pin whose record the panel is telling the story of, so the
+    /// page and the panel agree on who is being read.
     /// </summary>
-    private void RebuildChain()
+    private void UpdateSelectedDots()
     {
-        ChainRows.Children.Clear();
+        VpsRecord? selected = ViewModel.IsFocused ? ViewModel.SelectedRecord : null;
 
-        if (!ViewModel.IsFocused || ViewModel.Pins is not { Count: > 1 } pins)
+        foreach (MapDot dot in _dots)
         {
-            return;
-        }
-
-        for (int i = 1; i < pins.Count; i++)
-        {
-            ChainRows.Children.Add(BuildChainRow(pins[i]));
+            dot.SetSelected(dot.Pin is { Record: { } record }
+                && selected is { } chosen
+                && record.Id == chosen.Id);
         }
     }
 
     /// <summary>
-    /// One row of the chain: the record's pin in words - flag, name, country
-    /// - stepped in by its depth, so the list reads as the chain it is.
-    /// Hovering the row lights the pin itself on the page.
+    /// Fills the story panel with the selected VPS's important details: the
+    /// same fields the preview shows, as its read-only cells, with the ones
+    /// never filled left out rather than shown blank.
     /// </summary>
-    private Button BuildChainRow(MapPin pin)
+    private void RebuildPanel()
     {
-        // The pin this row speaks for, so the hover can find it.
-        MapDot? dot = _dots.FirstOrDefault(d => ReferenceEquals(d.Pin, pin));
+        PanelRows.Children.Clear();
 
-        Button button = new()
+        if (!ViewModel.IsFocused || ViewModel.SelectedRecord is not { } record)
         {
-            Style = (Style)Application.Current.Resources["BareButtonStyle"],
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-        };
-
-        Brush clear = new SolidColorBrush(Color.FromArgb(0x00, 0x00, 0x00, 0x00));
-
-        Border shell = new()
-        {
-            Height = 48,
-            CornerRadius = new CornerRadius(13),
-            Padding = new Thickness(14 + (pin.Level * 14), 4, 14, 4),
-            Background = clear,
-            BorderBrush = clear,
-            BorderThickness = new Thickness(1),
-        };
-
-        Grid layout = new() { ColumnSpacing = 11 };
-        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-        // The flag, or the globe when the record has no country.
-        Viewbox flagBox = new() { Width = 20, Height = 15, VerticalAlignment = VerticalAlignment.Center };
-
-        if (pin.FlagCountry is not null)
-        {
-            flagBox.Child = new FlagIcon { Country = pin.FlagCountry };
-        }
-        else
-        {
-            flagBox.Child = new LineIcon
-            {
-                Kind = "Globe",
-                Width = 16,
-                Height = 16,
-                Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0xA0, 0xA5, 0xAB)),
-            };
+            return;
         }
 
-        Grid.SetColumn(flagBox, 0);
-        layout.Children.Add(flagBox);
+        VpsSystemInfo system = record.System ?? new VpsSystemInfo();
 
-        StackPanel texts = new() { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
-        texts.Children.Add(new TextBlock
+        AddInfoCell("IP ADDRESS", system.Ip, "Globe", copy: true);
+        AddInfoCell("PORT", system.Port, "Key", unit: system.PortNumber, copy: true);
+        AddInfoCell("OS", system.Os, "Info", copy: true);
+        AddInfoCell("USERNAME", system.Username, "User", copy: true);
+        AddInfoCell("USER PASSWORD", system.UserPassword, "Lock", secret: true, copy: true);
+        AddInfoCell("ROOT USER", system.RootUser, "User", copy: true);
+        AddInfoCell("ROOT PASSWORD", system.RootPassword, "Lock", secret: true, copy: true);
+        AddInfoCell("CPU", system.Cpu, "Info");
+        AddInfoCell("MEMORY (RAM)", system.Memory, "Info");
+        AddInfoCell("DISK", system.Disk, "Info");
+        AddInfoCell("BANDWIDTH", system.Bandwidth, "Info");
+        AddInfoCell("OUT DATE", record.OutDate, "Calendar");
+
+        if (record.CycleLabel.Length > 0)
         {
-            Text = pin.Label,
-            FontFamily = (FontFamily)Application.Current.Resources["BalooSemiBoldFont"],
-            FontSize = 13,
-            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x2B, 0x2F, 0x33)),
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            MaxWidth = 200,
-        });
+            AddInfoCell("CYCLE", record.CycleLabel, "Clock");
+        }
 
-        string country = string.IsNullOrWhiteSpace(pin.TooltipTitle) || pin.TooltipTitle == "No country set"
-            ? "No country set"
-            : pin.TooltipTitle;
-        texts.Children.Add(new TextBlock
+        if (record.Balance is { } balance)
         {
-            Text = pin.Level == 1
-                ? country
-                : $"{country} \u00B7 {pin.Level} hops",
-            FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
-            FontSize = 11.5,
-            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x7A, 0x87, 0x98)),
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            MaxWidth = 220,
-        });
+            AddInfoCell(
+                "BALANCE",
+                $"{balance:0.##} {record.Currency}".Trim(),
+                "Bitcoin",
+                unit: record.BalanceBtc is { } btc ? $"{btc:0.########} BTC" : string.Empty);
+        }
 
-        Grid.SetColumn(texts, 1);
-        layout.Children.Add(texts);
-
-        shell.Child = layout;
-        button.Content = shell;
-
-        // The hover pairs: the row warms, the pin itself stands up.
-        Brush warm = new SolidColorBrush(Color.FromArgb(0xFF, 0xF4, 0xF6, 0xF9));
-        Brush warmBorder = new SolidColorBrush(Color.FromArgb(0xFF, 0xE4, 0xE6, 0xE9));
-
-        button.PointerEntered += (_, _) =>
+        if (PanelRows.Children.Count == 0)
         {
-            shell.Background = warm;
-            shell.BorderBrush = warmBorder;
-            dot?.HighlightOn();
-        };
-        button.PointerExited += (_, _) =>
-        {
-            shell.Background = clear;
-            shell.BorderBrush = clear;
-            dot?.HighlightOff();
-        };
-
-        // A click on the row is a click on the pin: the chooser or the
-        // record, whatever that pin's click means where it stands.
-        button.Click += (_, _) =>
-        {
-            if (dot is not null)
+            PanelRows.Children.Add(new TextBlock
             {
-                OnPinTapped(dot, pin);
-            }
-        };
+                Text = "Nothing recorded for this one yet",
+                FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
+                FontSize = 12.5,
+                Foreground = (Brush)Application.Current.Resources["CardMetaBrush"],
+                TextWrapping = TextWrapping.Wrap,
+            });
+        }
+    }
 
-        return button;
+    /// <summary>
+    /// One detail row: the preview's read-only cell, the copy button where a
+    /// value is worth carrying away. Empty values are skipped - a map panel
+    /// tells what is there, not what is missing.
+    /// </summary>
+    private void AddInfoCell(
+        string label, string value, string icon, string unit = "", bool secret = false, bool copy = false)
+    {
+        if (value.Trim().Length == 0 && unit.Trim().Length == 0)
+        {
+            return;
+        }
+
+        PanelRows.Children.Add(new FieldCell
+        {
+            Label = label,
+            Value = value,
+            UnitValue = unit,
+            IconKind = icon,
+            Kind = FieldCellKind.Display,
+            IsSecret = secret,
+            ShowCopy = copy,
+        });
     }
 
     // ------------------------------------------------------------------

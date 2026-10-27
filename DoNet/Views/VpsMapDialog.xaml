@@ -23,9 +23,11 @@
         flow along them.
 
         The story lives beside the page, not on it: when a network is open,
-        a panel slides in on the right carrying the way back, the main's own
-        card, and the chain as a readable list - hovering a row lights up
-        its pin on the page. The map keeps only what belongs to the map.
+        a panel slides in on the right carrying the way back and the
+        selected VPS's own card and important details, in the preview's
+        read-only vocabulary. Clicking any pin in the open network trades
+        the story to that record. The map keeps only what belongs to the
+        map.
 
         The chooser - the small panel that opens over a badge - is hand-built
         for the same reason the drawers are: the app has no stock dropdowns.
@@ -448,10 +450,12 @@
                     </Border>
 
                     <!--
-                        The story beside the page: the way back, the main's
-                        own card, and its chain as a readable list. Only on
-                        show while a network is open - the overview is the
-                        whole earth's view and needs no narration. Its
+                        The story beside the page: the way back, the selected
+                        VPS's own card, and its important details as the
+                        preview's read-only cells - the record the map is
+                        telling the story of, in the app's own vocabulary.
+                        Only on show while a network is open; clicking any
+                        connected pin trades the story to that record. Its
                         arrival is the slide storyboard above.
                     -->
                     <Border x:Name="NetworkPanel"
@@ -502,15 +506,15 @@
                                 </Border>
                             </Button>
 
-                            <!-- The main's own card. -->
+                            <!-- The selected VPS's own card. -->
                             <StackPanel Grid.Row="1" Spacing="4">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <Viewbox Width="26"
                                              Height="19"
                                              VerticalAlignment="Center">
-                                        <controls:FlagIcon Country="{x:Bind ViewModel.FocusedFlagCountry, Mode=OneWay}" />
+                                        <controls:FlagIcon Country="{x:Bind ViewModel.SelectedFlagCountry, Mode=OneWay}" />
                                     </Viewbox>
-                                    <TextBlock Text="{x:Bind ViewModel.FocusedName, Mode=OneWay}"
+                                    <TextBlock Text="{x:Bind ViewModel.SelectedName, Mode=OneWay}"
                                                FontFamily="{StaticResource BalooSemiBoldFont}"
                                                FontSize="16"
                                                Foreground="{StaticResource TextPrimaryBrush}"
@@ -520,13 +524,13 @@
                                                LineStackingStrategy="BlockLineHeight"
                                                LineHeight="21" />
                                 </StackPanel>
-                                <TextBlock Text="{x:Bind ViewModel.FocusedCountryLabel, Mode=OneWay}"
+                                <TextBlock Text="{x:Bind ViewModel.SelectedCountryLabel, Mode=OneWay}"
                                            FontFamily="{StaticResource BalooFont}"
                                            FontSize="12"
                                            Foreground="{StaticResource CardMetaBrush}"
                                            LineStackingStrategy="BlockLineHeight"
                                            LineHeight="16" />
-                                <TextBlock Text="{x:Bind ViewModel.FocusedSummary, Mode=OneWay}"
+                                <TextBlock Text="{x:Bind ViewModel.SelectedSummary, Mode=OneWay}"
                                            FontFamily="{StaticResource BalooSemiBoldFont}"
                                            FontSize="12"
                                            Foreground="{StaticResource BrandPrimaryBrush}"
@@ -534,15 +538,16 @@
                                            LineHeight="16" />
                             </StackPanel>
 
-                            <!-- The chain, as a list. -->
+                            <!-- The selected VPS's details, filled in code
+                                 from its record. -->
                             <TextBlock Grid.Row="2"
-                                       Text="THE NETWORK"
+                                       Text="THE VPS"
                                        Style="{StaticResource SectionLabelStyle}" />
 
                             <ScrollViewer Grid.Row="3"
                                           VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollMode="Disabled">
-                                <StackPanel x:Name="ChainRows" Spacing="6" />
+                                <StackPanel x:Name="PanelRows" Spacing="10" />
                             </ScrollViewer>
                         </Grid>
                     </Border>
@@ -591,7 +596,7 @@
                             </Border>
                             <TextBlock Text="MAINS IN ONE COUNTRY" Style="{StaticResource LegendTextStyle}" />
                         </StackPanel>
-                        <TextBlock Text="Click a main to open its network"
+                        <TextBlock Text="Click a main for its network, a pin for the VPS's details"
                                    Style="{StaticResource LegendTextStyle}" />
                     </controls:WrapPanel>
 
