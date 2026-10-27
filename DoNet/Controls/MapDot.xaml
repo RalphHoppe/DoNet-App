@@ -9,36 +9,38 @@
     mc:Ignorable="d">
 
     <!--
-        One dot on the VPS map.
+        One pin on the VPS map - the classic map marker.
 
-        The dot itself is a white coin carrying the country's flag, with the
-        ring saying what the record is: the VPS's own red for a main, the
-        app's slate for a VPS connected into an open network.
+        A teardrop: a round head carrying the country's flag, tapering to a
+        point whose tip lands exactly on the country it marks. The stroke
+        says what the record is - the VPS's own red for a main, the app's
+        slate for a VPS connected into an open network - and the pin's size
+        says it too: a main's head is bigger than a connected VPS's. The
+        focused main's tip carries a soft red ping, so the eye finds the
+        network's centre on the page.
 
-        Everything that hangs off the coin - the count badge, the MAIN tag,
-        the label, the hover card - lives in an overhang canvas, not in the
-        root grid. A grid hands its children its own size, and this root is
-        the coin's little square, so a label measured inside it would wrap to
-        one letter a line. A canvas measures its children against infinity,
-        which is what a thing that overhangs its box needs; the elements are
-        seated on it in code, in the Apply pattern the cards use, because the
-        pin is a plain object refreshed by replacement. The caller positions
-        the control on the map canvas; this control only ever owns its own
-        square.
+        The pin's words - the count badge for a country holding several
+        mains, the label under the tip, the hover card - live on an overhang
+        canvas, not in the root grid: a grid hands its children its own size
+        and the root is the pin's footprint, so words measured inside it
+        would wrap to a letter a line. A canvas measures against infinity;
+        the elements are seated on it in code, in the Apply pattern the
+        cards use, because the pin is a plain object refreshed by
+        replacement. The caller seats the control so the TIP sits on the
+        anchor; this control only ever owns its own footprint.
     -->
 
     <UserControl.Resources>
 
-        <!-- The rings a dot can wear, here so the code can hand them to the
-             coin without building colours itself. On the dark plate the main
-        keeps the VPS's own red and a connected VPS goes silver. -->
+        <!-- The two strokes a pin can wear, here so the code can hand them
+             to the body without building colours itself. -->
         <SolidColorBrush x:Key="MainRingBrush" Color="#FF5F57" />
-        <SolidColorBrush x:Key="NodeRingBrush" Color="#9FB2CC" />
+        <SolidColorBrush x:Key="NodeRingBrush" Color="#7A8798" />
 
         <Style x:Key="TipTextStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="#D6DADE" />
+            <Setter Property="Foreground" Value="#7A8798" />
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="MaxWidth" Value="226" />
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
@@ -59,47 +61,18 @@
                              To="0" Duration="0:0:0.08" />
         </Storyboard>
 
-        <!--
-            The main's heartbeat: a red ring swelling out of the coin and
-            fading, over and over. Only the root of an open network wears it -
-            the pulse is how the eye finds the centre of the network.
-        -->
-        <Storyboard x:Key="PulseStoryboard" RepeatBehavior="Forever">
-            <DoubleAnimation Storyboard.TargetName="PulseScale"
-                             Storyboard.TargetProperty="ScaleX"
-                             From="1" To="1.85" Duration="0:0:1.7">
-                <DoubleAnimation.EasingFunction>
-                    <QuadraticEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="PulseScale"
-                             Storyboard.TargetProperty="ScaleY"
-                             From="1" To="1.85" Duration="0:0:1.7">
-                <DoubleAnimation.EasingFunction>
-                    <QuadraticEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="PulseRing"
-                             Storyboard.TargetProperty="Opacity"
-                             From="0.6" To="0" Duration="0:0:1.7">
-                <DoubleAnimation.EasingFunction>
-                    <QuadraticEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
-
-        <!-- The dot leaning toward the pointer. -->
+        <!-- The pin leaning toward the pointer, growing from its tip. -->
         <Storyboard x:Key="HoverOn">
             <DoubleAnimation Storyboard.TargetName="HoverScale"
                              Storyboard.TargetProperty="ScaleX"
-                             To="1.14" Duration="0:0:0.12">
+                             To="1.12" Duration="0:0:0.12">
                 <DoubleAnimation.EasingFunction>
                     <CubicEase EasingMode="EaseOut" />
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
             <DoubleAnimation Storyboard.TargetName="HoverScale"
                              Storyboard.TargetProperty="ScaleY"
-                             To="1.14" Duration="0:0:0.12">
+                             To="1.12" Duration="0:0:0.12">
                 <DoubleAnimation.EasingFunction>
                     <CubicEase EasingMode="EaseOut" />
                 </DoubleAnimation.EasingFunction>
@@ -123,17 +96,45 @@
             </DoubleAnimation>
         </Storyboard>
 
+        <!--
+            The focused main's ping: a red ring swelling out of the tip and
+            fading, over and over - a heartbeat at the exact point on the
+            earth the network hangs from.
+        -->
+        <Storyboard x:Key="PulseStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="PulseScale"
+                             Storyboard.TargetProperty="ScaleX"
+                             From="1" To="2.6" Duration="0:0:1.7">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PulseScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="1" To="2.6" Duration="0:0:1.7">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PulseRing"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0.55" To="0" Duration="0:0:1.7">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
     </UserControl.Resources>
 
     <!--
-        The root is exactly the coin's square - the hit target is the dot and
-        nothing else. The scale transforms belong to the whole visual, so the
-        overhang grows with the coin on hover.
+        The root is the pin's footprint, transparent so the whole of it is
+        the hit target. The scale transforms belong to the whole visual and
+        grow from the tip, which is where the pin is planted.
     -->
     <Grid x:Name="Root"
-          Width="34"
-          Height="34"
-          RenderTransformOrigin="0.5,0.5"
+          Background="Transparent"
+          RenderTransformOrigin="0.5,0.95"
           PointerEntered="OnPointerEntered"
           PointerExited="OnPointerExited">
         <Grid.RenderTransform>
@@ -143,47 +144,28 @@
             </TransformGroup>
         </Grid.RenderTransform>
 
-        <!-- The main's heartbeat ring, behind everything, never a hit target. -->
-        <Ellipse x:Name="PulseRing"
-                 Stroke="#FF5F57"
-                 StrokeThickness="2"
-                 Opacity="0"
-                 IsHitTestVisible="False"
-                 RenderTransformOrigin="0.5,0.5">
-            <Ellipse.RenderTransform>
-                <ScaleTransform x:Name="PulseScale" ScaleX="1" ScaleY="1" />
-            </Ellipse.RenderTransform>
-        </Ellipse>
-
         <Button Style="{StaticResource BareButtonStyle}"
                 Click="OnClick">
             <Grid>
-                <!-- The main's glow on the dark plate: a wide soft wash and a
-                     bright ring just outside the coin. -->
-                <Ellipse x:Name="HaloWash"
-                         Opacity="0"
-                         Stroke="#24FF5F57"
-                         StrokeThickness="10" />
-                <Ellipse x:Name="Halo"
-                         Opacity="0"
-                         Stroke="#59FF5F57"
-                         StrokeThickness="1.5" />
+                <!-- The pin's soft ground shadow. -->
+                <Ellipse x:Name="GroundShadow"
+                         Fill="#23000000" />
 
-                <!-- The coin: white fill, the ring saying what the record is. -->
-                <Ellipse x:Name="Coin"
-                         Fill="#FFFFFF"
-                         Stroke="{StaticResource MainRingBrush}"
-                         StrokeThickness="3" />
+                <!-- The pin itself: white body, the stroke saying what the
+                     record is. Its geometry is built in code, sized to the
+                     pin's head. -->
+                <Path x:Name="PinBody"
+                      Fill="#FFFFFF"
+                      Stroke="{StaticResource MainRingBrush}"
+                      StrokeThickness="2.5"
+                      StrokeLineJoin="Round" />
 
-                <!-- The country's flag, or the globe when there is none. -->
-                <Viewbox x:Name="FlagBox"
-                         Width="21"
-                         Height="15">
+                <!-- The country's flag in the head, or the globe when there
+                     is no country. -->
+                <Viewbox x:Name="FlagBox">
                     <controls:FlagIcon x:Name="Flag" />
                 </Viewbox>
                 <Viewbox x:Name="NoCountryBox"
-                         Width="16"
-                         Height="16"
                          Visibility="Collapsed">
                     <controls:LineIcon Kind="Globe"
                                        Width="16"
@@ -195,16 +177,27 @@
 
         <!--
             The overhang: zero-sized on purpose, a canvas measures its
-            children against infinity and never clips them, so the badge, the
-            tag, the label and the hover card can be as wide as their words.
-            Seated in code; none of them is a hit target.
+            children against infinity and never clips them. Seated in code;
+            nothing here is a hit target.
         -->
         <Canvas x:Name="Overhang"
                 Width="0"
                 Height="0"
                 IsHitTestVisible="False">
 
-            <!-- A country holding several mains wears its count. -->
+            <!-- The focused main's ping, planted at the tip. -->
+            <Ellipse x:Name="PulseRing"
+                     Stroke="#FF5F57"
+                     StrokeThickness="2"
+                     Opacity="0"
+                     RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <ScaleTransform x:Name="PulseScale" ScaleX="1" ScaleY="1" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+
+            <!-- A country holding several mains wears its count, off the
+                 head's top-right shoulder. -->
             <Border x:Name="CountBadge"
                     CornerRadius="10"
                     Padding="7,1"
@@ -220,36 +213,19 @@
                            LineHeight="14" />
             </Border>
 
-            <!-- The network's root, named so it cannot be mistaken for a
-                 child. -->
-            <Border x:Name="MainTag"
-                    CornerRadius="8"
-                    Padding="8,1"
-                    Background="#FF5F57"
-                    Visibility="Collapsed">
-                <TextBlock Text="MAIN"
-                           FontFamily="{StaticResource BalooSemiBoldFont}"
-                           FontSize="10.5"
-                           Foreground="#FFFFFF"
-                           CharacterSpacing="80"
-                           LineStackingStrategy="BlockLineHeight"
-                           LineHeight="13" />
-            </Border>
-
-            <!-- The words under the dot: a country in the overview, a name in
-                 a network. A pill, so it stays readable over land and sea
-                 alike. -->
+            <!-- The words under the tip: a country in the overview, a name
+                 in a network. -->
             <Border x:Name="LabelPill"
                     CornerRadius="10"
                     Padding="9,2"
-                    Background="#B30E1626"
-                    BorderBrush="#2E4058"
+                    Background="#FFFFFF"
+                    BorderBrush="#E4E6E9"
                     BorderThickness="1"
                     Visibility="Collapsed">
                 <TextBlock x:Name="LabelText"
                            FontFamily="{StaticResource BalooFont}"
                            FontSize="12"
-                           Foreground="#E8EEF7"
+                           Foreground="#5C6066"
                            TextTrimming="CharacterEllipsis"
                            MaxWidth="150"
                            LineStackingStrategy="BlockLineHeight"
@@ -261,7 +237,9 @@
             <Border x:Name="TipCard"
                     CornerRadius="12"
                     Padding="12,10"
-                    Background="{StaticResource TooltipBackgroundBrush}"
+                    Background="#FFFFFF"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1"
                     Opacity="0">
                 <StackPanel Spacing="3">
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -274,14 +252,17 @@
                         <TextBlock x:Name="TipTitle"
                                    FontFamily="{StaticResource BalooSemiBoldFont}"
                                    FontSize="13"
-                                   Foreground="#FFFFFF"
+                                   Foreground="#2B2F33"
                                    TextTrimming="CharacterEllipsis"
                                    MaxWidth="200"
                                    VerticalAlignment="Center"
                                    LineStackingStrategy="BlockLineHeight"
                                    LineHeight="17" />
                     </StackPanel>
-                    <TextBlock x:Name="TipDetail" Style="{StaticResource TipTextStyle}" />
+                    <TextBlock x:Name="TipDetail"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="12.5"
+                               Foreground="#5C6066" />
                     <TextBlock x:Name="TipMeta" Style="{StaticResource TipTextStyle}" />
                 </StackPanel>
             </Border>

@@ -52,21 +52,14 @@ OUT_CS = REPO / "DoNet" / "Models" / "CountryAnchors.cs"
 W, H = 4096, 2048
 SS = 2  # supersample factor for smooth coastlines
 
-# The palette: the control-room look - a deep navy sea, dark slate
-# landmasses, and borders and a graticule that whisper rather than shout.
-# The dots, the lines and the panels around the map carry the light; the
-# map itself is the dark they stand on.
-SEA = (14, 22, 38)
-LAND = (30, 44, 69)
-BORDER = (53, 73, 107)
-GRATICULE = (10, 16, 28)
-
-# The sea's own texture: a faint grid of dots, the dashboard-map look. Drawn
-# before the land so the countries interrupt it, and quiet enough to read as
-# texture rather than pattern.
-DOT_GRID = (23, 35, 59)
-DOT_SPACING = 56   # supersampled pixels; 28 in the final image
-DOT_RADIUS = 2     # supersampled pixels
+# The palette: a premium light atlas. A warm paper sea, soft sage-green
+# landmasses, and borders and a graticule quiet enough to read as paper
+# texture. The pins and their arcs carry the colour; the map itself is the
+# page they sit on.
+SEA = (240, 234, 221)
+LAND = (208, 220, 194)
+BORDER = (183, 199, 167)
+GRATICULE = (230, 223, 208)
 
 # FlagData's 196 country names -> the geo data's spellings, where they
 # differ. Everything not here matches by name, and the countries the 110m
@@ -192,20 +185,6 @@ def anchor_of(rings: list[list[list[float]]]) -> tuple[float, float]:
     return round(lat, 2), round(lon, 2)
 
 
-def vignette_alphas(height: int) -> list[int]:
-    """The edge-darkening alphas for one column of pixels, top to bottom."""
-    band = max(1, int(height * 0.09))
-    out = []
-    for y in range(height):
-        if y < band:
-            out.append(int(42 * (1 - y / band)))
-        elif y >= height - band:
-            out.append(int(42 * (1 - (height - y) / band)))
-        else:
-            out.append(0)
-    return out
-
-
 def main() -> None:
     features = json.loads(GEO.read_text(encoding="utf-8"))["features"]
     by_geo_name: dict[str, dict] = {
@@ -219,14 +198,6 @@ def main() -> None:
 
     image = Image.new("RGB", (ws, hs), SEA)
     draw = ImageDraw.Draw(image)
-
-    # The dot grid under everything the land will cover.
-    for gy in range(DOT_SPACING // 2, hs, DOT_SPACING):
-        for gx in range(DOT_SPACING // 2, ws, DOT_SPACING):
-            draw.ellipse(
-                [gx - DOT_RADIUS, gy - DOT_RADIUS,
-                 gx + DOT_RADIUS, gy + DOT_RADIUS],
-                fill=DOT_GRID)
 
     # The graticule sits under the land: it is the sea's own marking, and
     # the countries interrupt it the way the reference maps do.
@@ -263,13 +234,6 @@ def main() -> None:
     draw.line([(-40, clip_y), (ws + 40, clip_y)], fill=BORDER, width=2 * SS)
 
     image = image.resize((W, H), Image.LANCZOS)
-
-    # A whisper of vignette at the top and bottom edges: the plate reads as a
-    # lit surface rather than a flat fill. Built as a one-pixel strip of
-    # alphas and stretched across, which is cheap at any size.
-    strip = Image.new("L", (1, H))
-    strip.putdata(vignette_alphas(H))
-    image.paste(Image.new("RGB", (W, H), (6, 10, 18)), (0, 0), strip.resize((W, H)))
 
     OUT_PNG.parent.mkdir(parents=True, exist_ok=True)
     quantised = image.convert("P", palette=Image.ADAPTIVE, colors=64)

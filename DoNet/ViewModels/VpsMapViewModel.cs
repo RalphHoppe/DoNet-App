@@ -96,6 +96,12 @@ public sealed partial class MapPin : ObservableObject
     /// <summary>Whether the tooltip opens above the dot rather than under it.</summary>
     [ObservableProperty]
     private bool _tooltipAbove = true;
+
+    /// <summary>
+    /// How far the label sits below its rest under the pin's tip, when the
+    /// nudge had to step it past another label.
+    /// </summary>
+    public double LabelDrop { get; set; }
 }
 
 /// <summary>
@@ -1130,13 +1136,15 @@ public sealed partial class VpsMapViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Keeps labels out of each other: each is placed under its dot, and
-    /// pushed down past any it would cover.
+    /// Keeps labels out of each other: each is placed under its pin's tip,
+    /// and pushed down past any it would cover.
     /// </summary>
     /// <remarks>
     /// Widths are estimated rather than measured - the view model has no
     /// text services - which is enough for the nudge's job: labels in a busy
     /// Europe or Caribbean step onto their own lines instead of piling up.
+    /// The drop it lands on is handed to the pin, so the control draws the
+    /// label where the nudge put it rather than at its rest.
     /// </remarks>
     private static void NudgeLabels(IReadOnlyList<MapPin> pins)
     {
@@ -1146,7 +1154,10 @@ public sealed partial class VpsMapViewModel : ObservableObject
         {
             double width = Math.Min(150, 16 + pin.Label.Length * 7.4);
             double left = pin.X - width / 2;
-            double top = pin.Y + pin.DotSize / 2 + 8;
+
+            // A teardrop's label rests under its tip, clear of the whole pin.
+            double rest = pin.Y + (pin.DotSize * 1.5) + 10;
+            double top = rest;
 
             for (int attempt = 0; attempt < 6; attempt++)
             {
@@ -1165,6 +1176,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
             }
 
             placed.Add((left, top, left + width, top + 20));
+            pin.LabelDrop = top - rest;
             pin.TooltipAbove = pin.Y > 150;
         }
     }

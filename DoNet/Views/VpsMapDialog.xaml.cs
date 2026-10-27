@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using DoNet.Controls;
 using DoNet.Services;
 using DoNet.ViewModels;
@@ -17,28 +18,34 @@ using Windows.UI;
 namespace DoNet.Views;
 
 /// <summary>
-/// The VPS map dialog. See the XAML for how the plate, the dots and the two
-/// views fit together; this code-behind owns the parts a XAML file cannot.
+/// The VPS map dialog. See the XAML for how the plate, the pins, the story
+/// panel and the two views fit together; this code-behind owns the parts a
+/// XAML file cannot.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The dots and the connections are built in code rather than templated:
+/// The pins and the connections are built in code rather than templated:
 /// they are positioned in pixels by the view model's layout pass, and an
 /// element the code positions is an element the code may as well create.
 /// Rebuilding happens on the view model's say-so - a new set of pins, a new
 /// set of lines - and repositioning on the window's, so a resize never
-/// replays the dots' arrival.
-///</para>
+/// replays the pins' arrival.
+/// </para>
+/// <para>
+/// The chain rows in the story panel are built here too, by hand as the
+/// drawers are: each row is its record's pin in words, and hovering one
+/// lights the pin itself, so the list and the page speak with one voice.
+/// </para>
 /// <para>
 /// The map's height is the one size the dialog computes for itself: the
-/// plate is exactly 2:1, so the map takes the width it is given and the
-/// height the window can spare, clamped so a small window still shows a
+/// plate is exactly 2:1, so the map takes the width the panel leaves it and
+/// the height the window can spare, clamped so a small window still shows a
 /// whole earth rather than a strip of it.
-///</para>
+/// </para>
 ///</remarks>
 public sealed partial class VpsMapDialog : UserControl
 {
-    /// <summary>The dots on the plate, in view model order.</summary>
+    /// <summary>The pins on the plate, in view model order.</summary>
     private readonly List<MapDot> _dots = new();
 
     /// <summary>The connections, paired with the segments that draw them.</summary>
@@ -110,6 +117,14 @@ public sealed partial class VpsMapDialog : UserControl
 
             case nameof(VpsMapViewModel.Pins):
                 RebuildDots();
+                RebuildChain();
+                break;
+
+            case nameof(VpsMapViewModel.IsFocused):
+                // The panel arrives sliding when a network opens and leaves
+                // at once when the view goes back to the whole earth.
+                ShowNetworkPanel();
+                RebuildChain();
                 break;
 
             case nameof(VpsMapViewModel.Lines):
@@ -125,7 +140,7 @@ public sealed partial class VpsMapDialog : UserControl
                 // The transform moved: the image is seated into its new
                 // rectangle and the pins - the same objects, in new places -
                 // are re-seated onto it. Rebuilding never happens here, so
-                // the dots' arrival never replays under the wheel.
+                // the pins' arrival never replays under the wheel.
                 ApplyImageRect();
                 PositionOverlay();
                 break;
@@ -200,25 +215,43 @@ public sealed partial class VpsMapDialog : UserControl
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// Gives the map its height: the width it is given halved (the plate is
-    /// exactly 2:1), capped by the room the window can spare, clamped so the
-    /// earth is never reduced to a strip.
+    /// Gives the map its height: half the width the panel leaves the plate
+    /// (the plate is exactly 2:1), capped by the room the window can spare,
+    /// clamped so the earth is never reduced to a strip.
     /// </summary>
+    /// <remarks>
+    /// The width is read from the map host itself once it is laid out, so
+    /// the panel arriving and leaving - which changes the plate's width, not
+    /// the window's - re-fits the height too. Before the first layout an
+    /// estimate from the window stands in.
+    /// </remarks>
     private void SizeMap()
     {
-        double availableWidth = Math.Max(0, Root.ActualWidth - 48);
-        double availableHeight = Math.Max(0, Root.ActualHeight - 48);
+        double width = MapHost.ActualWidth;
 
-        double cardInnerWidth = Math.Max(120, Math.Min(availableWidth, 1420) - 72);
-        double byWidth = cardInnerWidth / 2;
-        double byHeight = Math.Max(120, availableHeight - 238);
+        if (width < 50 && Root.ActualWidth > 0)
+        {
+            double inner = Math.Max(120, Math.Min(Root.ActualWidth - 48, 1480) - 72);
+            width = ViewModel.IsFocused ? inner - 348 : inner;
+        }
+
+        double byWidth = Math.Max(120, width / 2);
+        double byHeight = Math.Max(120, Root.ActualHeight - 48 - 238);
         double mapHeight = Math.Clamp(Math.Min(byWidth, byHeight), 280, 620);
 
-        MapHost.Height = mapHeight;
+        if (Math.Abs(MapHost.Height - mapHeight) > 0.5)
+        {
+            MapHost.Height = mapHeight;
+        }
     }
 
     private void OnMapHostSizeChanged(object sender, SizeChangedEventArgs args)
     {
+        // The plate's width may itself have changed what height fits - the
+        // panel taking its share of the row - so the height is fitted first
+        // from the width that just arrived.
+        SizeMap();
+
         // The clip keeps the plate's overflows - the connections that cross
         // the edge where the map ends and restarts, the view panned past an
         // edge - inside the map's own bounds.
@@ -273,7 +306,7 @@ public sealed partial class VpsMapDialog : UserControl
     }
 
     /// <summary>
-    /// A press on the map itself - the sea or the land, not a dot or a panel
+    /// A press on the map itself - the sea or the land, not a pin or a panel
     /// - may become a drag of the view.
     /// </summary>
     private void OnMapPointerPressed(object sender, PointerRoutedEventArgs args)
@@ -349,7 +382,7 @@ public sealed partial class VpsMapDialog : UserControl
     {
         while (node is not null)
         {
-            if (node is MapDot || node == FocusedHeader || node == ChooserLayer)
+            if (node is MapDot || node == NetworkPanel || node == ChooserLayer)
             {
                 return false;
             }
@@ -381,7 +414,7 @@ public sealed partial class VpsMapDialog : UserControl
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// Rebuilds the dots from the view model's pins, then seats them. The
+    /// Rebuilds the pins from the view model's pins, then seats them. The
     /// controls are created fresh so their arrival plays each time the view
     /// changes; a resize never comes through here.
     /// </summary>
@@ -553,9 +586,9 @@ public sealed partial class VpsMapDialog : UserControl
     }
 
     /// <summary>
-    /// Seats everything on the plate at its laid-out position: the dots
-    /// centred on theirs, the connections end to end, the chooser beside its
-    /// dot.
+    /// Seats everything on the plate at its laid-out position: the pins by
+    /// their tips - the point that lands on the country - the connections
+    /// end to end, the chooser beside its pin.
     /// </summary>
     private void PositionOverlay()
     {
@@ -566,8 +599,8 @@ public sealed partial class VpsMapDialog : UserControl
                 continue;
             }
 
-            Canvas.SetLeft(dot, pin.X - pin.DotSize / 2);
-            Canvas.SetTop(dot, pin.Y - pin.DotSize / 2);
+            Canvas.SetLeft(dot, pin.X - dot.TipOffsetX);
+            Canvas.SetTop(dot, pin.Y - dot.TipOffsetY);
         }
 
         foreach ((Path shape, MapLine model) in _lines)
@@ -588,11 +621,11 @@ public sealed partial class VpsMapDialog : UserControl
     }
 
     /// <summary>
-    /// A tap on the map itself, away from any dot: the chooser steps aside.
+    /// A tap on the map itself, away from any pin: the chooser steps aside.
     /// </summary>
     /// <remarks>
-    /// The tap that opens a chooser bubbles up from the dot to this layer as
-    /// well, so the climb up the tree skips the taps that belong to a dot.
+    /// The tap that opens a chooser bubbles up from the pin to this layer as
+    /// well, so the climb up the tree skips the taps that belong to a pin.
     /// </remarks>
     private void OnMapBackgroundTapped(object sender, TappedRoutedEventArgs args)
     {
@@ -609,6 +642,181 @@ public sealed partial class VpsMapDialog : UserControl
         }
 
         ViewModel.HandleBackgroundTap();
+    }
+
+    // ------------------------------------------------------------------
+    // The story panel
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Shows or hides the story panel: sliding in when a network opens,
+    /// leaving at once when the view goes back to the whole earth - the map
+    /// has a re-fit of its own to do then.
+    /// </summary>
+    private void ShowNetworkPanel()
+    {
+        if (ViewModel.IsFocused)
+        {
+            if (NetworkPanel.Visibility == Visibility.Visible)
+            {
+                return;
+            }
+
+            NetworkPanel.Visibility = Visibility.Visible;
+            NetworkPanel.Opacity = 0;
+            PanelOffset.X = 46;
+
+            if (Resources["PanelInStoryboard"] is Storyboard slide)
+            {
+                slide.Begin();
+            }
+            else
+            {
+                NetworkPanel.Opacity = 1;
+                PanelOffset.X = 0;
+            }
+        }
+        else
+        {
+            NetworkPanel.Visibility = Visibility.Collapsed;
+            NetworkPanel.Opacity = 1;
+            PanelOffset.X = 0;
+        }
+    }
+
+    /// <summary>
+    /// Fills the story panel's list from the open network: one row per
+    /// record after the main itself, which the panel's header already
+    /// carries.
+    /// </summary>
+    private void RebuildChain()
+    {
+        ChainRows.Children.Clear();
+
+        if (!ViewModel.IsFocused || ViewModel.Pins is not { Count: > 1 } pins)
+        {
+            return;
+        }
+
+        for (int i = 1; i < pins.Count; i++)
+        {
+            ChainRows.Children.Add(BuildChainRow(pins[i]));
+        }
+    }
+
+    /// <summary>
+    /// One row of the chain: the record's pin in words - flag, name, country
+    /// - stepped in by its depth, so the list reads as the chain it is.
+    /// Hovering the row lights the pin itself on the page.
+    /// </summary>
+    private Button BuildChainRow(MapPin pin)
+    {
+        // The pin this row speaks for, so the hover can find it.
+        MapDot? dot = _dots.FirstOrDefault(d => ReferenceEquals(d.Pin, pin));
+
+        Button button = new()
+        {
+            Style = (Style)Application.Current.Resources["BareButtonStyle"],
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+
+        Brush clear = new SolidColorBrush(Color.FromArgb(0x00, 0x00, 0x00, 0x00));
+
+        Border shell = new()
+        {
+            Height = 48,
+            CornerRadius = new CornerRadius(13),
+            Padding = new Thickness(14 + (pin.Level * 14), 4, 14, 4),
+            Background = clear,
+            BorderBrush = clear,
+            BorderThickness = new Thickness(1),
+        };
+
+        Grid layout = new() { ColumnSpacing = 11 };
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        // The flag, or the globe when the record has no country.
+        Viewbox flagBox = new() { Width = 20, Height = 15, VerticalAlignment = VerticalAlignment.Center };
+
+        if (pin.FlagCountry is not null)
+        {
+            flagBox.Child = new FlagIcon { Country = pin.FlagCountry };
+        }
+        else
+        {
+            flagBox.Child = new LineIcon
+            {
+                Kind = "Globe",
+                Width = 16,
+                Height = 16,
+                Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0xA0, 0xA5, 0xAB)),
+            };
+        }
+
+        Grid.SetColumn(flagBox, 0);
+        layout.Children.Add(flagBox);
+
+        StackPanel texts = new() { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        texts.Children.Add(new TextBlock
+        {
+            Text = pin.Label,
+            FontFamily = (FontFamily)Application.Current.Resources["BalooSemiBoldFont"],
+            FontSize = 13,
+            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x2B, 0x2F, 0x33)),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 200,
+        });
+
+        string country = string.IsNullOrWhiteSpace(pin.TooltipTitle) || pin.TooltipTitle == "No country set"
+            ? "No country set"
+            : pin.TooltipTitle;
+        texts.Children.Add(new TextBlock
+        {
+            Text = pin.Level == 1
+                ? country
+                : $"{country} \u00B7 {pin.Level} hops",
+            FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
+            FontSize = 11.5,
+            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x7A, 0x87, 0x98)),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 220,
+        });
+
+        Grid.SetColumn(texts, 1);
+        layout.Children.Add(texts);
+
+        shell.Child = layout;
+        button.Content = shell;
+
+        // The hover pairs: the row warms, the pin itself stands up.
+        Brush warm = new SolidColorBrush(Color.FromArgb(0xFF, 0xF4, 0xF6, 0xF9));
+        Brush warmBorder = new SolidColorBrush(Color.FromArgb(0xFF, 0xE4, 0xE6, 0xE9));
+
+        button.PointerEntered += (_, _) =>
+        {
+            shell.Background = warm;
+            shell.BorderBrush = warmBorder;
+            dot?.HighlightOn();
+        };
+        button.PointerExited += (_, _) =>
+        {
+            shell.Background = clear;
+            shell.BorderBrush = clear;
+            dot?.HighlightOff();
+        };
+
+        // A click on the row is a click on the pin: the chooser or the
+        // record, whatever that pin's click means where it stands.
+        button.Click += (_, _) =>
+        {
+            if (dot is not null)
+            {
+                OnPinTapped(dot, pin);
+            }
+        };
+
+        return button;
     }
 
     // ------------------------------------------------------------------
@@ -656,8 +864,8 @@ public sealed partial class VpsMapDialog : UserControl
             Height = 54,
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(14, 6, 14, 6),
-            Background = new SolidColorBrush(Color.FromArgb(0xFF, 0x1A, 0x2A, 0x44)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0x33, 0x45, 0x5F)),
+            Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xF4, 0xF6, 0xF9)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xE4, 0xE6, 0xE9)),
             BorderThickness = new Thickness(1),
         };
 
@@ -694,7 +902,7 @@ public sealed partial class VpsMapDialog : UserControl
             Text = row.Label,
             FontFamily = (FontFamily)Application.Current.Resources["BalooSemiBoldFont"],
             FontSize = 13.5,
-            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0xED, 0xF2, 0xF9)),
+            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x2B, 0x2F, 0x33)),
             TextTrimming = TextTrimming.CharacterEllipsis,
             MaxWidth = 200,
         };
@@ -703,7 +911,7 @@ public sealed partial class VpsMapDialog : UserControl
             Text = row.Detail,
             FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
             FontSize = 11.5,
-            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x8F, 0xA3, 0xBF)),
+            Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0x7A, 0x87, 0x98)),
         };
         texts.Children.Add(name);
         texts.Children.Add(detail);

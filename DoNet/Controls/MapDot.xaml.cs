@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using DoNet.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -10,23 +11,23 @@ using Windows.Foundation;
 namespace DoNet.Controls;
 
 /// <summary>
-/// One dot on the VPS map. See the XAML for how the dot carries its flag,
-/// its count, its MAIN tag, its label and its hover card - and why the
-/// overhang lives on a canvas rather than in the root grid.
+/// One pin on the VPS map. See the XAML for how the teardrop carries its
+/// flag, its count, its label and its hover card - and why the words live on
+/// an overhang canvas rather than in the root grid.
 /// </summary>
 public sealed partial class MapDot : UserControl
 {
-    /// <summary>Whether the pointer is over the dot, debounced for the bubbling exits.</summary>
+    /// <summary>Whether the pointer is over the pin, debounced for the bubbling exits.</summary>
     private bool _entered;
 
-    /// <summary>Whether the heartbeat storyboard is running.</summary>
+    /// <summary>Whether the ping storyboard is running.</summary>
     private bool _pulsing;
 
     public MapDot()
     {
         InitializeComponent();
 
-        // The entrance starts the dot dark and small; the storyboard on load
+        // The entrance starts the pin dark and small; the storyboard on load
         // brings it in. Until the control is loaded there is nothing to see,
         // so the base values only matter once it is in the tree.
         Root.Opacity = 0;
@@ -41,22 +42,33 @@ public sealed partial class MapDot : UserControl
         nameof(Pin), typeof(MapPin), typeof(MapDot),
         new PropertyMetadata(null, OnPinChanged));
 
-    /// <summary>The dot's data: what it is, where it is, what it says.</summary>
+    /// <summary>The pin's data: what it is, where it is, what it says.</summary>
     public MapPin? Pin
     {
         get => (MapPin?)GetValue(PinProperty);
         set => SetValue(PinProperty, value);
     }
 
-    /// <summary>The dot was clicked: the map decides what that means.</summary>
+    /// <summary>The pin was clicked: the map decides what that means.</summary>
     public event EventHandler<MapPin>? PinTapped;
+
+    /// <summary>
+    /// How far the anchor point sits from the control's left edge: the tip's
+    /// horizontal centre. The caller seats the control so the tip lands on
+    /// the anchor.
+    /// </summary>
+    public double TipOffsetX { get; private set; }
+
+    /// <summary>How far the anchor point sits from the control's top edge.</summary>
+    public double TipOffsetY { get; private set; }
 
     private static void OnPinChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((MapDot)d).Apply();
 
     /// <summary>
-    /// The dot's arrival: a staggered pop, so a view's dots land one after
-    /// another in the order the view model numbered them.
+    /// The pin's arrival: a staggered drop, so a view's pins land one after
+    /// another in the order the view model numbered them - each growing from
+    /// its own tip, like pins being pressed into the page.
     /// </summary>
     /// <remarks>
     /// Built in code because the delay is the pin's arrival index, which only
@@ -91,7 +103,7 @@ public sealed partial class MapDot : UserControl
             {
                 From = 0.55,
                 To = 1,
-                Duration = new Duration(TimeSpan.FromMilliseconds(220)),
+                Duration = new Duration(TimeSpan.FromMilliseconds(240)),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
             };
             Storyboard.SetTarget(rise, EntryScale);
@@ -113,21 +125,23 @@ public sealed partial class MapDot : UserControl
     }
 
     /// <summary>
-    /// Pushes the pin into the dot: size, ring, flag, badge, tag, label and
-    /// hover card.
+    /// Pushes the pin into the teardrop: geometry, stroke, flag, badge,
+    /// label and hover card.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The coin is the root's own square; everything else is seated on the
-    /// overhang canvas, measured first so it can be centred on the coin
-    /// without the canvas constraining it. A canvas measures its children
-    /// against infinity, so the measure is the element's honest size.
+    /// The teardrop is built from one head radius, in the pin's own terms:
+    /// a circle of that radius as the head, sides curving down to a point
+    /// whose tip is the anchor. Everything else on the pin - shadow, flag,
+    /// badge, ping - is seated from the same numbers, so one size change
+    /// reshapes the whole marker.
     /// </para>
     /// <para>
-    /// The seats are computed from the dot's size, so a 28-pixel node and a
-    /// 40-pixel main carry their extras at the same breathing distance.
+    /// The words live on the overhang canvas, measured against infinity
+    /// first so they can be centred on the pin without the canvas
+    /// constraining them.
     /// </para>
-    /// </remarks>
+    ///</remarks>
     private void Apply()
     {
         if (Pin is not { } pin)
@@ -136,36 +150,37 @@ public sealed partial class MapDot : UserControl
         }
 
         bool isMainKind = pin.Kind is MapPinKind.Main or MapPinKind.Cluster or MapPinKind.TreeMain;
-        double size = pin.DotSize;
+        double head = pin.DotSize / 2.0;
 
-        // The coin and its halo.
-        Root.Width = size;
-        Root.Height = size;
-        Coin.Width = size;
-        Coin.Height = size;
-        Coin.Stroke = (Brush)Resources[isMainKind ? "MainRingBrush" : "NodeRingBrush"];
-        Coin.StrokeThickness = isMainKind ? 3 : 2.25;
+        // The footprint: the teardrop's width is the head's diameter plus
+        // stroke room; its height is the head's arc plus the taper to the
+        // tip, plus a little ground for the shadow.
+        Root.Width = (head * 2) + 8;
+        Root.Height = (head * 2.9) + 8;
 
-        if (isMainKind)
-        {
-            Halo.Width = size + 8;
-            Halo.Height = size + 8;
-            Halo.Opacity = 1;
-            HaloWash.Width = size + 18;
-            HaloWash.Height = size + 18;
-            HaloWash.Opacity = 1;
-        }
-        else
-        {
-            Halo.Opacity = 0;
-            HaloWash.Opacity = 0;
-        }
+        double tipY = Root.Height - 2;
+        double cx = Root.Width / 2;
+        TipOffsetX = cx;
+        TipOffsetY = tipY;
 
-        // The heartbeat belongs to the root of an open network alone: the
-        // pulse is how the eye finds the centre of the network.
-        SetPulse(pin.Kind == MapPinKind.TreeMain, size);
+        // The pin grows from its tip, wherever it is planted.
+        Root.RenderTransformOrigin = new Point(0.5, tipY / Root.Height);
 
-        // The flag inside the coin, or the globe when there is no country.
+        // The body: a circle of the head's radius, its sides curving to the
+        // tip. Built as a path in the pin's own coordinates.
+        PinBody.Data = PinGeometry(cx, tipY, head);
+        PinBody.Stroke = (Brush)Resources[isMainKind ? "MainRingBrush" : "NodeRingBrush"];
+        PinBody.StrokeThickness = isMainKind ? 2.5 : 2;
+
+        // The ground shadow, under the tip.
+        GroundShadow.Width = head * 1.15;
+        GroundShadow.Height = Math.Max(4, head * 0.32);
+        GroundShadow.Margin = new Thickness(
+            cx - (head * 0.575), tipY - (GroundShadow.Height / 2) + 1, 0, 0);
+        GroundShadow.HorizontalAlignment = HorizontalAlignment.Left;
+        GroundShadow.VerticalAlignment = VerticalAlignment.Top;
+
+        // The flag in the head, or the globe when there is no country.
         bool hasFlag = pin.FlagCountry is not null;
         FlagBox.Visibility = hasFlag ? Visibility.Visible : Visibility.Collapsed;
         NoCountryBox.Visibility = hasFlag ? Visibility.Collapsed : Visibility.Visible;
@@ -173,34 +188,40 @@ public sealed partial class MapDot : UserControl
         if (hasFlag)
         {
             Flag.Country = pin.FlagCountry;
-            double flagWidth = size >= 34 ? 21 : 18;
+            double flagWidth = head * 1.24;
             FlagBox.Width = flagWidth;
             FlagBox.Height = flagWidth * 15.0 / 21.0;
+            FlagBox.Margin = new Thickness(cx - (flagWidth / 2), tipY - (head * 1.9) - (FlagBox.Height / 2), 0, 0);
+            FlagBox.HorizontalAlignment = HorizontalAlignment.Left;
+            FlagBox.VerticalAlignment = VerticalAlignment.Top;
+        }
+        else
+        {
+            double icon = head * 1.1;
+            NoCountryBox.Width = icon;
+            NoCountryBox.Height = icon;
+            NoCountryBox.Margin = new Thickness(cx - (icon / 2), tipY - (head * 1.9) - (icon / 2), 0, 0);
+            NoCountryBox.HorizontalAlignment = HorizontalAlignment.Left;
+            NoCountryBox.VerticalAlignment = VerticalAlignment.Top;
         }
 
+        // The focused main's ping, planted at the tip.
+        SetPulse(pin.Kind == MapPinKind.TreeMain, cx, tipY, head);
+
         // The count badge, only on a country holding several mains: hung off
-        // the coin's top-right shoulder.
+        // the head's top-right shoulder.
         bool isCluster = pin.Kind == MapPinKind.Cluster && pin.Cluster is { Count: > 1 };
         CountBadge.Visibility = isCluster ? Visibility.Visible : Visibility.Collapsed;
 
         if (isCluster)
         {
             CountText.Text = $"\u00D7{pin.Cluster!.Count}";
-            SeatOverhang(CountBadge, right: 20, top: -8, fromRight: true);
+            CountBadge.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Canvas.SetLeft(CountBadge, cx + (head * 0.4));
+            Canvas.SetTop(CountBadge, tipY - (head * 2.9) - 6);
         }
 
-        // The MAIN tag, only on the root of an open network: centred above
-        // the coin, clear of the halo.
-        MainTag.Visibility = pin.Kind == MapPinKind.TreeMain
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-
-        if (pin.Kind == MapPinKind.TreeMain)
-        {
-            SeatOverhang(MainTag, centre: true, top: -26);
-        }
-
-        // The label under the coin, when there is one.
+        // The label under the tip, when there is one.
         bool hasLabel = pin.Label.Trim().Length > 0;
         LabelPill.Visibility = hasLabel ? Visibility.Visible : Visibility.Collapsed;
 
@@ -210,76 +231,85 @@ public sealed partial class MapDot : UserControl
             LabelText.FontFamily = (FontFamily)Application.Current.Resources[isMainKind
                 ? "BalooSemiBoldFont"
                 : "BalooFont"];
-            LabelText.FontSize = pin.Kind == MapPinKind.TreeMain ? 12.5 : 12;
-            SeatOverhang(LabelPill, centre: true, bottom: size / 2 + 13, fromBottom: true);
+            LabelPill.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Canvas.SetLeft(LabelPill, cx - (LabelPill.DesiredSize.Width / 2));
+            Canvas.SetTop(LabelPill, Root.Height + 2 + pin.LabelDrop);
         }
 
-        // The hover card, above by default and under when the dot sits near
-        // the top of the map.
+        // The hover card: the country in words, the record's name, its place
+        // in the network. Above the head by default, under the label when
+        // the pin sits near the top of the map.
         TipTitle.Text = pin.TooltipTitle;
         TipDetail.Text = pin.TooltipDetail;
         TipMeta.Text = pin.TooltipMeta;
         TipFlagBox.Visibility = hasFlag ? Visibility.Visible : Visibility.Collapsed;
-        TipCard.Visibility = Visibility.Visible;
 
         if (hasFlag)
         {
             TipFlag.Country = pin.FlagCountry;
         }
 
-        // The clearance the card needs: past the MAIN tag when there is one,
-        // past the badge's shoulder when there is not - and past the label
-        // when it opens downward instead.
-        double above = pin.Kind == MapPinKind.TreeMain ? 134 : 96;
-        double below = size / 2 + 41 + 84;
-
-        // The card is measured against infinity, so its honest size is
-        // known before it is seated: centred on the coin, hanging down from
-        // its clearance above or standing on it below.
         TipCard.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        double cardWidth = TipCard.DesiredSize.Width;
+        double cardHeight = TipCard.DesiredSize.Height;
 
         if (pin.TooltipAbove)
         {
-            Canvas.SetLeft(TipCard, size / 2 - TipCard.DesiredSize.Width / 2);
-            Canvas.SetTop(TipCard, -above);
+            Canvas.SetLeft(TipCard, cx - (cardWidth / 2));
+            Canvas.SetTop(TipCard, tipY - (head * 2.9) - cardHeight - 8);
         }
         else
         {
-            Canvas.SetLeft(TipCard, size / 2 - TipCard.DesiredSize.Width / 2);
-            Canvas.SetTop(TipCard, size + below - TipCard.DesiredSize.Height);
+            Canvas.SetLeft(TipCard, cx - (cardWidth / 2));
+            Canvas.SetTop(TipCard, Root.Height + 30);
         }
     }
 
     /// <summary>
-    /// Starts or stops the main's heartbeat, sized to its coin.
+    /// The teardrop's geometry: a head circle of the given radius whose
+    /// sides curve down to a point at the tip.
     /// </summary>
-    private void SetPulse(bool on, double size)
+    private static string PinGeometry(double cx, double tipY, double head)
     {
-        if (on == _pulsing && on && Math.Abs(PulseRing.Width - size) < 0.5)
-        {
-            return;
-        }
+        static string Pt(double x, double y)
+            => string.Create(CultureInfo.InvariantCulture, $"{x:0.###},{y:0.###}");
 
-        // Fetched once, before the branch: a pattern variable declared in an
-        // if condition is in scope in that if's else as well, so declaring
-        // the same name in both branches is a conflict (CS0136). One local,
-        // both jobs.
-        if (Resources["PulseStoryboard"] is not Storyboard board)
-        {
-            return;
-        }
+        double headY = tipY - (head * 1.9);
 
-        if (on)
+        // Tip, left curve to the head's left edge, the head's arc over the
+        // top, right curve back down to the tip.
+        return string.Join(' ',
+            "M", Pt(cx, tipY),
+            "C", Pt(cx - head * 0.6, tipY - head * 0.8),
+                  Pt(cx - head, tipY - head * 1.3),
+                  Pt(cx - head, headY),
+            "A", Pt(head, head), "0 1 1",
+                  Pt(cx + head, headY),
+            "C", Pt(cx + head, tipY - head * 1.3),
+                  Pt(cx + head * 0.6, tipY - head * 0.8),
+                  Pt(cx, tipY),
+            "Z");
+    }
+
+    /// <summary>
+    /// Starts or stops the focused main's ping, planted at the tip.
+    /// </summary>
+    private void SetPulse(bool on, double cx, double tipY, double head)
+    {
+        if (on && Resources["PulseStoryboard"] is Storyboard board)
         {
+            double size = Math.Max(10, head * 0.55);
             PulseRing.Width = size;
             PulseRing.Height = size;
-            PulseRing.Opacity = 0.6;
+            Canvas.SetLeft(PulseRing, cx - (size / 2));
+            Canvas.SetTop(PulseRing, tipY - (size / 2));
+            PulseRing.Opacity = 0.55;
             board.Begin();
             _pulsing = true;
         }
         else
         {
-            if (_pulsing)
+            if (_pulsing && Resources["PulseStoryboard"] is Storyboard board)
             {
                 board.Stop();
             }
@@ -290,46 +320,7 @@ public sealed partial class MapDot : UserControl
     }
 
     /// <summary>
-    /// Seats an overhang element on its canvas: centred on the coin, or hung
-    /// off one of its corners.
-    /// </summary>
-    /// <remarks>
-    /// The element is measured against infinity first - a canvas does not
-    /// size its children, so the measure is the only way to know how wide the
-    /// words are.
-    /// </remarks>
-    private void SeatOverhang(
-        FrameworkElement element,
-        bool centre = false,
-        double right = 0,
-        double top = 0,
-        double bottom = 0,
-        bool fromRight = false,
-        bool fromBottom = false)
-    {
-        element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-
-        if (centre)
-        {
-            Canvas.SetLeft(element, Root.Width / 2 - element.DesiredSize.Width / 2);
-        }
-        else if (fromRight)
-        {
-            Canvas.SetLeft(element, Root.Width + right - element.DesiredSize.Width);
-        }
-
-        if (fromBottom)
-        {
-            Canvas.SetTop(element, Root.Height + bottom - element.DesiredSize.Height);
-        }
-        else
-        {
-            Canvas.SetTop(element, top);
-        }
-    }
-
-    /// <summary>
-    /// The dot leans toward the pointer and speaks: its hover card says in
+    /// The pin leans toward the pointer and speaks: its hover card says in
     /// words what its colours just said.
     /// </summary>
     private void OnPointerEntered(object sender, PointerRoutedEventArgs args)
@@ -340,27 +331,49 @@ public sealed partial class MapDot : UserControl
         }
 
         _entered = true;
+        HighlightOn();
+        ShowTip();
+    }
 
+    private void OnPointerExited(object sender, PointerRoutedEventArgs args)
+    {
+        _entered = false;
+        HighlightOff();
+        HideTip();
+    }
+
+    /// <summary>
+    /// Grows the pin toward the pointer - also called by the map when the
+    /// pin's row is hovered in the network panel, so the list and the page
+    /// speak with one voice.
+    /// </summary>
+    public void HighlightOn()
+    {
         if (Resources["HoverOn"] is Storyboard hover)
         {
             hover.Begin();
         }
+    }
 
+    /// <summary>Returns the pin to its rest.</summary>
+    public void HighlightOff()
+    {
+        if (Resources["HoverOff"] is Storyboard hover)
+        {
+            hover.Begin();
+        }
+    }
+
+    private void ShowTip()
+    {
         if (Resources["TipShow"] is Storyboard tip)
         {
             tip.Begin();
         }
     }
 
-    private void OnPointerExited(object sender, PointerRoutedEventArgs args)
+    private void HideTip()
     {
-        _entered = false;
-
-        if (Resources["HoverOff"] is Storyboard hover)
-        {
-            hover.Begin();
-        }
-
         if (Resources["TipHide"] is Storyboard tip)
         {
             tip.Begin();
