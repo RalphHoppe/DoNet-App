@@ -163,8 +163,10 @@ public sealed partial class MapDot : UserControl
         TipOffsetX = cx;
         TipOffsetY = tipY;
 
-        // The pin grows from its tip, wherever it is planted.
-        Root.RenderTransformOrigin = new Point(0.5, tipY / Root.Height);
+        // The pin grows from its tip, wherever it is planted. The point is
+        // built with float parts - fully qualified and narrow, so the line
+        // means the same thing to every binding of the name Point.
+        Root.RenderTransformOrigin = new Windows.Foundation.Point(0.5f, (float)(tipY / Root.Height));
 
         // The body: a circle of the head's radius, its sides curving to the
         // tip. Built as a path in the pin's own coordinates.
@@ -296,7 +298,12 @@ public sealed partial class MapDot : UserControl
     /// </summary>
     private void SetPulse(bool on, double cx, double tipY, double head)
     {
-        if (on && Resources["PulseStoryboard"] is Storyboard board)
+        // Resolved once, before the branches: a pattern variable declared in
+        // the if condition is in scope in the else branch too, so the two
+        // branches cannot each declare their own board.
+        Storyboard? board = Resources["PulseStoryboard"] as Storyboard;
+
+        if (on && board is not null)
         {
             double size = Math.Max(10, head * 0.55);
             PulseRing.Width = size;
@@ -309,7 +316,7 @@ public sealed partial class MapDot : UserControl
         }
         else
         {
-            if (_pulsing && Resources["PulseStoryboard"] is Storyboard board)
+            if (_pulsing && board is not null)
             {
                 board.Stop();
             }

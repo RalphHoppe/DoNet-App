@@ -556,9 +556,9 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <WrapPanel Grid.Column="0"
-                               HorizontalSpacing="20"
-                               VerticalSpacing="6">
+                    <controls:WrapPanel Grid.Column="0"
+                                        ItemSpacing="20"
+                                        LineSpacing="6">
                         <StackPanel Orientation="Horizontal" Spacing="7">
                             <Ellipse Width="15"
                                      Height="15"
@@ -593,7 +593,7 @@
                         </StackPanel>
                         <TextBlock Text="Click a main to open its network"
                                    Style="{StaticResource LegendTextStyle}" />
-                    </WrapPanel>
+                    </controls:WrapPanel>
 
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
