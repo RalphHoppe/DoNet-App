@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using DoNet.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -271,26 +270,50 @@ public sealed partial class MapDot : UserControl
     /// The teardrop's geometry: a head circle of the given radius whose
     /// sides curve down to a point at the tip.
     /// </summary>
-    private static string PinGeometry(double cx, double tipY, double head)
+    /// <remarks>
+    /// A real geometry, not the path-data shorthand: that mini-language is
+    /// the XAML parser's to read, and there is no turning a string back into
+    /// a geometry from code.
+    /// </remarks>
+    private static PathGeometry PinGeometry(double cx, double tipY, double head)
     {
-        static string Pt(double x, double y)
-            => string.Create(CultureInfo.InvariantCulture, $"{x:0.###},{y:0.###}");
-
         double headY = tipY - (head * 1.9);
 
-        // Tip, left curve to the head's left edge, the head's arc over the
-        // top, right curve back down to the tip.
-        return string.Join(' ',
-            "M", Pt(cx, tipY),
-            "C", Pt(cx - head * 0.6, tipY - head * 0.8),
-                  Pt(cx - head, tipY - head * 1.3),
-                  Pt(cx - head, headY),
-            "A", Pt(head, head), "0 1 1",
-                  Pt(cx + head, headY),
-            "C", Pt(cx + head, tipY - head * 1.3),
-                  Pt(cx + head * 0.6, tipY - head * 0.8),
-                  Pt(cx, tipY),
-            "Z");
+        PathFigure figure = new()
+        {
+            StartPoint = new Point(cx, tipY),
+            IsClosed = true,
+            IsFilled = true,
+        };
+
+        // The left side: out of the tip, curving up to the head's west edge.
+        figure.Segments.Add(new BezierSegment
+        {
+            Point1 = new Point(cx - (head * 0.6), tipY - (head * 0.8)),
+            Point2 = new Point(cx - head, tipY - (head * 1.3)),
+            Point3 = new Point(cx - head, headY),
+        });
+
+        // The head: a semicircle over the top, west to east.
+        figure.Segments.Add(new ArcSegment
+        {
+            Point = new Point(cx + head, headY),
+            Size = new Size(head, head),
+            IsLargeArc = false,
+            SweepDirection = SweepDirection.Clockwise,
+        });
+
+        // The right side: back down to the tip.
+        figure.Segments.Add(new BezierSegment
+        {
+            Point1 = new Point(cx + head, tipY - (head * 1.3)),
+            Point2 = new Point(cx + (head * 0.6), tipY - (head * 0.8)),
+            Point3 = new Point(cx, tipY),
+        });
+
+        PathGeometry geometry = new();
+        geometry.Figures.Add(figure);
+        return geometry;
     }
 
     /// <summary>
