@@ -537,7 +537,11 @@ public sealed partial class VpsMapDialog : UserControl
                 From = 0,
                 To = -period,
                 Duration = new Duration(TimeSpan.FromSeconds(1)),
-                RepeatBehavior = new RepeatBehavior(double.PositiveInfinity),
+
+                // Forever is a mode, not a number: the count-taking
+                // constructor rejects infinity with an out-of-range
+                // exception, so the forever behaviour is set by type.
+                RepeatBehavior = new RepeatBehavior { Type = RepeatBehaviorType.Forever },
             };
             Storyboard.SetTarget(drift, shape);
             Storyboard.SetTargetProperty(drift, "StrokeDashOffset");
