@@ -260,19 +260,28 @@ public sealed partial class MapDot : UserControl
             return;
         }
 
-        if (on && Resources["PulseStoryboard"] is Storyboard pulse)
+        // Fetched once, before the branch: a pattern variable declared in an
+        // if condition is in scope in that if's else as well, so declaring
+        // the same name in both branches is a conflict (CS0136). One local,
+        // both jobs.
+        if (Resources["PulseStoryboard"] is not Storyboard board)
+        {
+            return;
+        }
+
+        if (on)
         {
             PulseRing.Width = size;
             PulseRing.Height = size;
             PulseRing.Opacity = 0.6;
-            pulse.Begin();
+            board.Begin();
             _pulsing = true;
         }
         else
         {
-            if (_pulsing && Resources["PulseStoryboard"] is Storyboard pulse)
+            if (_pulsing)
             {
-                pulse.Stop();
+                board.Stop();
             }
 
             PulseRing.Opacity = 0;
