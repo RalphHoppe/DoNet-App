@@ -10,28 +10,24 @@ using Windows.Foundation;
 namespace DoNet.Controls;
 
 /// <summary>
-/// One pin on the VPS map. See the XAML for how the teardrop carries its
-/// flag, its count, its label and its hover card - and why the words live on
-/// an overhang canvas rather than in the root grid.
+/// One marker on the VPS map. See the XAML for how the delta carries its
+/// callout, its count and its selection ring - and why the words live on an
+/// overhang canvas rather than in the root grid.
 /// </summary>
 public sealed partial class MapDot : UserControl
 {
-    /// <summary>Whether the pointer is over the pin, debounced for the bubbling exits.</summary>
+    /// <summary>Whether the pointer is over the marker, debounced for the bubbling exits.</summary>
     private bool _entered;
-
-    /// <summary>Whether the ping storyboard is running.</summary>
-    private bool _pulsing;
 
     public MapDot()
     {
         InitializeComponent();
 
-        // The entrance starts the pin dark and small; the storyboard on load
-        // brings it in. Until the control is loaded there is nothing to see,
-        // so the base values only matter once it is in the tree.
+        // The entrance starts the marker hidden and small; the storyboard on
+        // load brings it in.
         Root.Opacity = 0;
-        EntryScale.ScaleX = 0.55;
-        EntryScale.ScaleY = 0.55;
+        EntryScale.ScaleX = 0.6;
+        EntryScale.ScaleY = 0.6;
 
         Loaded += OnLoadedOnce;
     }
@@ -48,7 +44,7 @@ public sealed partial class MapDot : UserControl
         set => SetValue(PinProperty, value);
     }
 
-    /// <summary>The pin was clicked: the map decides what that means.</summary>
+    /// <summary>The marker was clicked: the map decides what that means.</summary>
     public event EventHandler<MapPin>? PinTapped;
 
     /// <summary>
@@ -65,15 +61,15 @@ public sealed partial class MapDot : UserControl
         => ((MapDot)d).Apply();
 
     /// <summary>
-    /// The pin's arrival: a staggered drop, so a view's pins land one after
-    /// another in the order the view model numbered them - each growing from
+    /// The marker's arrival: a staggered drop, so a view's markers land one
+    /// after another in the order the view model numbered them - each from
     /// its own tip, like pins being pressed into the page.
     /// </summary>
     /// <remarks>
-    /// Built in code because the delay is the pin's arrival index, which only
-    /// the instance knows. The base values are set in the constructor and
-    /// re-set here, so a pin arriving into an already-loaded control still
-    /// enters rather than appearing fully formed.
+    /// Built in code because the delay is the marker's arrival index, which
+    /// only the instance knows. The base values are set in the constructor
+    /// and re-set here, so a marker arriving into an already-loaded control
+    /// still enters rather than appearing fully formed.
     /// </remarks>
     private void OnLoadedOnce(object sender, RoutedEventArgs args)
     {
@@ -88,21 +84,21 @@ public sealed partial class MapDot : UserControl
         }
 
         Root.Opacity = 0;
-        EntryScale.ScaleX = 0.55;
-        EntryScale.ScaleY = 0.55;
+        EntryScale.ScaleX = 0.6;
+        EntryScale.ScaleY = 0.6;
 
         Storyboard entrance = new()
         {
-            BeginTime = TimeSpan.FromMilliseconds(Math.Min(pin.Index, 20) * 30),
+            BeginTime = TimeSpan.FromMilliseconds(Math.Min(pin.Index, 20) * 26),
         };
 
         foreach (string axis in new[] { "ScaleX", "ScaleY" })
         {
             DoubleAnimation rise = new()
             {
-                From = 0.55,
+                From = 0.6,
                 To = 1,
-                Duration = new Duration(TimeSpan.FromMilliseconds(240)),
+                Duration = new Duration(TimeSpan.FromMilliseconds(220)),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
             };
             Storyboard.SetTarget(rise, EntryScale);
@@ -114,7 +110,7 @@ public sealed partial class MapDot : UserControl
         {
             From = 0,
             To = 1,
-            Duration = new Duration(TimeSpan.FromMilliseconds(200)),
+            Duration = new Duration(TimeSpan.FromMilliseconds(190)),
         };
         Storyboard.SetTarget(fade, Root);
         Storyboard.SetTargetProperty(fade, "Opacity");
@@ -124,20 +120,20 @@ public sealed partial class MapDot : UserControl
     }
 
     /// <summary>
-    /// Pushes the pin into the teardrop: geometry, stroke, flag, badge,
-    /// label and hover card.
+    /// Pushes the pin into the delta: geometry, fill, count, callout and
+    /// selection ring.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The teardrop is built from one head radius, in the pin's own terms:
-    /// a circle of that radius as the head, sides curving down to a point
-    /// whose tip is the anchor. Everything else on the pin - shadow, flag,
-    /// badge, ping - is seated from the same numbers, so one size change
-    /// reshapes the whole marker.
+    /// The delta is built from one width, in the pin's own terms: a triangle
+    /// as wide as the pin's size, about four fifths as tall, its tip at the
+    /// bottom centre. Everything else on the marker - the ring, the count
+    /// chip, the callout - is seated from the same numbers, so one size
+    /// change reshapes the whole marker.
     /// </para>
     /// <para>
     /// The words live on the overhang canvas, measured against infinity
-    /// first so they can be centred on the pin without the canvas
+    /// first so they can be centred on the marker without the canvas
     /// constraining them.
     /// </para>
     ///</remarks>
@@ -149,80 +145,43 @@ public sealed partial class MapDot : UserControl
         }
 
         bool isMainKind = pin.Kind is MapPinKind.Main or MapPinKind.Cluster or MapPinKind.TreeMain;
-        double head = pin.DotSize / 2.0;
 
-        // The footprint: the teardrop's width is the head's diameter plus
-        // stroke room; its height is the head's arc plus the taper to the
-        // tip, plus a little ground for the shadow.
-        Root.Width = (head * 2) + 8;
-        Root.Height = (head * 2.9) + 8;
+        // The footprint: the delta's width plus stroke room; its height is
+        // the width's share, plus room for the white halo.
+        double width = pin.DotSize;
+        double height = Math.Round(width * 0.82);
+        Root.Width = width + 8;
+        Root.Height = height + 8;
 
-        double tipY = Root.Height - 2;
+        double tipY = Root.Height - 4;
         double cx = Root.Width / 2;
         TipOffsetX = cx;
         TipOffsetY = tipY;
 
-        // The pin grows from its tip, wherever it is planted. The point is
-        // built with float parts - fully qualified and narrow, so the line
-        // means the same thing to every binding of the name Point.
+        // The marker grows from its tip, wherever it is planted. The point
+        // is built with float parts - fully qualified and narrow, so the
+        // line means the same thing to every binding of the name Point.
         Root.RenderTransformOrigin = new Windows.Foundation.Point(0.5f, (float)(tipY / Root.Height));
 
-        // The selected pin's ring, circling the head, a breath outside it.
-        double headY = tipY - (head * 1.9);
-        double ringSize = (head + 4) * 2;
-        SelectHalo.Width = ringSize + 2.5;
-        SelectHalo.Height = ringSize + 2.5;
+        // The delta: a triangle whose tip sits at the anchor.
+        Delta.Data = DeltaGeometry(cx, tipY, width, height);
+        Delta.Fill = (Brush)Resources[isMainKind ? "MainFillBrush" : "NodeFillBrush"];
+
+        // The selection ring, circling the delta's visual centre, a breath
+        // outside it.
+        double centreY = tipY - (height * 0.42);
+        double ringSize = (width * 0.62) + 9;
+        SelectHalo.Width = ringSize + 2;
+        SelectHalo.Height = ringSize + 2;
         SelectRing.Width = ringSize;
         SelectRing.Height = ringSize;
-        Canvas.SetLeft(SelectHalo, cx - head - 5.25);
-        Canvas.SetTop(SelectHalo, headY - head - 5.25);
-        Canvas.SetLeft(SelectRing, cx - head - 4);
-        Canvas.SetTop(SelectRing, headY - head - 4);
-
-        // The body: a circle of the head's radius, its sides curving to the
-        // tip. Built as a path in the pin's own coordinates.
-        PinBody.Data = PinGeometry(cx, tipY, head);
-        PinBody.Stroke = (Brush)Resources[isMainKind ? "MainRingBrush" : "NodeRingBrush"];
-        PinBody.StrokeThickness = isMainKind ? 2.5 : 2;
-
-        // The ground shadow, under the tip.
-        GroundShadow.Width = head * 1.15;
-        GroundShadow.Height = Math.Max(4, head * 0.32);
-        GroundShadow.Margin = new Thickness(
-            cx - (head * 0.575), tipY - (GroundShadow.Height / 2) + 1, 0, 0);
-        GroundShadow.HorizontalAlignment = HorizontalAlignment.Left;
-        GroundShadow.VerticalAlignment = VerticalAlignment.Top;
-
-        // The flag in the head, or the globe when there is no country.
-        bool hasFlag = pin.FlagCountry is not null;
-        FlagBox.Visibility = hasFlag ? Visibility.Visible : Visibility.Collapsed;
-        NoCountryBox.Visibility = hasFlag ? Visibility.Collapsed : Visibility.Visible;
-
-        if (hasFlag)
-        {
-            Flag.Country = pin.FlagCountry;
-            double flagWidth = head * 1.24;
-            FlagBox.Width = flagWidth;
-            FlagBox.Height = flagWidth * 15.0 / 21.0;
-            FlagBox.Margin = new Thickness(cx - (flagWidth / 2), tipY - (head * 1.9) - (FlagBox.Height / 2), 0, 0);
-            FlagBox.HorizontalAlignment = HorizontalAlignment.Left;
-            FlagBox.VerticalAlignment = VerticalAlignment.Top;
-        }
-        else
-        {
-            double icon = head * 1.1;
-            NoCountryBox.Width = icon;
-            NoCountryBox.Height = icon;
-            NoCountryBox.Margin = new Thickness(cx - (icon / 2), tipY - (head * 1.9) - (icon / 2), 0, 0);
-            NoCountryBox.HorizontalAlignment = HorizontalAlignment.Left;
-            NoCountryBox.VerticalAlignment = VerticalAlignment.Top;
-        }
-
-        // The focused main's ping, planted at the tip.
-        SetPulse(pin.Kind == MapPinKind.TreeMain, cx, tipY, head);
+        Canvas.SetLeft(SelectHalo, cx - (ringSize / 2) - 1);
+        Canvas.SetTop(SelectHalo, centreY - (ringSize / 2) - 1);
+        Canvas.SetLeft(SelectRing, cx - (ringSize / 2));
+        Canvas.SetTop(SelectRing, centreY - (ringSize / 2));
 
         // The count badge, only on a country holding several mains: hung off
-        // the head's top-right shoulder.
+        // the delta's right shoulder.
         bool isCluster = pin.Kind == MapPinKind.Cluster && pin.Cluster is { Count: > 1 };
         CountBadge.Visibility = isCluster ? Visibility.Visible : Visibility.Collapsed;
 
@@ -230,98 +189,37 @@ public sealed partial class MapDot : UserControl
         {
             CountText.Text = $"\u00D7{pin.Cluster!.Count}";
             CountBadge.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Canvas.SetLeft(CountBadge, cx + (head * 0.4));
-            Canvas.SetTop(CountBadge, tipY - (head * 2.9) - 6);
+            Canvas.SetLeft(CountBadge, cx + (width * 0.34));
+            Canvas.SetTop(CountBadge, tipY - height - 2);
         }
 
-        // The label under the tip, when there is one.
-        bool hasLabel = pin.Label.Trim().Length > 0;
-        LabelPill.Visibility = hasLabel ? Visibility.Visible : Visibility.Collapsed;
-
-        if (hasLabel)
+        // The callout: the country's name in the overview, the record's name
+        // in an open network, above the delta.
+        CalloutText.Text = pin.Kind switch
         {
-            LabelText.Text = pin.Label;
-            LabelText.FontFamily = (FontFamily)Application.Current.Resources[isMainKind
-                ? "BalooSemiBoldFont"
-                : "BalooFont"];
-            LabelPill.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Canvas.SetLeft(LabelPill, cx - (LabelPill.DesiredSize.Width / 2));
-            Canvas.SetTop(LabelPill, tipY + 6 + pin.LabelDrop);
-        }
-
-        // The hover card: the country in words, the record's name, its place
-        // in the network. Above the head by default, under the label when
-        // the pin sits near the top of the map.
-        TipTitle.Text = pin.TooltipTitle;
-        TipDetail.Text = pin.TooltipDetail;
-        TipMeta.Text = pin.TooltipMeta;
-        TipFlagBox.Visibility = hasFlag ? Visibility.Visible : Visibility.Collapsed;
-
-        if (hasFlag)
-        {
-            TipFlag.Country = pin.FlagCountry;
-        }
-
-        TipCard.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        double cardWidth = TipCard.DesiredSize.Width;
-        double cardHeight = TipCard.DesiredSize.Height;
-
-        if (pin.TooltipAbove)
-        {
-            Canvas.SetLeft(TipCard, cx - (cardWidth / 2));
-            Canvas.SetTop(TipCard, tipY - (head * 2.9) - cardHeight - 8);
-        }
-        else
-        {
-            Canvas.SetLeft(TipCard, cx - (cardWidth / 2));
-            Canvas.SetTop(TipCard, Root.Height + 30);
-        }
+            MapPinKind.Main or MapPinKind.Cluster => pin.TooltipTitle,
+            _ => string.IsNullOrWhiteSpace(pin.TooltipDetail) ? pin.TooltipTitle : pin.TooltipDetail,
+        };
+        Callout.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Canvas.SetLeft(Callout, cx - (Callout.DesiredSize.Width / 2));
+        Canvas.SetTop(Callout, tipY - height - Callout.DesiredSize.Height - 6);
     }
 
     /// <summary>
-    /// The teardrop's geometry: a head circle of the given radius whose
-    /// sides curve down to a point at the tip.
+    /// The delta's geometry: a triangle as wide as the given width, about
+    /// four fifths as tall, tip at the bottom centre.
     /// </summary>
-    /// <remarks>
-    /// A real geometry, not the path-data shorthand: that mini-language is
-    /// the XAML parser's to read, and there is no turning a string back into
-    /// a geometry from code.
-    /// </remarks>
-    private static PathGeometry PinGeometry(double cx, double tipY, double head)
+    private static PathGeometry DeltaGeometry(double cx, double tipY, double width, double height)
     {
-        double headY = tipY - (head * 1.9);
-
         PathFigure figure = new()
         {
-            StartPoint = new Point(cx, tipY),
+            StartPoint = new Point(cx - (width / 2), tipY - height),
             IsClosed = true,
             IsFilled = true,
         };
 
-        // The left side: out of the tip, curving up to the head's west edge.
-        figure.Segments.Add(new BezierSegment
-        {
-            Point1 = new Point(cx - (head * 0.6), tipY - (head * 0.8)),
-            Point2 = new Point(cx - head, tipY - (head * 1.3)),
-            Point3 = new Point(cx - head, headY),
-        });
-
-        // The head: a semicircle over the top, west to east.
-        figure.Segments.Add(new ArcSegment
-        {
-            Point = new Point(cx + head, headY),
-            Size = new Size(head, head),
-            IsLargeArc = false,
-            SweepDirection = SweepDirection.Clockwise,
-        });
-
-        // The right side: back down to the tip.
-        figure.Segments.Add(new BezierSegment
-        {
-            Point1 = new Point(cx + head, tipY - (head * 1.3)),
-            Point2 = new Point(cx + (head * 0.6), tipY - (head * 0.8)),
-            Point3 = new Point(cx, tipY),
-        });
+        figure.Segments.Add(new LineSegment { Point = new Point(cx + (width / 2), tipY - height) });
+        figure.Segments.Add(new LineSegment { Point = new Point(cx, tipY) });
 
         PathGeometry geometry = new();
         geometry.Figures.Add(figure);
@@ -329,41 +227,9 @@ public sealed partial class MapDot : UserControl
     }
 
     /// <summary>
-    /// Starts or stops the focused main's ping, planted at the tip.
-    /// </summary>
-    private void SetPulse(bool on, double cx, double tipY, double head)
-    {
-        // Resolved once, before the branches: a pattern variable declared in
-        // the if condition is in scope in the else branch too, so the two
-        // branches cannot each declare their own board.
-        Storyboard? board = Resources["PulseStoryboard"] as Storyboard;
-
-        if (on && board is not null)
-        {
-            double size = Math.Max(10, head * 0.55);
-            PulseRing.Width = size;
-            PulseRing.Height = size;
-            Canvas.SetLeft(PulseRing, cx - (size / 2));
-            Canvas.SetTop(PulseRing, tipY - (size / 2));
-            PulseRing.Opacity = 0.55;
-            board.Begin();
-            _pulsing = true;
-        }
-        else
-        {
-            if (_pulsing && board is not null)
-            {
-                board.Stop();
-            }
-
-            PulseRing.Opacity = 0;
-            _pulsing = false;
-        }
-    }
-
-    /// <summary>
-    /// The pin leans toward the pointer and speaks: its hover card says in
-    /// words what its colours just said.
+    /// The marker stands up toward the pointer and speaks its place's name.
+    /// The lift also raises it above its siblings on the layer, so the
+    /// callout is never spoken from underneath another marker.
     /// </summary>
     private void OnPointerEntered(object sender, PointerRoutedEventArgs args)
     {
@@ -373,21 +239,22 @@ public sealed partial class MapDot : UserControl
         }
 
         _entered = true;
+        Canvas.SetZIndex(this, 100);
         HighlightOn();
-        ShowTip();
+        ShowCallout();
     }
 
     private void OnPointerExited(object sender, PointerRoutedEventArgs args)
     {
         _entered = false;
+        Canvas.SetZIndex(this, 0);
         HighlightOff();
-        HideTip();
+        HideCallout();
     }
 
     /// <summary>
-    /// Grows the pin toward the pointer - also called by the map when the
-    /// pin's row is hovered in the network panel, so the list and the page
-    /// speak with one voice.
+    /// Stands the marker up - also called by the map when the marker's row is
+    /// hovered in the panel, so the list and the page speak with one voice.
     /// </summary>
     public void HighlightOn()
     {
@@ -397,7 +264,7 @@ public sealed partial class MapDot : UserControl
         }
     }
 
-    /// <summary>Returns the pin to its rest.</summary>
+    /// <summary>Returns the marker to its rest.</summary>
     public void HighlightOff()
     {
         if (Resources["HoverOff"] is Storyboard hover)
@@ -407,9 +274,10 @@ public sealed partial class MapDot : UserControl
     }
 
     /// <summary>
-    /// Marks this pin as the one whose story the panel is telling: a quiet
-    /// teal ring around its head. Also called by the map when the selection
-    /// changes, so the page and the panel agree on who is being read.
+    /// Marks this marker as the one whose story the panel is telling: a
+    /// quiet teal ring around the delta. Also called by the map when the
+    /// selection changes, so the page and the panel agree on who is being
+    /// read.
     /// </summary>
     public void SetSelected(bool on)
     {
@@ -417,7 +285,7 @@ public sealed partial class MapDot : UserControl
         SelectRing.Opacity = on ? 1 : 0;
     }
 
-    private void ShowTip()
+    private void ShowCallout()
     {
         if (Resources["TipShow"] is Storyboard tip)
         {
@@ -425,7 +293,7 @@ public sealed partial class MapDot : UserControl
         }
     }
 
-    private void HideTip()
+    private void HideCallout()
     {
         if (Resources["TipHide"] is Storyboard tip)
         {

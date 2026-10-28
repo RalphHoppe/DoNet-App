@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using DoNet.Controls;
 using DoNet.Models;
-using DoNet.Services;
 using DoNet.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -18,34 +18,34 @@ using Windows.UI;
 namespace DoNet.Views;
 
 /// <summary>
-/// The VPS map dialog. See the XAML for how the plate, the pins, the story
-/// panel and the two views fit together; this code-behind owns the parts a
-/// XAML file cannot.
+/// The VPS map screen. See the XAML for how the page, the panel and the two
+/// views fit together; this code-behind owns the parts a XAML file cannot.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The pins and the connections are built in code rather than templated:
+/// The markers and the connections are built in code rather than templated:
 /// they are positioned in pixels by the view model's layout pass, and an
 /// element the code positions is an element the code may as well create.
 /// Rebuilding happens on the view model's say-so - a new set of pins, a new
-/// set of lines - and repositioning on the window's, so a resize never
-/// replays the pins' arrival.
+/// set of lines - and repositioning on the screen's, so a resize never
+/// replays the markers' arrival.
 /// </para>
 /// <para>
-/// The story panel's detail rows are built here too, as the preview's
-/// read-only cells: the selected VPS's important information in the app's
-/// own vocabulary, and a click on any pin trades the story to that record.
+/// The panel's rows are built here too: the list as one row per record -
+/// every main in the overview, the chain stepped in by depth in a network -
+/// and the selected VPS's details as the preview's read-only cells. Hovering
+/// a row stands its marker up on the page, so the list and the earth speak
+/// with one voice.
 /// </para>
 /// <para>
-/// The map's height is the one size the dialog computes for itself: the
-/// plate is exactly 2:1, so the map takes the width the panel leaves it and
-/// the height the window can spare, clamped so a small window still shows a
-/// whole earth rather than a strip of it.
+/// The screen's own arrival and departure belong to the shell: HomePage
+/// slides the layer this view lives in, the way it moves its sections, and
+/// the rail's Services button becomes the way back while the map is up.
 /// </para>
 ///</remarks>
-public sealed partial class VpsMapDialog : UserControl
+public sealed partial class VpsMapView : UserControl
 {
-    /// <summary>The pins on the plate, in view model order.</summary>
+    /// <summary>The markers on the plate, in view model order.</summary>
     private readonly List<MapDot> _dots = new();
 
     /// <summary>The connections, paired with the segments that draw them.</summary>
@@ -63,7 +63,7 @@ public sealed partial class VpsMapDialog : UserControl
     /// <summary>Whether the pointer has moved far enough to count as a drag.</summary>
     private bool _dragging;
 
-    public VpsMapDialog()
+    public VpsMapView()
     {
         // Resolved before InitializeComponent, as everywhere else here: x:Bind
         // binds its root object while the generated code runs.
@@ -73,64 +73,73 @@ public sealed partial class VpsMapDialog : UserControl
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
-        // The map's height follows the window's spare room, so the dialog is
-        // never taller than the screen it is on.
-        Root.SizeChanged += (_, _) => SizeMap();
-
         // A deferred control can be created *because* it is already supposed
-        // to be showing. Catch up once in the tree, like the other dialogs.
-        Loaded += (_, _) =>
-        {
-            if (ViewModel.IsDialogOpen && Root.Visibility != Visibility.Visible)
-            {
-                Open();
-            }
-        };
+        // to be showing; whatever it missed, it catches up on now.
+        Loaded += (_, _) => CatchUp();
 
         // HomePage is rebuilt on every unlock, and the view model is a
         // singleton, so without this each lock/unlock cycle leaves another
-        // detached dialog listening to it.
-        Unloaded += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        // detached screen listening to it. The flow stops with it - an
+        // animation nobody can see is still an animation.
+        Unloaded += (_, _) =>
+        {
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _flow?.Stop();
+            _flow = null;
+        };
     }
 
     /// <summary>The map's state and its data.</summary>
     public VpsMapViewModel ViewModel { get; }
 
+    /// <summary>
+    /// Releases this control's compiled bindings. Called when the host page
+    /// is leaving for good.
+    /// </summary>
+    public void ReleaseBindings() => Bindings.StopTracking();
+
     // ------------------------------------------------------------------
     // The view model's word
     // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Brings the screen up to date with a view model that may have moved
+    /// while the control did not exist: everything is rebuilt from what is,
+    /// never from what changed.
+    /// </summary>
+    private void CatchUp()
+    {
+        RebuildDots();
+        RebuildLines();
+        RebuildChooser();
+        RebuildList();
+        RebuildDetails();
+        ApplyImageRect();
+        PositionOverlay();
+        UpdateSelectedDots();
+    }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
         switch (args.PropertyName)
         {
-            case nameof(VpsMapViewModel.IsDialogOpen):
-                if (ViewModel.IsDialogOpen)
-                {
-                    Open();
-                }
-                else if (Root.Visibility == Visibility.Visible)
-                {
-                    Close();
-                }
-                break;
-
             case nameof(VpsMapViewModel.Pins):
                 RebuildDots();
-                RebuildPanel();
+                UpdateSelectedDots();
+                break;
+
+            case nameof(VpsMapViewModel.Rows):
+                RebuildList();
                 break;
 
             case nameof(VpsMapViewModel.IsFocused):
-                // The panel arrives sliding when a network opens and leaves
-                // at once when the view goes back to the whole earth.
-                ShowNetworkPanel();
+                RebuildList();
+                RebuildDetails();
                 UpdateSelectedDots();
                 break;
 
             case nameof(VpsMapViewModel.SelectedRecord):
-                // The story traded: the panel retells, the page's selection
-                // ring moves.
-                RebuildPanel();
+                RebuildDetails();
                 UpdateSelectedDots();
                 break;
 
@@ -145,120 +154,26 @@ public sealed partial class VpsMapDialog : UserControl
 
             case nameof(VpsMapViewModel.ImageRect):
                 // The transform moved: the image is seated into its new
-                // rectangle and the pins - the same objects, in new places -
-                // are re-seated onto it. Rebuilding never happens here, so
-                // the pins' arrival never replays under the wheel.
+                // rectangle and the markers - the same objects, in new places
+                // - are re-seated onto it. Rebuilding never happens here, so
+                // the markers' arrival never replays under the wheel.
                 ApplyImageRect();
                 PositionOverlay();
                 break;
         }
     }
 
-    // ------------------------------------------------------------------
-    // Open and close
-    // ------------------------------------------------------------------
-
-    private void Open()
-    {
-        Root.Visibility = Visibility.Visible;
-
-        if (Resources["OpenStoryboard"] is Storyboard open)
-        {
-            open.Begin();
-        }
-    }
-
-    /// <summary>
-    /// Plays the exit, then hides. Hiding only after the animation completes
-    /// is the whole point - collapsing first would make the close instant and
-    /// the storyboard invisible.
-    /// </summary>
-    private void Close()
-    {
-        if (Resources["CloseStoryboard"] is Storyboard close)
-        {
-            close.Begin();
-        }
-        else
-        {
-            Root.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    private void OnCloseCompleted(object? sender, object args)
-    {
-        // An invisible animation is still an animation: the flow stops with
-        // the panel.
-        _flow?.Stop();
-        _flow = null;
-
-        Root.Visibility = Visibility.Collapsed;
-
-        // Reset the transforms the exit left behind, or the next open starts
-        // displaced.
-        CardOffset.Y = 0;
-        Card.Opacity = 1;
-        Scrim.Opacity = 1;
-    }
-
-    /// <summary>Click-away on the backdrop closes, as a modal should.</summary>
-    private void OnScrimTapped(object sender, TappedRoutedEventArgs args) => ViewModel.Close();
-
-    private void OnCloseClick(object sender, RoutedEventArgs args) => ViewModel.Close();
-
     private void OnBackClick(object sender, RoutedEventArgs args) => ViewModel.BackToOverview();
 
     private void OnChooserCloseClick(object sender, RoutedEventArgs args)
         => ViewModel.HandleBackgroundTap();
 
-    /// <summary>
-    /// Releases this control's compiled bindings. Called when the host page
-    /// is leaving for good.
-    /// </summary>
-    public void ReleaseBindings() => Bindings.StopTracking();
-
     // ------------------------------------------------------------------
     // Sizing
     // ------------------------------------------------------------------
 
-    /// <summary>
-    /// Gives the map its height: half the width the panel leaves the plate
-    /// (the plate is exactly 2:1), capped by the room the window can spare,
-    /// clamped so the earth is never reduced to a strip.
-    /// </summary>
-    /// <remarks>
-    /// The width is read from the map host itself once it is laid out, so
-    /// the panel arriving and leaving - which changes the plate's width, not
-    /// the window's - re-fits the height too. Before the first layout an
-    /// estimate from the window stands in.
-    /// </remarks>
-    private void SizeMap()
-    {
-        double width = MapHost.ActualWidth;
-
-        if (width < 50 && Root.ActualWidth > 0)
-        {
-            double inner = Math.Max(120, Math.Min(Root.ActualWidth - 48, 1480) - 72);
-            width = ViewModel.IsFocused ? inner - 348 : inner;
-        }
-
-        double byWidth = Math.Max(120, width / 2);
-        double byHeight = Math.Max(120, Root.ActualHeight - 48 - 238);
-        double mapHeight = Math.Clamp(Math.Min(byWidth, byHeight), 280, 620);
-
-        if (Math.Abs(MapHost.Height - mapHeight) > 0.5)
-        {
-            MapHost.Height = mapHeight;
-        }
-    }
-
     private void OnMapHostSizeChanged(object sender, SizeChangedEventArgs args)
     {
-        // The plate's width may itself have changed what height fits - the
-        // panel taking its share of the row - so the height is fitted first
-        // from the width that just arrived.
-        SizeMap();
-
         // The clip keeps the plate's overflows - the connections that cross
         // the edge where the map ends and restarts, the view panned past an
         // edge - inside the map's own bounds.
@@ -313,8 +228,8 @@ public sealed partial class VpsMapDialog : UserControl
     }
 
     /// <summary>
-    /// A press on the map itself - the sea or the land, not a pin or a panel
-    /// - may become a drag of the view.
+    /// A press on the map itself - the sea or the land, not a marker or a
+    /// panel - may become a drag of the view.
     /// </summary>
     private void OnMapPointerPressed(object sender, PointerRoutedEventArgs args)
     {
@@ -382,14 +297,14 @@ public sealed partial class VpsMapDialog : UserControl
 
     /// <summary>
     /// Whether a press began on the map itself: the climb from where it began
-    /// reaches the plate's canvas or the dot layer's background before any of
-    /// the panels that sit over them.
+    /// reaches the plate's canvas or the marker layer's background before any
+    /// of the panels that sit over them.
     /// </summary>
     private bool PressStartsOnMap(DependencyObject? node)
     {
         while (node is not null)
         {
-            if (node is MapDot || node == NetworkPanel || node == ChooserLayer)
+            if (node is MapDot || node == ChooserLayer)
             {
                 return false;
             }
@@ -421,7 +336,7 @@ public sealed partial class VpsMapDialog : UserControl
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// Rebuilds the pins from the view model's pins, then seats them. The
+    /// Rebuilds the markers from the view model's pins, then seats them. The
     /// controls are created fresh so their arrival plays each time the view
     /// changes; a resize never comes through here.
     /// </summary>
@@ -449,7 +364,6 @@ public sealed partial class VpsMapDialog : UserControl
         }
 
         PositionOverlay();
-        UpdateSelectedDots();
     }
 
     private void OnPinTapped(object? sender, MapPin pin) => ViewModel.HandlePinClick(pin);
@@ -594,9 +508,9 @@ public sealed partial class VpsMapDialog : UserControl
     }
 
     /// <summary>
-    /// Seats everything on the plate at its laid-out position: the pins by
-    /// their tips - the point that lands on the country - the connections
-    /// end to end, the chooser beside its pin.
+    /// Seats everything on the plate at its laid-out position: the markers by
+    /// their tips - the point that lands on the country - the connections end
+    /// to end, the chooser beside its marker.
     /// </summary>
     private void PositionOverlay()
     {
@@ -616,24 +530,25 @@ public sealed partial class VpsMapDialog : UserControl
             shape.Data = ArcGeometry(model.X1, model.Y1, model.X2, model.Y2);
         }
 
+        ChooserCard.Visibility = ViewModel.Chooser is null
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
         if (ViewModel.Chooser is { } chooser)
         {
-            ChooserCard.Visibility = Visibility.Visible;
             Canvas.SetLeft(ChooserCard, chooser.X);
             Canvas.SetTop(ChooserCard, chooser.Y);
-        }
-        else
-        {
-            ChooserCard.Visibility = Visibility.Collapsed;
         }
     }
 
     /// <summary>
-    /// A tap on the map itself, away from any pin: the chooser steps aside.
+    /// A tap on the map itself, away from any marker: the chooser steps
+    /// aside.
     /// </summary>
     /// <remarks>
-    /// The tap that opens a chooser bubbles up from the pin to this layer as
-    /// well, so the climb up the tree skips the taps that belong to a pin.
+    /// The tap that opens a chooser bubbles up from the marker to this layer
+    /// as well, so the climb up the tree skips the taps that belong to a
+    /// marker.
     /// </remarks>
     private void OnMapBackgroundTapped(object sender, TappedRoutedEventArgs args)
     {
@@ -653,48 +568,182 @@ public sealed partial class VpsMapDialog : UserControl
     }
 
     // ------------------------------------------------------------------
-    // The story panel
+    // The panel's list
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// Shows or hides the story panel: sliding in when a network opens,
-    /// leaving at once when the view goes back to the whole earth - the map
-    /// has a re-fit of its own to do then.
+    /// Fills the panel's list: every main in the overview, the whole chain -
+    /// stepped in by depth - in an open network.
     /// </summary>
-    private void ShowNetworkPanel()
+    private void RebuildList()
     {
-        if (ViewModel.IsFocused)
+        ListRows.Children.Clear();
+        ListTitle.Text = ViewModel.IsFocused ? "THE NETWORK" : "MAINS";
+
+        if (ViewModel.Rows is not { } rows)
         {
-            if (NetworkPanel.Visibility == Visibility.Visible)
-            {
-                return;
-            }
-
-            NetworkPanel.Visibility = Visibility.Visible;
-            NetworkPanel.Opacity = 0;
-            PanelOffset.X = 46;
-
-            if (Resources["PanelInStoryboard"] is Storyboard slide)
-            {
-                slide.Begin();
-            }
-            else
-            {
-                NetworkPanel.Opacity = 1;
-                PanelOffset.X = 0;
-            }
+            return;
         }
-        else
+
+        foreach (MapListRow row in rows)
         {
-            NetworkPanel.Visibility = Visibility.Collapsed;
-            NetworkPanel.Opacity = 1;
-            PanelOffset.X = 0;
+            ListRows.Children.Add(BuildListRow(row));
+        }
+
+        if (rows.Count == 0 && !ViewModel.IsFocused)
+        {
+            ListRows.Children.Add(new TextBlock
+            {
+                Text = "No mains yet - add a VPS and it lands here",
+                FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
+                FontSize = 12.5,
+                Foreground = (Brush)Application.Current.Resources["CardMetaBrush"],
+                TextWrapping = TextWrapping.Wrap,
+            });
         }
     }
 
     /// <summary>
-    /// Marks the pin whose record the panel is telling the story of, so the
-    /// page and the panel agree on who is being read.
+    /// One row of the list: the record's marker in words - flag, name,
+    /// country - stepped in by its depth, with the record's place in the
+    /// network on the right. Hovering the row stands its marker up on the
+    /// page; clicking the row is clicking the marker.
+    /// </summary>
+    private Button BuildListRow(MapListRow row)
+    {
+        // The marker this row speaks for, so the hover can find it.
+        MapDot? dot = _dots.FirstOrDefault(d =>
+            d.Pin is { Record: { } record } && record.Id == row.Record.Id);
+
+        Button button = new()
+        {
+            Style = (Style)Application.Current.Resources["BareButtonStyle"],
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+
+        Brush clear = new SolidColorBrush(Color.FromArgb(0x00, 0x00, 0x00, 0x00));
+
+        Border shell = new()
+        {
+            MinHeight = 50,
+            CornerRadius = new CornerRadius(13),
+            Padding = new Thickness(13 + (row.Level * 13), 5, 11, 5),
+            Background = clear,
+            BorderBrush = clear,
+            BorderThickness = new Thickness(1),
+        };
+
+        Grid layout = new() { ColumnSpacing = 10 };
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        // The flag, or the globe when the record has no country.
+        Viewbox flagBox = new() { Width = 20, Height = 15, VerticalAlignment = VerticalAlignment.Center };
+
+        if (row.FlagCountry is not null)
+        {
+            flagBox.Child = new FlagIcon { Country = row.FlagCountry };
+        }
+        else
+        {
+            flagBox.Child = new LineIcon
+            {
+                Kind = "Globe",
+                Width = 16,
+                Height = 16,
+                Foreground = new SolidColorBrush(Color.FromArgb(0xFF, 0xA0, 0xA5, 0xAB)),
+            };
+        }
+
+        Grid.SetColumn(flagBox, 0);
+        layout.Children.Add(flagBox);
+
+        StackPanel texts = new() { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        texts.Children.Add(new TextBlock
+        {
+            Text = row.Name,
+            FontFamily = (FontFamily)Application.Current.Resources["BalooSemiBoldFont"],
+            FontSize = 13,
+            Foreground = (Brush)Application.Current.Resources["TextPrimaryBrush"],
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 190,
+        });
+        texts.Children.Add(new TextBlock
+        {
+            Text = row.Country,
+            FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
+            FontSize = 11.5,
+            Foreground = (Brush)Application.Current.Resources["CardMetaBrush"],
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 210,
+        });
+
+        Grid.SetColumn(texts, 1);
+        layout.Children.Add(texts);
+
+        // The record's place in the network, on the right.
+        Border chip = new()
+        {
+            CornerRadius = new CornerRadius(9),
+            Padding = new Thickness(8, 1, 8, 1),
+            Background = new SolidColorBrush(Color.FromArgb(0x14, 0x4B, 0xAA, 0x98)),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        chip.Child = new TextBlock
+        {
+            Text = row.Meta,
+            FontFamily = (FontFamily)Application.Current.Resources["BalooSemiBoldFont"],
+            FontSize = 10.5,
+            Foreground = (Brush)Application.Current.Resources["BrandPrimaryBrush"],
+            MaxWidth = 150,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+            LineHeight = 14,
+        };
+        Grid.SetColumn(chip, 2);
+        layout.Children.Add(chip);
+
+        shell.Child = layout;
+        button.Content = shell;
+
+        // The hover pairs: the row warms, the marker itself stands up.
+        Brush warm = new SolidColorBrush(Color.FromArgb(0xFF, 0xF4, 0xF6, 0xF9));
+        Brush warmBorder = new SolidColorBrush(Color.FromArgb(0xFF, 0xE4, 0xE6, 0xE9));
+
+        button.PointerEntered += (_, _) =>
+        {
+            shell.Background = warm;
+            shell.BorderBrush = warmBorder;
+            dot?.HighlightOn();
+        };
+        button.PointerExited += (_, _) =>
+        {
+            shell.Background = clear;
+            shell.BorderBrush = clear;
+            dot?.HighlightOff();
+        };
+
+        // A click on the row is a click on the marker: the overview's mains
+        // open their network, the network's records trade the selection.
+        button.Click += (_, _) =>
+        {
+            if (ViewModel.IsFocused)
+            {
+                ViewModel.SelectedRecord = row.Record;
+            }
+            else
+            {
+                ViewModel.ChooseMain(row.Record);
+            }
+        };
+
+        return button;
+    }
+
+    /// <summary>
+    /// Marks the marker whose record the panel is telling the story of, so
+    /// the page and the panel agree on who is being read.
     /// </summary>
     private void UpdateSelectedDots()
     {
@@ -708,85 +757,139 @@ public sealed partial class VpsMapDialog : UserControl
         }
     }
 
+    // ------------------------------------------------------------------
+    // The panel's details
+    // ------------------------------------------------------------------
+
     /// <summary>
-    /// Fills the story panel with the selected VPS's important details: the
-    /// same fields the preview shows, as its read-only cells, with the ones
-    /// never filled left out rather than shown blank.
+    /// Fills the panel's detail section with the selected VPS's card and its
+    /// important details: the same fields the preview shows, as its read-only
+    /// cells, with the ones never filled left out rather than shown blank.
     /// </summary>
-    private void RebuildPanel()
+    private void RebuildDetails()
     {
-        PanelRows.Children.Clear();
+        SelectionCard.Children.Clear();
 
         if (!ViewModel.IsFocused || ViewModel.SelectedRecord is not { } record)
         {
             return;
         }
 
+        // The selection's own card, compact: flag, name, place, place in the
+        // network.
+        StackPanel head = new() { Orientation = Orientation.Horizontal, Spacing = 9 };
+
+        if (ViewModel.SelectedFlagCountry is not null)
+        {
+            Viewbox flagBox = new() { Width = 22, Height = 16, VerticalAlignment = VerticalAlignment.Center };
+            flagBox.Child = new FlagIcon { Country = ViewModel.SelectedFlagCountry };
+            head.Children.Add(flagBox);
+        }
+
+        head.Children.Add(new TextBlock
+        {
+            Text = ViewModel.SelectedName,
+            FontFamily = (FontFamily)Application.Current.Resources["BalooSemiBoldFont"],
+            FontSize = 15,
+            Foreground = (Brush)Application.Current.Resources["TextPrimaryBrush"],
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxWidth = 240,
+            VerticalAlignment = VerticalAlignment.Center,
+            LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+            LineHeight = 20,
+        });
+        SelectionCard.Children.Add(head);
+
+        SelectionCard.Children.Add(new TextBlock
+        {
+            Text = ViewModel.SelectedCountryLabel,
+            FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
+            FontSize = 11.5,
+            Foreground = (Brush)Application.Current.Resources["CardMetaBrush"],
+            LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+            LineHeight = 15,
+        });
+        SelectionCard.Children.Add(new TextBlock
+        {
+            Text = ViewModel.SelectedSummary,
+            FontFamily = (FontFamily)Application.Current.Resources["BalooSemiBoldFont"],
+            FontSize = 11.5,
+            Foreground = (Brush)Application.Current.Resources["BrandPrimaryBrush"],
+            LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+            LineHeight = 15,
+        });
+
+        // The details themselves, in a scroller of their own so a long chain
+        // above never buries them.
+        ScrollViewer scroller = new()
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            MaxHeight = 300,
+        };
+        StackPanel cells = new() { Spacing = 9 };
+        scroller.Content = cells;
+        SelectionCard.Children.Add(scroller);
+
         VpsSystemInfo system = record.System ?? new VpsSystemInfo();
 
-        AddInfoCell("IP ADDRESS", system.Ip, "Globe", copy: true);
-        AddInfoCell("PORT", system.Port, "Key", unit: system.PortNumber, copy: true);
-        AddInfoCell("OS", system.Os, "Info", copy: true);
-        AddInfoCell("USERNAME", system.Username, "User", copy: true);
-        AddInfoCell("USER PASSWORD", system.UserPassword, "Lock", secret: true, copy: true);
-        AddInfoCell("ROOT USER", system.RootUser, "User", copy: true);
-        AddInfoCell("ROOT PASSWORD", system.RootPassword, "Lock", secret: true, copy: true);
-        AddInfoCell("CPU", system.Cpu, "Info");
-        AddInfoCell("MEMORY (RAM)", system.Memory, "Info");
-        AddInfoCell("DISK", system.Disk, "Info");
-        AddInfoCell("BANDWIDTH", system.Bandwidth, "Info");
-        AddInfoCell("OUT DATE", record.OutDate, "Calendar");
+        void AddCell(
+            string label, string value, string icon, string unit = "", bool secret = false, bool copy = false)
+        {
+            if (value.Trim().Length == 0 && unit.Trim().Length == 0)
+            {
+                return;
+            }
+
+            cells.Children.Add(new FieldCell
+            {
+                Label = label,
+                Value = value,
+                UnitValue = unit,
+                IconKind = icon,
+                Kind = FieldCellKind.Display,
+                IsSecret = secret,
+                ShowCopy = copy,
+            });
+        }
+
+        AddCell("IP ADDRESS", system.Ip, "Globe", copy: true);
+        AddCell("PORT", system.Port, "Key", unit: system.PortNumber, copy: true);
+        AddCell("OS", system.Os, "Info", copy: true);
+        AddCell("USERNAME", system.Username, "User", copy: true);
+        AddCell("USER PASSWORD", system.UserPassword, "Lock", secret: true, copy: true);
+        AddCell("ROOT USER", system.RootUser, "User", copy: true);
+        AddCell("ROOT PASSWORD", system.RootPassword, "Lock", secret: true, copy: true);
+        AddCell("CPU", system.Cpu, "Info");
+        AddCell("MEMORY (RAM)", system.Memory, "Info");
+        AddCell("DISK", system.Disk, "Info");
+        AddCell("BANDWIDTH", system.Bandwidth, "Info");
+        AddCell("OUT DATE", record.OutDate, "Calendar");
 
         if (record.CycleLabel.Length > 0)
         {
-            AddInfoCell("CYCLE", record.CycleLabel, "Clock");
+            AddCell("CYCLE", record.CycleLabel, "Clock");
         }
 
         if (record.Balance is { } balance)
         {
-            AddInfoCell(
+            AddCell(
                 "BALANCE",
                 $"{balance:0.##} {record.Currency}".Trim(),
                 "Bitcoin",
                 unit: record.BalanceBtc is { } btc ? $"{btc:0.########} BTC" : string.Empty);
         }
 
-        if (PanelRows.Children.Count == 0)
+        if (cells.Children.Count == 0)
         {
-            PanelRows.Children.Add(new TextBlock
+            SelectionCard.Children.Add(new TextBlock
             {
                 Text = "Nothing recorded for this one yet",
                 FontFamily = (FontFamily)Application.Current.Resources["BalooFont"],
-                FontSize = 12.5,
+                FontSize = 12,
                 Foreground = (Brush)Application.Current.Resources["CardMetaBrush"],
                 TextWrapping = TextWrapping.Wrap,
             });
         }
-    }
-
-    /// <summary>
-    /// One detail row: the preview's read-only cell, the copy button where a
-    /// value is worth carrying away. Empty values are skipped - a map panel
-    /// tells what is there, not what is missing.
-    /// </summary>
-    private void AddInfoCell(
-        string label, string value, string icon, string unit = "", bool secret = false, bool copy = false)
-    {
-        if (value.Trim().Length == 0 && unit.Trim().Length == 0)
-        {
-            return;
-        }
-
-        PanelRows.Children.Add(new FieldCell
-        {
-            Label = label,
-            Value = value,
-            UnitValue = unit,
-            IconKind = icon,
-            Kind = FieldCellKind.Display,
-            IsSecret = secret,
-            ShowCopy = copy,
-        });
     }
 
     // ------------------------------------------------------------------

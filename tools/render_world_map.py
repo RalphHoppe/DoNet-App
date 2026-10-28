@@ -52,14 +52,13 @@ OUT_CS = REPO / "DoNet" / "Models" / "CountryAnchors.cs"
 W, H = 4096, 2048
 SS = 2  # supersample factor for smooth coastlines
 
-# The palette: a premium light atlas. A warm paper sea, soft sage-green
-# landmasses, and borders and a graticule quiet enough to read as paper
-# texture. The pins and their arcs carry the colour; the map itself is the
-# page they sit on.
-SEA = (240, 234, 221)
-LAND = (208, 220, 194)
-BORDER = (183, 199, 167)
-GRATICULE = (230, 223, 208)
+# The palette: Proton-quiet. A near-white sea, flat pale-grey landmasses,
+# and hairline borders - the map as calm ground the markers sit on, saying
+# nothing until a pin speaks. No graticule: the reference map keeps its page
+# empty of everything but the countries themselves.
+SEA = (239, 241, 244)
+LAND = (216, 222, 229)
+BORDER = (198, 206, 215)
 
 # FlagData's 196 country names -> the geo data's spellings, where they
 # differ. Everything not here matches by name, and the countries the 110m
@@ -210,18 +209,6 @@ def main() -> None:
 
     image = Image.new("RGB", (ws, hs), SEA)
     draw = ImageDraw.Draw(image)
-
-    # The graticule sits under the land: it is the sea's own marking, and
-    # the countries interrupt it the way the reference maps do.
-    for lon in range(-150, 181, 30):
-        x = px(lon, 0)[0]
-        draw.line([(x, 0), (x, hs)], fill=GRATICULE, width=SS)
-    for lat in range(-60, 91, 30):
-        y = px(0, lat)[1]
-        draw.line([(0, y), (ws, y)], fill=GRATICULE, width=SS)
-    # The equator and the prime meridian carry a touch more weight.
-    draw.line([(px(0, 0)[0], 0), (px(0, 0)[0], hs)], fill=BORDER, width=SS)
-    draw.line([(0, px(0, 0)[1]), (ws, px(0, 0)[1])], fill=BORDER, width=SS)
 
     # Every ring is drawn at three horizontal offsets. Rings that do not
     # cross the antimeridian fall outside the canvas at the other two and

@@ -55,10 +55,7 @@ public sealed partial class MapPin : ObservableObject
     /// <summary>The arrival order, for the staggered entrance.</summary>
     public int Index { get; init; }
 
-    /// <summary>The words under the dot: a country in the overview, a name in a network.</summary>
-    public string Label { get; init; } = string.Empty;
-
-    /// <summary>The country whose flag the dot carries, or null when the record has none.</summary>
+    /// <summary>The country whose flag the marker's list row carries, or null when the record has none.</summary>
     public string? FlagCountry { get; init; }
 
     /// <summary>How deep in the network the dot sits; the main is level zero.</summary>
@@ -93,15 +90,6 @@ public sealed partial class MapPin : ObservableObject
     [ObservableProperty]
     private double _y;
 
-    /// <summary>Whether the tooltip opens above the dot rather than under it.</summary>
-    [ObservableProperty]
-    private bool _tooltipAbove = true;
-
-    /// <summary>
-    /// How far the label sits below its rest under the pin's tip, when the
-    /// nudge had to step it past another label.
-    /// </summary>
-    public double LabelDrop { get; set; }
 }
 
 /// <summary>
@@ -146,6 +134,40 @@ public sealed class ChooserRow
 
     /// <summary>The country whose flag the row carries.</summary>
     public string? FlagCountry { get; init; }
+}
+
+/// <summary>
+/// One row of the map's side panel: a VPS in words, the map's marker in list
+/// form.
+/// </summary>
+/// <remarks>
+/// The overview carries one row per main; an open network carries the whole
+/// chain, each row stepped in by its depth. The row is the honest place for
+/// the words a quiet map does not say itself - the flag, the country, the
+/// counts - so the page can stay markers and arcs alone.
+/// </remarks>
+public sealed class MapListRow
+{
+    /// <summary>The record the row speaks for.</summary>
+    public required VpsRecord Record { get; init; }
+
+    /// <summary>The row's title: the VPS's name.</summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>The row's note: the country, or the honest absence of one.</summary>
+    public string Country { get; init; } = string.Empty;
+
+    /// <summary>The country whose flag the row carries, when it has one.</summary>
+    public string? FlagCountry { get; init; }
+
+    /// <summary>The row's right-hand note: what the record is to the others.</summary>
+    public string Meta { get; init; } = string.Empty;
+
+    /// <summary>How deep in the network the record sits; the main is level zero.</summary>
+    public int Level { get; init; }
+
+    /// <summary>True when the row's record is a main - the overview's whole list.</summary>
+    public bool IsMain { get; init; }
 }
 
 /// <summary>
@@ -416,6 +438,13 @@ public sealed partial class VpsMapViewModel : ObservableObject
     [ObservableProperty]
     private IReadOnlyList<MapPin>? _pins;
 
+    /// <summary>
+    /// The side panel's rows: every main in the overview, the whole chain in
+    /// an open network.
+    /// </summary>
+    [ObservableProperty]
+    private IReadOnlyList<MapListRow>? _rows;
+
     /// <summary>The direct connections, as pixel segments.</summary>
     [ObservableProperty]
     private IReadOnlyList<MapLine>? _lines;
@@ -474,6 +503,13 @@ public sealed partial class VpsMapViewModel : ObservableObject
 
     /// <summary>Closes the map.</summary>
     public void Close() => IsDialogOpen = false;
+
+    /// <summary>
+    /// Closes the map, as the rail's back button asks: the same close, as a
+    /// command the button can carry while the map is the screen.
+    /// </summary>
+    [RelayCommand]
+    private void CloseMap() => Close();
 
     /// <summary>
     /// Returns the map to its pre-unlock condition. Called when the app locks.
@@ -619,6 +655,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
         SelectedRecord = null;
 
         List<MapPin> pins = new();
+        List<MapListRow> rows = new();
         int offMap = 0;
         int index = 0;
 
@@ -650,6 +687,23 @@ public sealed partial class VpsMapViewModel : ObservableObject
                 : ClusterPin(mains, country, nx, ny, index++);
 
             pins.Add(pin);
+
+            // The panel's row for every main, the quiet map's words.
+            foreach (MapNode main in mains)
+            {
+                rows.Add(new MapListRow
+                {
+                    Record = main.Record,
+                    Name = string.IsNullOrWhiteSpace(main.Record.Name) ? "VPS" : main.Record.Name,
+                    Country = country,
+                    FlagCountry = country,
+                    Meta = main.TotalCount == 0
+                        ? "No connected VPSs yet"
+                        : $"{main.TotalCount} connected VPS{(main.TotalCount == 1 ? string.Empty : "s")}",
+                    Level = 0,
+                    IsMain = true,
+                });
+            }
         }
 
         OffMapCount = offMap;
@@ -662,6 +716,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
         Layout(pins);
 
         Pins = pins;
+        Rows = rows;
     }
 
     /// <summary>The overview dot for a country with one main.</summary>
@@ -671,7 +726,6 @@ public sealed partial class VpsMapViewModel : ObservableObject
             Kind = MapPinKind.Main,
             DotSize = MainDot,
             Index = index,
-            Label = country.ToUpperInvariant(),
             FlagCountry = country,
             Record = main.Record,
             Nx = nx,
@@ -693,7 +747,6 @@ public sealed partial class VpsMapViewModel : ObservableObject
             Kind = MapPinKind.Cluster,
             DotSize = ClusterDot,
             Index = index,
-            Label = country.ToUpperInvariant(),
             FlagCountry = country,
             Cluster = mains.Select(node => node.Record).ToList(),
             Nx = nx,
@@ -714,9 +767,26 @@ public sealed partial class VpsMapViewModel : ObservableObject
 
         List<MapPin> pins = new() { NetworkPin(main, main, index: 0) };
         List<(MapPin, MapPin, int)> edges = new();
+        List<MapListRow> rows = new()
+        {
+            new()
+            {
+                Record = main.Record,
+                Name = string.IsNullOrWhiteSpace(main.Record.Name) ? "VPS" : main.Record.Name,
+                Country = string.IsNullOrWhiteSpace(main.Record.Country)
+                    ? "No country set"
+                    : main.Record.Country,
+                FlagCountry = CountryOrNull(main.Record.Country),
+                Meta = main.TotalCount == 0
+                    ? "Main \u00B7 no connected VPSs"
+                    : $"Main \u00B7 {main.Children.Count} direct \u00B7 {main.TotalCount} in the network",
+                Level = 0,
+                IsMain = true,
+            },
+        };
         int index = 1;
 
-        WalkChain(main, pins[0], pins, edges, ref index);
+        WalkChain(main, pins[0], pins, edges, rows, ref index);
 
         _edges = edges;
 
@@ -728,6 +798,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
         Layout(pins);
 
         Pins = pins;
+        Rows = rows;
 
         // The network opens on its main's story; a click on any of its
         // connected pins will trade it for that record's.
@@ -740,6 +811,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
         MapPin parentPin,
         List<MapPin> pins,
         List<(MapPin, MapPin, int)> edges,
+        List<MapListRow> rows,
         ref int index)
     {
         foreach (MapNode child in parent.Children.OrderBy(node => node.Record.Id))
@@ -748,7 +820,25 @@ public sealed partial class VpsMapViewModel : ObservableObject
             pins.Add(pin);
             edges.Add((parentPin, pin, child.Level));
 
-            WalkChain(child, pin, pins, edges, ref index);
+            rows.Add(new MapListRow
+            {
+                Record = child.Record,
+                Name = string.IsNullOrWhiteSpace(child.Record.Name) ? "VPS" : child.Record.Name,
+                Country = string.IsNullOrWhiteSpace(child.Record.Country)
+                    ? "No country set"
+                    : child.Record.Country,
+                FlagCountry = CountryOrNull(child.Record.Country),
+                Meta = (string.IsNullOrWhiteSpace(child.Record.NodeName)
+                        ? "Connected VPS"
+                        : $"Connected to {child.Record.NodeName}")
+                    + (child.Children.Count > 0
+                        ? $" \u00B7 {child.Children.Count} of its own"
+                        : string.Empty),
+                Level = child.Level,
+                IsMain = false,
+            });
+
+            WalkChain(child, pin, pins, edges, rows, ref index);
         }
     }
 
@@ -789,7 +879,6 @@ public sealed partial class VpsMapViewModel : ObservableObject
             DotSize = isMain ? TreeMainDot : NodeDot,
             Index = index,
             Level = node.Level,
-            Label = string.IsNullOrWhiteSpace(record.Name) ? "VPS" : record.Name,
             FlagCountry = country.Length == 0 ? null : country,
             Record = record,
             Nx = nx,
@@ -912,15 +1001,22 @@ public sealed partial class VpsMapViewModel : ObservableObject
             .ToList();
 
         // Seated before it is published, the same promise the pins are laid
-        // out under: what the view builds is already where it belongs.
+        // out under: what the view builds is already where it belongs. The
+        // panel opens beside the marker on its right, and on its left when
+        // the right would run it into the map's edge - or under the zoom
+        // buttons that live there.
         double estimatedHeight = 96 + rows.Count * 62;
+        bool fitsRight = pin.X + 44 + 300 <= _hostSize.Width - 60;
+        double left = fitsRight
+            ? pin.X + 44
+            : pin.X - 44 - 300;
 
         Chooser = new MapChooser
         {
             Country = pin.FlagCountry ?? string.Empty,
             FlagCountry = pin.FlagCountry,
             Rows = rows,
-            X = Math.Clamp(pin.X + 44, 12, Math.Max(12, _hostSize.Width - 320)),
+            X = Math.Clamp(left, 12, Math.Max(12, _hostSize.Width - 320)),
             Y = Math.Clamp(pin.Y - 30, 12, Math.Max(12, _hostSize.Height - estimatedHeight)),
         };
     }
@@ -1168,7 +1264,6 @@ public sealed partial class VpsMapViewModel : ObservableObject
         }
 
         SpreadSharedAnchors(pins);
-        NudgeLabels(pins);
         LayoutLines();
         LayoutChooser();
     }
@@ -1205,61 +1300,6 @@ public sealed partial class VpsMapViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Keeps labels out of each other: each is placed just under its pin's
-    /// tip, and pushed down past any it would cover.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Widths are estimated rather than measured - the view model has no
-    /// text services - which is enough for the nudge's job: labels in a busy
-    /// Europe or Caribbean step onto their own lines instead of piling up.
-    /// The drop it lands on is handed to the pin, so the control draws the
-    /// label where the nudge put it rather than at its rest.
-    /// </para>
-    /// <para>
-    /// The rest is where the control really seats the pill - a breath under
-    /// the tip, clear of the ground shadow - because the nudge must reason
-    /// about the boxes as they will actually be drawn. A rest deeper than
-    /// that made every push land the label far from its own pin, which read
-    /// as labels floating loose of the map.
-    /// </para>
-    /// </remarks>
-    private static void NudgeLabels(IReadOnlyList<MapPin> pins)
-    {
-        List<(double Left, double Top, double Right, double Bottom)> placed = new();
-
-        foreach (MapPin pin in pins.OrderBy(pin => pin.Y).ThenBy(pin => pin.X))
-        {
-            double width = Math.Min(170, 18 + pin.Label.Length * 7.6);
-            double left = pin.X - width / 2;
-
-            // A teardrop's label rests just under its tip: below the anchor
-            // there is no pin to stay clear of, only the ground shadow.
-            double rest = pin.Y + 6;
-            double top = rest;
-
-            for (int attempt = 0; attempt < 6; attempt++)
-            {
-                bool clear = placed.All(
-                    box => left >= box.Right
-                          || left + width <= box.Left
-                          || top >= box.Bottom
-                          || top + 21 <= box.Top);
-
-                if (clear)
-                {
-                    break;
-                }
-
-                top += 22;
-            }
-
-            placed.Add((left, top, left + width, top + 21));
-            pin.LabelDrop = top - rest;
-            pin.TooltipAbove = pin.Y > 150;
-        }
-    }
 
     /// <summary>
     /// Draws the connections as pixel segments, each taking the short way

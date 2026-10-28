@@ -457,10 +457,74 @@ public sealed partial class HomePage : Page
 
     private void OnVpsMapPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (args.PropertyName == nameof(VpsMapViewModel.IsDialogOpen) && _vpsMap.IsDialogOpen)
+        if (args.PropertyName == nameof(VpsMapViewModel.IsDialogOpen))
         {
-            Realize("VpsMapModal");
+            UpdateServicesRailButton();
+
+            if (_vpsMap.IsDialogOpen)
+            {
+                Realize("VpsMapScreen");
+                ShowMapLayer();
+            }
+            else
+            {
+                HideMapLayer();
+            }
         }
+    }
+
+    /// <summary>
+    /// Slides the map screen in over the sections, the way a drilled screen
+    /// arrives.
+    /// </summary>
+    private void ShowMapLayer()
+    {
+        if (MapLayer.Visibility == Visibility.Visible)
+        {
+            return;
+        }
+
+        MapLayer.Opacity = 0;
+        MapShift.Y = 18;
+        MapLayer.Visibility = Visibility.Visible;
+
+        if (Resources["MapOpenStoryboard"] is Microsoft.UI.Xaml.Media.Animation.Storyboard open)
+        {
+            open.Begin();
+        }
+        else
+        {
+            MapLayer.Opacity = 1;
+            MapShift.Y = 0;
+        }
+    }
+
+    /// <summary>
+    /// Plays the map screen's exit, then hides it - collapsing first would
+    /// make the leave instant and the animation invisible.
+    /// </summary>
+    private void HideMapLayer()
+    {
+        if (MapLayer.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        if (Resources["MapCloseStoryboard"] is Microsoft.UI.Xaml.Media.Animation.Storyboard close)
+        {
+            close.Begin();
+        }
+        else
+        {
+            MapLayer.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void OnMapLayerCloseCompleted(object? sender, object args)
+    {
+        MapLayer.Visibility = Visibility.Collapsed;
+        MapLayer.Opacity = 0;
+        MapShift.Y = 18;
     }
 
     private void OnAccountsPropertyChanged(object? sender, PropertyChangedEventArgs args)
@@ -521,7 +585,19 @@ public sealed partial class HomePage : Page
     /// </remarks>
     private void UpdateServicesRailButton()
     {
-        if (_services.IsDrilled && _services.SelectedKind is { } kind)
+        if (_vpsMap.IsDialogOpen)
+        {
+            // The map screen is up, opened from the drilled type screen: the
+            // button's back closes the map and returns to that screen.
+            ServicesRailButton.IconAltData = (Microsoft.UI.Xaml.Media.Geometry)
+                Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(
+                    typeof(Microsoft.UI.Xaml.Media.Geometry), TypeMarkData.Chevron);
+            ServicesRailButton.AccentBrush = PrimaryServiceTypes.GradientOf(PrimaryServiceType.Vps);
+            ServicesRailButton.IconAltActive = true;
+            ServicesRailButton.Command = _vpsMap.CloseMapCommand;
+            ServicesRailButton.Label = "Back to VPS";
+        }
+        else if (_services.IsDrilled && _services.SelectedKind is { } kind)
         {
             ServicesRailButton.IconAltData = (Microsoft.UI.Xaml.Media.Geometry)
                 Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(
@@ -617,7 +693,7 @@ public sealed partial class HomePage : Page
         ServiceRecordModal?.ReleaseBindings();
         VpsModal?.ReleaseBindings();
         WalletModal?.ReleaseBindings();
-        VpsMapModal?.ReleaseBindings();
+        VpsMapScreen?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();

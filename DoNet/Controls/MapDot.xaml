@@ -5,74 +5,61 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:controls="using:DoNet.Controls"
     mc:Ignorable="d">
 
     <!--
-        One pin on the VPS map - the classic map marker.
+        One marker on the VPS map - the small delta a location wears.
 
-        A teardrop: a round head carrying the country's flag, tapering to a
-        point whose tip lands exactly on the country it marks. The stroke
-        says what the record is - the VPS's own red for a main, the app's
-        slate for a VPS connected into an open network - and the pin's size
-        says it too: a main's head is bigger than a connected VPS's. The
-        focused main's tip carries a soft red ping, so the eye finds the
-        network's centre on the page.
+        A triangle pointing at the country it marks: the map's own colour
+        for a main, a quiet slate for a VPS connected into an open network,
+        a white halo so both read over land and sea alike. The tip lands
+        exactly on the anchor; the caller seats the control by it.
 
-        The pin's words - the count badge for a country holding several
-        mains, the label under the tip, the hover card - live on an overhang
+        The marker's words - the callout that names the place on hover, the
+        count chip when one country holds several mains, the ring when this
+        is the VPS whose story the panel is telling - live on an overhang
         canvas, not in the root grid: a grid hands its children its own size
-        and the root is the pin's footprint, so words measured inside it
+        and the root is the marker's footprint, so words measured inside it
         would wrap to a letter a line. A canvas measures against infinity;
         the elements are seated on it in code, in the Apply pattern the
-        cards use, because the pin is a plain object refreshed by
-        replacement. The caller seats the control so the TIP sits on the
-        anchor; this control only ever owns its own footprint.
+        cards use. The hovered marker also lifts itself above its siblings
+        on the layer, so its callout is never spoken from underneath them.
     -->
 
     <UserControl.Resources>
 
-        <!-- The two strokes a pin can wear, here so the code can hand them
-             to the body without building colours itself. -->
-        <SolidColorBrush x:Key="MainRingBrush" Color="#FF5F57" />
-        <SolidColorBrush x:Key="NodeRingBrush" Color="#7A8798" />
+        <!-- The two fills a marker can wear. -->
+        <SolidColorBrush x:Key="MainFillBrush" Color="#FF5F57" />
+        <SolidColorBrush x:Key="NodeFillBrush" Color="#7A8798" />
 
-        <Style x:Key="TipTextStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="#7A8798" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="MaxWidth" Value="226" />
-            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
-            <Setter Property="LineHeight" Value="16" />
-        </Style>
-
-        <!-- The hover card arriving and leaving, quickly enough to feel
+        <!-- The callout arriving and leaving, quickly enough to feel
              attached to the pointer rather than animated in its own right. -->
         <Storyboard x:Key="TipShow">
-            <DoubleAnimation Storyboard.TargetName="TipCard"
+            <DoubleAnimation Storyboard.TargetName="Callout"
                              Storyboard.TargetProperty="Opacity"
                              To="1" Duration="0:0:0.10" />
         </Storyboard>
 
         <Storyboard x:Key="TipHide">
-            <DoubleAnimation Storyboard.TargetName="TipCard"
+            <DoubleAnimation Storyboard.TargetName="Callout"
                              Storyboard.TargetProperty="Opacity"
                              To="0" Duration="0:0:0.08" />
         </Storyboard>
 
-        <!-- The pin leaning toward the pointer, growing from its tip. -->
+        <!-- The marker standing up toward the pointer, growing from its
+             tip - also driven by the panel, when the marker's row is
+             hovered there. -->
         <Storyboard x:Key="HoverOn">
             <DoubleAnimation Storyboard.TargetName="HoverScale"
                              Storyboard.TargetProperty="ScaleX"
-                             To="1.12" Duration="0:0:0.12">
+                             To="1.22" Duration="0:0:0.12">
                 <DoubleAnimation.EasingFunction>
                     <CubicEase EasingMode="EaseOut" />
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
             <DoubleAnimation Storyboard.TargetName="HoverScale"
                              Storyboard.TargetProperty="ScaleY"
-                             To="1.12" Duration="0:0:0.12">
+                             To="1.22" Duration="0:0:0.12">
                 <DoubleAnimation.EasingFunction>
                     <CubicEase EasingMode="EaseOut" />
                 </DoubleAnimation.EasingFunction>
@@ -96,45 +83,17 @@
             </DoubleAnimation>
         </Storyboard>
 
-        <!--
-            The focused main's ping: a red ring swelling out of the tip and
-            fading, over and over - a heartbeat at the exact point on the
-            earth the network hangs from.
-        -->
-        <Storyboard x:Key="PulseStoryboard" RepeatBehavior="Forever">
-            <DoubleAnimation Storyboard.TargetName="PulseScale"
-                             Storyboard.TargetProperty="ScaleX"
-                             From="1" To="2.6" Duration="0:0:1.7">
-                <DoubleAnimation.EasingFunction>
-                    <QuadraticEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="PulseScale"
-                             Storyboard.TargetProperty="ScaleY"
-                             From="1" To="2.6" Duration="0:0:1.7">
-                <DoubleAnimation.EasingFunction>
-                    <QuadraticEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="PulseRing"
-                             Storyboard.TargetProperty="Opacity"
-                             From="0.55" To="0" Duration="0:0:1.7">
-                <DoubleAnimation.EasingFunction>
-                    <QuadraticEase EasingMode="EaseOut" />
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
-
+        <!-- The marker's arrival: a drop from just above its place, fading
+             in - built in code, where the stagger lives. -->
     </UserControl.Resources>
 
     <!--
-        The root is the pin's footprint, transparent so the whole of it is
-        the hit target. The scale transforms belong to the whole visual and
-        grow from the tip, which is where the pin is planted.
+        The root is the marker's footprint, transparent so the whole of it
+        is the hit target. The scale transform grows from the tip, which is
+        where the marker is planted.
     -->
     <Grid x:Name="Root"
           Background="Transparent"
-          RenderTransformOrigin="0.5,0.95"
           PointerEntered="OnPointerEntered"
           PointerExited="OnPointerExited">
         <Grid.RenderTransform>
@@ -147,31 +106,13 @@
         <Button Style="{StaticResource BareButtonStyle}"
                 Click="OnClick">
             <Grid>
-                <!-- The pin's soft ground shadow. -->
-                <Ellipse x:Name="GroundShadow"
-                         Fill="#23000000" />
-
-                <!-- The pin itself: white body, the stroke saying what the
-                     record is. Its geometry is built in code, sized to the
-                     pin's head. -->
-                <Path x:Name="PinBody"
-                      Fill="#FFFFFF"
-                      Stroke="{StaticResource MainRingBrush}"
-                      StrokeThickness="2.5"
+                <!-- The delta itself: its geometry is built in code, sized
+                     to the marker's width, tip at the bottom. -->
+                <Path x:Name="Delta"
+                      Fill="{StaticResource MainFillBrush}"
+                      Stroke="#FFFFFF"
+                      StrokeThickness="2"
                       StrokeLineJoin="Round" />
-
-                <!-- The country's flag in the head, or the globe when there
-                     is no country. -->
-                <Viewbox x:Name="FlagBox">
-                    <controls:FlagIcon x:Name="Flag" />
-                </Viewbox>
-                <Viewbox x:Name="NoCountryBox"
-                         Visibility="Collapsed">
-                    <controls:LineIcon Kind="Globe"
-                                       Width="16"
-                                       Height="16"
-                                       Foreground="#A0A5AB" />
-                </Viewbox>
             </Grid>
         </Button>
 
@@ -185,31 +126,20 @@
                 Height="0"
                 IsHitTestVisible="False">
 
-            <!-- The selected pin's mark: a quiet teal ring around its head,
-                 a white halo under it so it reads over any land. Shown when
-                 this is the VPS whose story the panel is telling. -->
+            <!-- The ring when this is the VPS whose story the panel tells:
+                 a quiet teal circle around the delta, a white halo under it
+                 so it reads over any land. -->
             <Ellipse x:Name="SelectHalo"
                      Stroke="#FFFFFF"
-                     StrokeThickness="5"
+                     StrokeThickness="4.5"
                      Opacity="0" />
             <Ellipse x:Name="SelectRing"
                      Stroke="#4BAA98"
                      StrokeThickness="2.5"
                      Opacity="0" />
 
-            <!-- The focused main's ping, planted at the tip. -->
-            <Ellipse x:Name="PulseRing"
-                     Stroke="#FF5F57"
-                     StrokeThickness="2"
-                     Opacity="0"
-                     RenderTransformOrigin="0.5,0.5">
-                <Ellipse.RenderTransform>
-                    <ScaleTransform x:Name="PulseScale" ScaleX="1" ScaleY="1" />
-                </Ellipse.RenderTransform>
-            </Ellipse>
-
             <!-- A country holding several mains wears its count, off the
-                 head's top-right shoulder. -->
+                 delta's right shoulder. -->
             <Border x:Name="CountBadge"
                     CornerRadius="10"
                     Padding="7,1"
@@ -225,58 +155,24 @@
                            LineHeight="14" />
             </Border>
 
-            <!-- The words under the tip: a country in the overview, a name
-                 in a network. -->
-            <Border x:Name="LabelPill"
+            <!-- The hover callout: the place's name, in words, above the
+                 marker. Flags live in the panel's list; the map's words stay
+                 plain. -->
+            <Border x:Name="Callout"
                     CornerRadius="10"
                     Padding="9,2"
-                    Background="#FFFFFF"
-                    BorderBrush="#E4E6E9"
-                    BorderThickness="1"
-                    Visibility="Collapsed">
-                <TextBlock x:Name="LabelText"
-                           FontFamily="{StaticResource BalooFont}"
-                           FontSize="12"
-                           Foreground="#5C6066"
-                           TextTrimming="CharacterEllipsis"
-                           MaxWidth="150"
-                           LineStackingStrategy="BlockLineHeight"
-                           LineHeight="15" />
-            </Border>
-
-            <!-- The hover card: the country in words, the record's name, and
-                 its place in the network. -->
-            <Border x:Name="TipCard"
-                    CornerRadius="12"
-                    Padding="12,10"
                     Background="#FFFFFF"
                     BorderBrush="#CBD5E1"
                     BorderThickness="1"
                     Opacity="0">
-                <StackPanel Spacing="3">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Viewbox x:Name="TipFlagBox"
-                                 Width="18"
-                                 Height="13"
-                                 VerticalAlignment="Center">
-                            <controls:FlagIcon x:Name="TipFlag" />
-                        </Viewbox>
-                        <TextBlock x:Name="TipTitle"
-                                   FontFamily="{StaticResource BalooSemiBoldFont}"
-                                   FontSize="13"
-                                   Foreground="#2B2F33"
-                                   TextTrimming="CharacterEllipsis"
-                                   MaxWidth="200"
-                                   VerticalAlignment="Center"
-                                   LineStackingStrategy="BlockLineHeight"
-                                   LineHeight="17" />
-                    </StackPanel>
-                    <TextBlock x:Name="TipDetail"
-                               FontFamily="{StaticResource BalooSemiBoldFont}"
-                               FontSize="12.5"
-                               Foreground="#5C6066" />
-                    <TextBlock x:Name="TipMeta" Style="{StaticResource TipTextStyle}" />
-                </StackPanel>
+                <TextBlock x:Name="CalloutText"
+                           FontFamily="{StaticResource BalooSemiBoldFont}"
+                           FontSize="12"
+                           Foreground="#2B2F33"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="180"
+                           LineStackingStrategy="BlockLineHeight"
+                           LineHeight="15" />
             </Border>
         </Canvas>
     </Grid>

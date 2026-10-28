@@ -40,6 +40,37 @@
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
         </Storyboard>
+
+        <!--
+            The map screen's arrival and departure: the same rise the
+            sections' layers use, so the map reads as a screen of the app
+            rather than a window over it.
+        -->
+        <Storyboard x:Key="MapOpenStoryboard">
+            <DoubleAnimation Storyboard.TargetName="MapLayer"
+                             Storyboard.TargetProperty="(UIElement.Opacity)"
+                             From="0" To="1" Duration="0:0:0.22" />
+            <DoubleAnimation Storyboard.TargetName="MapShift"
+                             Storyboard.TargetProperty="Y"
+                             From="18" To="0" Duration="0:0:0.30">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Key="MapCloseStoryboard" Completed="OnMapLayerCloseCompleted">
+            <DoubleAnimation Storyboard.TargetName="MapLayer"
+                             Storyboard.TargetProperty="(UIElement.Opacity)"
+                             To="0" Duration="0:0:0.16" />
+            <DoubleAnimation Storyboard.TargetName="MapShift"
+                             Storyboard.TargetProperty="Y"
+                             To="14" Duration="0:0:0.16">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
     </Page.Resources>
 
     <!--
@@ -227,6 +258,23 @@
 
                     <views:AccountsView x:Name="AccountsGrid" x:Load="False" />
                 </Grid>
+
+                <!--
+                    The VPS map screen, over every section: a screen of its own
+                    rather than a dialog, the way the quiet map apps do it. The
+                    rail's Services button becomes the way back while it is up,
+                    and the layer's arrival is the slide the sections use. Like
+                    the dialogs it is deferred - the map carries its own share
+                    of elements - and realised on demand.
+                -->
+                <Grid x:Name="MapLayer"
+                      Visibility="Collapsed"
+                      Opacity="0">
+                    <Grid.RenderTransform>
+                        <TranslateTransform x:Name="MapShift" Y="18" />
+                    </Grid.RenderTransform>
+                    <views:VpsMapView x:Name="VpsMapScreen" x:Load="False" />
+                </Grid>
             </Grid>
             </Grid>
 
@@ -260,7 +308,6 @@
             <views:ServiceRecordDialog x:Name="ServiceRecordModal" x:Load="False" />
             <views:VpsDialog x:Name="VpsModal" x:Load="False" />
             <views:WalletDialog x:Name="WalletModal" x:Load="False" />
-            <views:VpsMapDialog x:Name="VpsMapModal" x:Load="False" />
             <views:ConfirmDialog x:Name="ConfirmModal" x:Load="False" />
         </Grid>
     </Page>
