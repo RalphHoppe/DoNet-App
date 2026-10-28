@@ -241,6 +241,12 @@ public sealed partial class VpsMapViewModel : ObservableObject
     /// <summary>The pin the open chooser belongs to.</summary>
     private MapPin? _chooserPin;
 
+    /// <summary>
+    /// The record the open network belongs to, or null in the overview: a
+    /// click on that same main is a selection, not a re-opening.
+    /// </summary>
+    private int? _networkMainId;
+
     /// <summary>The host's size, the last time the view reported it.</summary>
     private (double Width, double Height) _hostSize;
 
@@ -480,6 +486,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
         IsEmpty = false;
         IsFocused = false;
         SelectedRecord = null;
+        _networkMainId = null;
         CloseChooser();
         Pins = null;
         Lines = null;
@@ -608,6 +615,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
     private void BuildOverview()
     {
         IsFocused = false;
+        _networkMainId = null;
         SelectedRecord = null;
 
         List<MapPin> pins = new();
@@ -702,6 +710,7 @@ public sealed partial class VpsMapViewModel : ObservableObject
     private void BuildNetwork(MapNode main)
     {
         IsFocused = true;
+        _networkMainId = main.Record.Id;
 
         List<MapPin> pins = new() { NetworkPin(main, main, index: 0) };
         List<(MapPin, MapPin, int)> edges = new();
@@ -831,7 +840,18 @@ public sealed partial class VpsMapViewModel : ObservableObject
                     && _nodesById.TryGetValue(record.Id, out MapNode? main))
                 {
                     CloseChooser();
-                    BuildNetwork(main);
+
+                    if (IsFocused && record.Id == _networkMainId)
+                    {
+                        // The network's own main, clicked while its story is
+                        // already open: the click selects it, rather than
+                        // re-opening the network and replaying its arrival.
+                        SelectedRecord = record;
+                    }
+                    else
+                    {
+                        BuildNetwork(main);
+                    }
                 }
                 break;
 
