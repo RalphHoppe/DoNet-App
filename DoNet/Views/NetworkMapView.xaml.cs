@@ -345,7 +345,8 @@ public sealed partial class NetworkMapView : UserControl
     {
         foreach ((MapMarker marker, MapMarkerItem model) in _markers)
         {
-            if (model.Record is { } record && record.Id == row.Record.Id)
+            if (model.Record is { } record && row.Record is { } rowRecord
+                && record.Id == rowRecord.Id)
             {
                 marker.SetHover(on);
                 return;
@@ -679,6 +680,13 @@ public sealed partial class NetworkMapView : UserControl
             return;
         }
 
+        // A chooser without its marker has nowhere to sit.
+        if (chooser.Anchor is not { } anchor)
+        {
+            ChooserCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         ChooserFlag.Country = chooser.FlagCountry;
         ChooserTitle.Text =
             $"{chooser.Rows.Count} MAIN VPS{(chooser.Rows.Count == 1 ? string.Empty : "S")} "
@@ -691,8 +699,8 @@ public sealed partial class NetworkMapView : UserControl
         double panelH = ChooserCard.DesiredSize.Height;
 
         double zoom = MapScroll.ZoomFactor;
-        double anchorX = (chooser.Anchor.WorldX * zoom) + LetterX(zoom) - MapScroll.HorizontalOffset;
-        double anchorY = (chooser.Anchor.WorldY * zoom) + LetterY(zoom) - MapScroll.VerticalOffset;
+        double anchorX = (anchor.WorldX * zoom) + LetterX(zoom) - MapScroll.HorizontalOffset;
+        double anchorY = (anchor.WorldY * zoom) + LetterY(zoom) - MapScroll.VerticalOffset;
 
         double vw = MapScroll.ViewportWidth;
         double vh = MapScroll.ViewportHeight;

@@ -110,12 +110,14 @@ public sealed class MapArcItem
 }
 
 /// <summary>
-/// One row of the map panel's list: a VPS in words.
+/// One row of the map panel's list: a VPS in words. Every member defaults or
+/// is optional, because the XAML compiler constructs the class bare for its
+/// metadata, which a required member would refuse (CS9035, in generated code).
 /// </summary>
 public sealed partial class MapRowItem : ObservableObject
 {
-    /// <summary>The record the row speaks for.</summary>
-    public required VpsRecord Record { get; init; }
+    /// <summary>The record the row speaks for; the panel's rows always carry one.</summary>
+    public VpsRecord? Record { get; init; }
 
     /// <summary>The row's title: the VPS's name.</summary>
     public string Name { get; init; } = string.Empty;
@@ -137,14 +139,17 @@ public sealed partial class MapRowItem : ObservableObject
     private bool _isSelected;
 }
 
-/// <summary>One read-only cell of the panel's detail section.</summary>
+/// <summary>
+/// One read-only cell of the panel's detail section. Every member defaults,
+/// because the XAML compiler constructs the class bare for its metadata.
+/// </summary>
 public sealed class MapDetailItem
 {
     /// <summary>The cell's label.</summary>
-    public required string Label { get; init; }
+    public string Label { get; init; } = string.Empty;
 
     /// <summary>The cell's value.</summary>
-    public required string Value { get; init; }
+    public string Value { get; init; } = string.Empty;
 
     /// <summary>The cell's attached unit, e.g. a port number beside its protocol.</summary>
     public string Unit { get; init; } = string.Empty;
@@ -159,11 +164,15 @@ public sealed class MapDetailItem
     public bool ShowCopy { get; init; }
 }
 
-/// <summary>One row of the chooser: a main VPS inside a clustered country.</summary>
+/// <summary>
+/// One row of the chooser: a main VPS inside a clustered country. Every member
+/// defaults or is optional, because the XAML compiler constructs the class
+/// bare for its metadata.
+/// </summary>
 public sealed class MapChooserRow
 {
-    /// <summary>The record the row picks.</summary>
-    public required VpsRecord Record { get; init; }
+    /// <summary>The record the row picks; the chooser's rows always carry one.</summary>
+    public VpsRecord? Record { get; init; }
 
     /// <summary>The row's title: the VPS's name.</summary>
     public string Name { get; init; } = string.Empty;
@@ -182,7 +191,7 @@ public sealed class MapChooserRow
 public sealed class MapChooserState
 {
     /// <summary>The marker the chooser belongs to, for the view to sit beside.</summary>
-    public required MapMarkerItem Anchor { get; init; }
+    public MapMarkerItem? Anchor { get; init; }
 
     /// <summary>The country the choice is happening in.</summary>
     public string Country { get; init; } = string.Empty;
@@ -680,13 +689,18 @@ public sealed partial class NetworkMapViewModel : ObservableObject
     /// </summary>
     public void ActivateRow(MapRowItem row)
     {
+        if (row.Record is not { } record)
+        {
+            return;
+        }
+
         if (!IsFocused)
         {
-            OpenNetwork(row.Record);
+            OpenNetwork(record);
         }
         else
         {
-            SelectRecord(row.Record);
+            SelectRecord(record);
         }
     }
 

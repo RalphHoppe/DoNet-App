@@ -9,6 +9,8 @@ Checks:
   4. every x:Name referenced from code-behind is actually declared in the markup
   5. every Grid.Row / Grid.Column sits inside the rows and columns its Grid defines
   6. no element's content children are split in two by a property element
+  7. no class used as an x:DataType has `required` members - XamlTypeInfo.g.cs
+     constructs those bare, and C# refuses (CS9035, pointing at generated code)
 
 Run from the repository root:   python3 tools/validate_xaml.py
 """
@@ -247,6 +249,62 @@ def check_datatemplate_binds(path, xaml_src, all_cs, problems):
 # ---- 2d. x:Bind paths inside typed templates resolve against the DataType --
 for path, text in xaml_text.items():
     check_datatemplate_binds(path, text, cs_text, problems)
+
+
+def class_own_body(src, cls):
+    """The brace-balanced body of a class declaration, or None.
+
+    The same pragmatic brace count this file's other checks run on: good
+    enough here, because the item classes that end up as x:DataType carry no
+    string literals with unbalanced braces.
+    """
+    m = re.search(rf"\b(?:class|record)\s+{re.escape(cls)}\b", src)
+    if not m:
+        return None
+    open_at = src.find("{", m.end())
+    if open_at == -1:
+        return None
+    depth = 0
+    for i in range(open_at, len(src)):
+        if src[i] == "{":
+            depth += 1
+        elif src[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return src[open_at:i]
+    return None
+
+
+def check_datatype_required(path, xaml_src, all_cs, problems):
+    """No `required` members on a class a DataTemplate is typed to.
+
+    The XAML compiler writes XamlTypeInfo.g.cs with a bare `new` for every
+    x:DataType, and C# refuses to construct a type whose required member is
+    unset: CS9035, in generated code, with an error list entry pointing far
+    from the cause. Such members must default or be optional instead.
+    """
+    rel = os.path.relpath(path, ROOT)
+    for m in re.finditer(r'x:DataType="([\w:.]+)"', xaml_src):
+        type_name = m.group(1).rsplit(":", 1)[-1]
+        line = xaml_src[: m.start()].count("\n") + 1
+        for cs_path, cs_src in all_cs.items():
+            body = class_own_body(cs_src, type_name)
+            if body is None:
+                continue
+            for r in re.finditer(
+                    r"\b(?:public|internal)\s+(?:static\s+)?required\s"
+                    r"[\w<>,\[\]?.\s]+?\s(\w+)\s*(?:\{|=>)", body):
+                problems.append(
+                    f"{rel}:{line}: x:DataType {type_name} has a required member "
+                    f"'{r.group(1)}' ({os.path.relpath(cs_path, ROOT)}) - "
+                    f"XamlTypeInfo.g.cs constructs the type bare and the build "
+                    f"fails with CS9035. Give the member a default, or make it optional")
+            break
+
+
+# ---- 2e. x:DataType classes construct bare: no required members -----------
+for path, text in xaml_text.items():
+    check_datatype_required(path, text, cs_text, problems)
 
 # ---- 3. event handlers exist ----------------------------------------------
 for path, text in xaml_text.items():
