@@ -47,18 +47,27 @@ GEO = Path("/tmp/geo/world.geo.json-master/countries.geo.json")
 OUT_PNG = REPO / "DoNet" / "Assets" / "Maps" / "world-map.png"
 OUT_CS = REPO / "DoNet" / "Models" / "CountryAnchors.cs"
 
-# Final image. 2:1, and wide enough that the dialog never needs more than
-# it holds, even on a large monitor at high scaling.
-W, H = 4096, 2048
+# Final image. The plate is cropped to the latitudes that carry the
+# countries - 84 north to 60 south, exact 2.5:1 - so the land fills the
+# frame instead of leaving the dead sea band a full-height plate keeps
+# below every continent once Antarctica is off. Wide enough that the map
+# never needs more than it holds, even on a large monitor at high scaling.
+W, H = 4100, 1640
 SS = 2  # supersample factor for smooth coastlines
 
-# The palette: Proton-quiet. A near-white sea, flat pale-grey landmasses,
-# and hairline borders - the map as calm ground the markers sit on, saying
-# nothing until a pin speaks. No graticule: the reference map keeps its page
-# empty of everything but the countries themselves.
-SEA = (239, 241, 244)
-LAND = (216, 222, 229)
-BORDER = (198, 206, 215)
+# The latitude band the plate covers; the placement math in the view model
+# uses the same two numbers.
+LAT_TOP = 84.0
+LAT_BOTTOM = -60.0
+
+# The palette: the DoNet atlas. A warm ivory sea, sage-teal land with
+# hairline borders, and a graticule faint enough to read as paper texture
+# - the app's own warm voice rather than a cold cartography grey. The
+# markers and their arcs carry the colour; the map itself is the page.
+SEA = (245, 241, 232)
+LAND = (223, 230, 223)
+BORDER = (198, 210, 199)
+GRATICULE = (237, 232, 219)
 
 # FlagData's 196 country names -> the geo data's spellings, where they
 # differ. Everything not here matches by name, and the countries the 110m
@@ -205,10 +214,24 @@ def main() -> None:
     ws, hs = W * SS, H * SS
 
     def px(lon: float, lat: float) -> tuple[float, float]:
-        return (lon + 180) / 360 * ws, (90 - lat) / 180 * hs
+        return (
+            (lon + 180) / 360 * ws,
+            (LAT_TOP - lat) / (LAT_TOP - LAT_BOTTOM) * hs,
+        )
 
     image = Image.new("RGB", (ws, hs), SEA)
     draw = ImageDraw.Draw(image)
+
+    # The graticule sits under the land: it is the sea's own marking, and
+    # the countries interrupt it the way the reference maps do. Within the
+    # band only - the poles the plate does not carry are not ruled over.
+    for lon in range(-150, 181, 30):
+        x = px(lon, 0)[0]
+        draw.line([(x, 0), (x, hs)], fill=GRATICULE, width=SS)
+    for lat in range(-60, 91, 30):
+        y = px(0, lat)[1]
+        if 0 <= y <= hs:
+            draw.line([(0, y), (ws, y)], fill=GRATICULE, width=SS)
 
     # Every ring is drawn at three horizontal offsets. Rings that do not
     # cross the antimeridian fall outside the canvas at the other two and

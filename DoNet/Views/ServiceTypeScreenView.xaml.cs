@@ -27,7 +27,7 @@ public sealed partial class ServiceTypeScreenView : UserControl
         ViewModel = App.Current.Services.GetRequiredService<ServicesViewModel>();
         Vps = App.Current.Services.GetRequiredService<VpsViewModel>();
         Wallets = App.Current.Services.GetRequiredService<WalletViewModel>();
-        VpsMap = App.Current.Services.GetRequiredService<VpsMapViewModel>();
+        NetworkMap = App.Current.Services.GetRequiredService<NetworkMapViewModel>();
 
         InitializeComponent();
 
@@ -53,7 +53,7 @@ public sealed partial class ServiceTypeScreenView : UserControl
     public WalletViewModel Wallets { get; }
 
     /// <summary>The VPS map: the records laid over the whole earth.</summary>
-    public VpsMapViewModel VpsMap { get; }
+    public NetworkMapViewModel NetworkMap { get; }
 
     /// <summary>Guards the search sync so loading a directory's text is not read back as typing.</summary>
     private bool _syncingSearch;
@@ -182,7 +182,7 @@ public sealed partial class ServiceTypeScreenView : UserControl
     {
         try
         {
-            _ = VpsMap.OpenAsync();
+            _ = NetworkMap.OpenAsync();
         }
         catch (Exception error)
         {

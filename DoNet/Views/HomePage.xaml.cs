@@ -42,7 +42,7 @@ public sealed partial class HomePage : Page
 
     private readonly WalletViewModel _wallets;
 
-    private readonly VpsMapViewModel _vpsMap;
+    private readonly NetworkMapViewModel _networkMap;
 
     // Opacity is linear and movement is eased, which is how the rail and the entrance
     // animation already behave. Out is short enough to read as the old section getting
@@ -96,7 +96,7 @@ public sealed partial class HomePage : Page
         _services = App.Current.Services.GetRequiredService<ServicesViewModel>();
         _vps = App.Current.Services.GetRequiredService<VpsViewModel>();
         _wallets = App.Current.Services.GetRequiredService<WalletViewModel>();
-        _vpsMap = App.Current.Services.GetRequiredService<VpsMapViewModel>();
+        _networkMap = App.Current.Services.GetRequiredService<NetworkMapViewModel>();
 
         InitializeComponent();
 
@@ -108,7 +108,7 @@ public sealed partial class HomePage : Page
         _services.PropertyChanged += OnServicesPropertyChanged;
         _vps.PropertyChanged += OnVpsPropertyChanged;
         _wallets.PropertyChanged += OnWalletsPropertyChanged;
-        _vpsMap.PropertyChanged += OnVpsMapPropertyChanged;
+        _networkMap.PropertyChanged += OnMapPropertyChanged;
         ViewModel.PropertyChanged += OnSectionChanged;
 
         WireSectionTransition();
@@ -455,15 +455,15 @@ public sealed partial class HomePage : Page
         }
     }
 
-    private void OnVpsMapPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    private void OnMapPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (args.PropertyName == nameof(VpsMapViewModel.IsDialogOpen))
+        if (args.PropertyName == nameof(NetworkMapViewModel.IsDialogOpen))
         {
             UpdateServicesRailButton();
 
-            if (_vpsMap.IsDialogOpen)
+            if (_networkMap.IsDialogOpen)
             {
-                Realize("VpsMapScreen");
+                Realize("NetworkMapScreen");
                 ShowMapLayer();
             }
             else
@@ -585,7 +585,7 @@ public sealed partial class HomePage : Page
     /// </remarks>
     private void UpdateServicesRailButton()
     {
-        if (_vpsMap.IsDialogOpen)
+        if (_networkMap.IsDialogOpen)
         {
             // The map screen is up, opened from the drilled type screen: the
             // button's back closes the map and returns to that screen.
@@ -594,7 +594,7 @@ public sealed partial class HomePage : Page
                     typeof(Microsoft.UI.Xaml.Media.Geometry), TypeMarkData.Chevron);
             ServicesRailButton.AccentBrush = PrimaryServiceTypes.GradientOf(PrimaryServiceType.Vps);
             ServicesRailButton.IconAltActive = true;
-            ServicesRailButton.Command = _vpsMap.CloseMapCommand;
+            ServicesRailButton.Command = _networkMap.CloseMapCommand;
             ServicesRailButton.Label = "Back to VPS";
         }
         else if (_services.IsDrilled && _services.SelectedKind is { } kind)
@@ -664,7 +664,7 @@ public sealed partial class HomePage : Page
         _services.PropertyChanged -= OnServicesPropertyChanged;
         _vps.PropertyChanged -= OnVpsPropertyChanged;
         _wallets.PropertyChanged -= OnWalletsPropertyChanged;
-        _vpsMap.PropertyChanged -= OnVpsMapPropertyChanged;
+        _networkMap.PropertyChanged -= OnMapPropertyChanged;
         ViewModel.PropertyChanged -= OnSectionChanged;
 
         // Unsubscribe before stopping, so a transition caught in flight by the lock
@@ -693,7 +693,7 @@ public sealed partial class HomePage : Page
         ServiceRecordModal?.ReleaseBindings();
         VpsModal?.ReleaseBindings();
         WalletModal?.ReleaseBindings();
-        VpsMapScreen?.ReleaseBindings();
+        NetworkMapScreen?.ReleaseBindings();
 
         // Null when the user never opened a person and the idle warm-up had not run.
         PersonModal?.ReleaseBindings();

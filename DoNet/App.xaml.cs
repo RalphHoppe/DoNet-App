@@ -150,7 +150,7 @@ public partial class App : Application
 
         // The VPS map: one view over the records, opened from the type
         // screen's header and hosted at the HomePage root like the others.
-        services.AddSingleton<VpsMapViewModel>();
+        services.AddSingleton<NetworkMapViewModel>();
 
         return services.BuildServiceProvider();
     }

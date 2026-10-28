@@ -273,7 +273,7 @@
                     <Grid.RenderTransform>
                         <TranslateTransform x:Name="MapShift" Y="18" />
                     </Grid.RenderTransform>
-                    <views:VpsMapView x:Name="VpsMapScreen" x:Load="False" />
+                    <views:NetworkMapView x:Name="NetworkMapScreen" x:Load="False" />
                 </Grid>
             </Grid>
             </Grid>

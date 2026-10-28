@@ -1,50 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    x:Class="DoNet.Views.VpsMapView"
+    x:Class="DoNet.Views.NetworkMapView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:DoNet.Controls"
+    xmlns:vm="using:DoNet.ViewModels"
     mc:Ignorable="d">
 
     <!--
-        The VPS map as a screen of its own, laid out the way the quiet map
-        apps do it: the map is the page, and the words live in a panel
-        beside it.
+        The VPS map screen: the world as a page, the words beside it.
 
-        The page is the rendered equirectangular earth - x from longitude,
-        y from latitude, exactly 2:1 - in near-white and pale grey, so calm
-        that the markers are the only things speaking on it. Every marker is
-        placed by that one rule, so the picture and the placement math
-        cannot disagree about where a country is.
+        The map is a fixed world - 2560 by 1024 world pixels, the plate's
+        own latitude band - and everything on it is placed once, in the
+        world's own coordinates: the plate image fills it exactly, the
+        markers sit on their countries' anchors, the arcs join them. The
+        view is a scroller over that world: the wheel zooms about the
+        pointer, a drag carries the view, and neither ever moves a marker.
+        The markers counter-scale so they stay the same size on screen at
+        every depth, and the plate's letterbox - the band of sea the
+        scroller shows beside the world when the window is wider than it -
+        is part of every screen-to-world conversion, so a zoom is always
+        anchored to the point under the pointer.
 
-        The panel carries everything the map declines to say: the list -
-        every main in the overview, the whole chain in an open network, each
-        row stepped in by its depth - and, below it, the selected VPS's
-        important details as the preview's read-only cells. Hovering a row
-        stands its marker up; clicking one is clicking the marker.
+        The panel carries what a quiet map declines to say: the list -
+        every main in the overview, the whole chain stepped in by depth in
+        an open network - and, below it, the selected VPS's details as the
+        preview's read-only cells. Hovering a row lifts its marker on the
+        page; clicking a row is clicking the marker.
 
-        The overview dots the mains, one delta per country, a count chip
-        where one country holds several. A click trades the overview for
-        that main's network: its whole chain as markers joined by curved
-        arcs whose dashes flow along them, framed to fit.
-
-        The chooser - the small panel that opens over a chip - is hand-built
-        for the same reason the drawers are: the app has no stock dropdowns.
+        The chooser - the small panel that opens over a country holding
+        several mains - is hand-built for the same reason the drawers are:
+        the app has no stock dropdowns. It closes the moment the view
+        moves, so it can never float loose of its marker.
     -->
 
     <UserControl.Resources>
-
-        <!--
-            The connections: curved arcs whose dashes flow along them - the
-            app's own teal for a main's direct children, a quieter sage for
-            everything deeper, so depth reads at a glance.
-        -->
+        <!-- The connections: gentle arcs, the app's teal for a main's direct
+             children, a quieter sage for everything deeper. -->
         <SolidColorBrush x:Key="ConnectionBrush" Color="#4BAA98" />
         <SolidColorBrush x:Key="DeepConnectionBrush" Color="#93BBB0" />
 
-        <!-- The section labels, the tables' header voice. -->
         <Style x:Key="SectionLabelStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource BaumansFont}" />
             <Setter Property="FontSize" Value="13" />
@@ -63,9 +60,69 @@
             <Setter Property="LineHeight" Value="20" />
         </Style>
 
+        <!-- The panel's list rows. -->
+        <DataTemplate x:Key="RowTemplate" x:DataType="vm:MapRowItem">
+            <controls:MapListRow Model="{x:Bind}" />
+        </DataTemplate>
+
+        <!-- The panel's detail cells, the preview's read-only vocabulary. -->
+        <DataTemplate x:Key="DetailTemplate" x:DataType="vm:MapDetailItem">
+            <controls:FieldCell Label="{x:Bind Label}"
+                                Value="{x:Bind Value}"
+                                UnitValue="{x:Bind Unit}"
+                                IconKind="{x:Bind Icon}"
+                                Kind="Display"
+                                IsSecret="{x:Bind IsSecret}"
+                                ShowCopy="{x:Bind ShowCopy}" />
+        </DataTemplate>
+
+        <!-- The chooser's rows. -->
+        <DataTemplate x:Key="ChooserRowTemplate" x:DataType="vm:MapChooserRow">
+            <Button Style="{StaticResource BareButtonStyle}"
+                    HorizontalAlignment="Stretch"
+                    Tag="{x:Bind Record}"
+                    Click="OnChooserRowClick">
+                <Border Height="52"
+                        CornerRadius="13"
+                        Padding="13,5"
+                        Background="#F4F6F9"
+                        BorderBrush="#E4E6E9"
+                        BorderThickness="1">
+                    <Grid ColumnSpacing="11">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Viewbox Grid.Column="0"
+                                 Width="20"
+                                 Height="15"
+                                 VerticalAlignment="Center">
+                            <controls:FlagIcon Country="{x:Bind FlagCountry}" />
+                        </Viewbox>
+
+                        <StackPanel Grid.Column="1"
+                                    Spacing="1"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind Name}"
+                                       FontFamily="{StaticResource BalooSemiBoldFont}"
+                                       FontSize="13.5"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="200" />
+                            <TextBlock Text="{x:Bind Detail}"
+                                       FontFamily="{StaticResource BalooFont}"
+                                       FontSize="11.5"
+                                       Foreground="{StaticResource CardMetaBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="210" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Button>
+        </DataTemplate>
     </UserControl.Resources>
 
-    <!-- The screen: the panel's words on the left, the earth beside them. -->
     <Border CornerRadius="34"
             Background="{StaticResource CardBackgroundBrush}"
             BorderBrush="{StaticResource CardBorderBrush}"
@@ -152,7 +209,12 @@
                 <ScrollViewer Grid.Row="3"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollMode="Disabled">
-                    <StackPanel x:Name="ListRows" Spacing="5" />
+                    <ItemsRepeater x:Name="RowsRepeater"
+                                   ItemTemplate="{StaticResource RowTemplate}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="5" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
                 </ScrollViewer>
 
                 <!-- The selected VPS's details, below the list. -->
@@ -162,22 +224,55 @@
                     <TextBlock Text="THE VPS"
                                Style="{StaticResource SectionLabelStyle}" />
 
-                    <!-- The selection's own card, compact. -->
-                    <StackPanel x:Name="SelectionCard" Spacing="2" />
+                    <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="9">
+                            <Viewbox Width="22"
+                                     Height="16"
+                                     VerticalAlignment="Center"
+                                     Visibility="{x:Bind ViewModel.HasSelectedFlag, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                <controls:FlagIcon Country="{x:Bind ViewModel.SelectedFlagCountry, Mode=OneWay}" />
+                            </Viewbox>
+                            <TextBlock Text="{x:Bind ViewModel.SelectedName, Mode=OneWay}"
+                                       FontFamily="{StaticResource BalooSemiBoldFont}"
+                                       FontSize="15"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="250"
+                                       VerticalAlignment="Center"
+                                       LineStackingStrategy="BlockLineHeight"
+                                       LineHeight="20" />
+                        </StackPanel>
+                        <TextBlock Text="{x:Bind ViewModel.SelectedCountryLabel, Mode=OneWay}"
+                                   FontFamily="{StaticResource BalooFont}"
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource CardMetaBrush}"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   LineHeight="15" />
+                        <TextBlock Text="{x:Bind ViewModel.SelectedSummary, Mode=OneWay}"
+                                   FontFamily="{StaticResource BalooSemiBoldFont}"
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource BrandPrimaryBrush}"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   LineHeight="15" />
+                    </StackPanel>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollMode="Disabled"
+                                  MaxHeight="320">
+                        <ItemsRepeater x:Name="DetailsRepeater"
+                                       ItemTemplate="{StaticResource DetailTemplate}">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Spacing="9" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </ScrollViewer>
                 </StackPanel>
             </Grid>
 
-            <!-- The earth .................................................. -->
+            <!-- The world .................................................. -->
             <Border Grid.Column="1"
                     CornerRadius="0,34,34,0"
-                    Background="#EFF1F4">
-                <!--
-                    The wheel zooms about the pointer; a drag from the map
-                    itself - the sea or the land, not a marker or a panel -
-                    carries the view. Presses on the markers and the chooser
-                    never start a drag; the code-behind checks where a press
-                    began.
-                -->
+                    Background="#F5F1E8">
                 <Grid x:Name="MapHost"
                       SizeChanged="OnMapHostSizeChanged"
                       PointerWheelChanged="OnMapWheel"
@@ -186,34 +281,41 @@
                       PointerReleased="OnMapPointerReleased"
                       PointerCanceled="OnMapPointerReleased">
 
-                    <!-- Everything that belongs to the plate is clipped to
-                         it: the connections that cross the edge where the
-                         map ends and restarts leave the map, not the
-                         screen. -->
-                    <Grid x:Name="MapClip">
-                        <!--
-                            The plate and its connections share one canvas,
-                            in host pixels: the image is seated and sized by
-                            the view model's transform, and the arcs run
-                            between the transformed positions.
-                        -->
-                        <Canvas x:Name="MapCanvas">
-                            <Image x:Name="MapImage"
-                                   Source="ms-appx:///Assets/Maps/world-map.png"
-                                   Stretch="Fill"
-                                   Width="0"
-                                   Height="0" />
-                        </Canvas>
+                    <!--
+                        The scroller owns the view: it clips, it holds the
+                        zoom and the offsets, and its ChangeView is the one
+                        door through which the view ever moves. User
+                        scrolling is disabled - the map's own gestures (the
+                        wheel, the drag) decide what moving means - but the
+                        scroller's machinery, the clamping to the world's
+                        true edges included, keeps working underneath.
+                    -->
+                    <ScrollViewer x:Name="MapScroll"
+                                  HorizontalScrollMode="Disabled"
+                                  VerticalScrollMode="Disabled"
+                                  HorizontalScrollBarVisibility="Hidden"
+                                  VerticalScrollBarVisibility="Hidden"
+                                  IsScrollInertiaEnabled="False"
+                                  ZoomMode="Enabled"
+                                  ViewChanged="OnScrollViewChanged">
 
                         <!--
-                            The markers sit above the arcs and keep their own
-                            size at every zoom. The layer's transparent
-                            background is the map's drag surface.
+                            The world itself: fixed, in world pixels, its
+                            every child placed once and never moved. Centred
+                            when the scroller shows more than it holds, so
+                            the letterbox splits evenly either side.
                         -->
-                        <Canvas x:Name="DotLayer"
-                                Background="Transparent"
-                                Tapped="OnMapBackgroundTapped" />
-                    </Grid>
+                        <Grid x:Name="World"
+                              Width="2560"
+                              Height="1024"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                            <Image Source="ms-appx:///Assets/Maps/world-map.png"
+                                   Stretch="Fill" />
+                            <Canvas x:Name="ArcLayer" />
+                            <Canvas x:Name="MarkerLayer" />
+                        </Grid>
+                    </ScrollViewer>
 
                     <!-- The chooser, seated beside its marker in code. -->
                     <Canvas x:Name="ChooserLayer">
@@ -268,7 +370,12 @@
                                     </Button>
                                 </Grid>
 
-                                <StackPanel x:Name="ChooserRows" Spacing="6" />
+                                <ItemsRepeater x:Name="ChooserRepeater"
+                                               ItemTemplate="{StaticResource ChooserRowTemplate}">
+                                    <ItemsRepeater.Layout>
+                                        <StackLayout Spacing="6" />
+                                    </ItemsRepeater.Layout>
+                                </ItemsRepeater>
                             </StackPanel>
                         </Border>
                     </Canvas>
@@ -276,8 +383,8 @@
                     <!--
                         ZOOM: closer, further, and the whole earth back. The
                         wheel zooms about the pointer and a drag carries the
-                        view; these are the same trip with somewhere definite
-                        to land.
+                        view; these are the same trip with somewhere
+                        definite to land.
                     -->
                     <StackPanel HorizontalAlignment="Right"
                                 VerticalAlignment="Top"
@@ -285,7 +392,6 @@
                                 Spacing="8">
                         <Button Style="{StaticResource BareButtonStyle}"
                                 ToolTipService.ToolTip="Zoom in"
-                                IsEnabled="{x:Bind ViewModel.CanZoomIn, Mode=OneWay}"
                                 Click="OnZoomInClick">
                             <Border Width="34"
                                     Height="34"
@@ -308,7 +414,6 @@
 
                         <Button Style="{StaticResource BareButtonStyle}"
                                 ToolTipService.ToolTip="Zoom out"
-                                IsEnabled="{x:Bind ViewModel.CanZoomOut, Mode=OneWay}"
                                 Click="OnZoomOutClick">
                             <Border Width="34"
                                     Height="34"
@@ -353,46 +458,45 @@
                         </Button>
                     </StackPanel>
 
-                    <!-- The states, centred on the plate. -->
-                    <Border HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            CornerRadius="14"
-                            Padding="18,10"
-                            Background="#F2FFFFFF"
-                            BorderBrush="{StaticResource CardBorderBrush}"
-                            BorderThickness="1"
-                            Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <!-- The states, centred on the world, in the app's own
+                         illustrations. -->
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="10"
+                                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        <controls:StateArt Width="112"
+                                           Height="86"
+                                           Kind="Loading"
+                                           IsActive="True" />
                         <TextBlock Text="Plotting the network..."
                                    Style="{StaticResource StateTextStyle}" />
-                    </Border>
+                    </StackPanel>
 
-                    <Border HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            CornerRadius="14"
-                            Padding="18,10"
-                            Background="#F2FFFFFF"
-                            BorderBrush="{StaticResource CardBorderBrush}"
-                            BorderThickness="1"
-                            Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="10"
+                                Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        <controls:StateArt Width="112"
+                                           Height="86"
+                                           Kind="Error"
+                                           IsActive="False" />
                         <TextBlock Text="The directory refused - go back and try again."
                                    Style="{StaticResource StateTextStyle}" />
-                    </Border>
+                    </StackPanel>
 
-                    <Border HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            CornerRadius="14"
-                            Padding="18,10"
-                            Background="#F2FFFFFF"
-                            BorderBrush="{StaticResource CardBorderBrush}"
-                            BorderThickness="1"
-                            Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                        <StackPanel Spacing="2">
-                            <TextBlock Text="No VPS records yet"
-                                       Style="{StaticResource StateTextStyle}" />
-                            <TextBlock Text="Add one, and it lands on the page."
-                                       Style="{StaticResource StateTextStyle}" />
-                        </StackPanel>
-                    </Border>
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="10"
+                                Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        <controls:StateArt Width="112"
+                                           Height="86"
+                                           Kind="Empty"
+                                           IsActive="False" />
+                        <TextBlock Text="No VPS records yet"
+                                   Style="{StaticResource StateTextStyle}" />
+                        <TextBlock Text="Add one, and it lands on the page."
+                                   Style="{StaticResource StateTextStyle}" />
+                    </StackPanel>
 
                     <!-- The honest footnote about the records that could not
                          be placed. -->

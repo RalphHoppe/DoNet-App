@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.MapMarker"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        One marker on the VPS map: the country as a flag tile.
+
+        The app's cards carry TypeMark tiles; the map carries flag tiles -
+        a rounded white tile with the country's flag inside, a ring that
+        says what the record is (the VPS's own red for a main, slate for a
+        VPS connected into an open network), a white halo so both read over
+        land and sea alike. A country holding several mains wears its count
+        on an amber chip at the tile's shoulder. The selected VPS's tile is
+        ringed in the app's teal.
+
+        The tile is centred on its anchor - the top of the country's shape -
+        and never moves: it is placed once, in the world's own coordinates,
+        and the view zooms and pans over the world. What varies with the
+        zoom is only the tile's counter-scale, which keeps it the same size
+        on screen at every depth.
+
+        The marker's words - the callout that names the place on hover, the
+        count chip, the selection ring - live on an overhang canvas, not in
+        the root grid: a grid hands its children its own size, so words
+        measured inside it would wrap to a letter a line. A canvas measures
+        against infinity; the elements are seated on it in code. The tile's
+        size is fixed per kind, so where they land is decided once, and the
+        same every time.
+    -->
+
+    <UserControl.Resources>
+        <!-- The two rings a tile can wear. -->
+        <SolidColorBrush x:Key="MainRingBrush" Color="#FF5F57" />
+        <SolidColorBrush x:Key="NodeRingBrush" Color="#7A8798" />
+    </UserControl.Resources>
+
+    <Grid x:Name="Root"
+          Background="Transparent">
+
+        <!-- The counter-scale, set by the view as the zoom changes, keeps the
+             tile the same size on screen at every depth. The hover lift
+             lives on the tile itself so the two never fight. -->
+        <Grid.RenderTransform>
+            <ScaleTransform x:Name="ZoomScale" ScaleX="1" ScaleY="1" />
+        </Grid.RenderTransform>
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="HoverStates">
+                <VisualState x:Name="Rest">
+                    <VisualState.Setters>
+                        <Setter Target="Callout.Opacity" Value="0" />
+                        <Setter Target="HoverScale.ScaleX" Value="1" />
+                        <Setter Target="HoverScale.ScaleY" Value="1" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="PointerOver">
+                    <VisualState.Setters>
+                        <Setter Target="Callout.Opacity" Value="1" />
+                        <Setter Target="HoverScale.ScaleX" Value="1.1" />
+                        <Setter Target="HoverScale.ScaleY" Value="1.1" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Button Style="{StaticResource BareButtonStyle}"
+                Click="OnClick">
+            <Grid>
+                <!-- The white halo, so the tile reads over land and sea. -->
+                <Border x:Name="Halo"
+                        CornerRadius="12"
+                        Background="#B3FFFFFF" />
+
+                <!-- The tile itself. -->
+                <Border x:Name="Tile"
+                        CornerRadius="10"
+                        Background="#FFFFFF"
+                        BorderThickness="2"
+                        RenderTransformOrigin="0.5,0.5">
+                    <Border.RenderTransform>
+                        <ScaleTransform x:Name="HoverScale" ScaleX="1" ScaleY="1" />
+                    </Border.RenderTransform>
+                    <Grid>
+                        <Viewbox x:Name="FlagBox">
+                            <controls:FlagIcon x:Name="Flag" />
+                        </Viewbox>
+                        <Viewbox x:Name="GlobeBox"
+                                 Visibility="Collapsed">
+                            <controls:LineIcon Kind="Globe"
+                                               Width="16"
+                                               Height="16"
+                                               Foreground="#A0A5AB" />
+                        </Viewbox>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Button>
+
+        <!--
+            The overhang: zero-sized on purpose, a canvas measures its
+            children against infinity and never clips them. Seated in code;
+            nothing here is a hit target.
+        -->
+        <Canvas x:Name="Overhang"
+                Width="0"
+                Height="0"
+                IsHitTestVisible="False">
+
+            <!-- The selected VPS's ring, around the tile. -->
+            <Border x:Name="SelectRing"
+                    CornerRadius="12"
+                    BorderBrush="#4BAA98"
+                    BorderThickness="2.5"
+                    Opacity="0" />
+
+            <!-- A country holding several mains wears its count. -->
+            <Border x:Name="CountChip"
+                    CornerRadius="10"
+                    Padding="7,1"
+                    Background="#FEBC2E"
+                    BorderBrush="#FFFFFF"
+                    BorderThickness="1.5"
+                    Visibility="Collapsed">
+                <TextBlock x:Name="CountText"
+                           FontFamily="{StaticResource JerseyFont}"
+                           FontSize="13"
+                           Foreground="#8A5B12"
+                           LineStackingStrategy="BlockLineHeight"
+                           LineHeight="14" />
+            </Border>
+
+            <!-- The hover callout: the place's name, in words, above the
+                 tile. Plain words - the flags and the counts live in the
+                 panel's list, where words belong. -->
+            <Border x:Name="Callout"
+                    CornerRadius="10"
+                    Padding="9,2"
+                    Background="#FFFFFF"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1"
+                    Opacity="0">
+                <TextBlock x:Name="CalloutText"
+                           FontFamily="{StaticResource BalooSemiBoldFont}"
+                           FontSize="12"
+                           Foreground="#2B2F33"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="180"
+                           LineStackingStrategy="BlockLineHeight"
+                           LineHeight="15" />
+            </Border>
+        </Canvas>
+    </Grid>
+</UserControl>
