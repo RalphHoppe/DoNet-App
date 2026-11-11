@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.VpsCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        One VPS record in the directory grid - the same shape as the other cards,
+        with the type's own mark where they put initials: the red gradient tile
+        with the white glyph, the type list's mark at card scale.
+
+        What it previews is chosen the way the other cards choose: the fields a
+        glance wants when it is hunting one record among many - what it runs, what
+        it costs, how long it lasts, where it is. The system's secrets are not on
+        it, for the same reason the account card leaves its password off: a card
+        is visible across a room.
+
+        The caption under the name carries the node voice: a record either is a
+        main or belongs to one, and that is the first thing the directory's eye
+        wants to know about it.
+    -->
+
+    <UserControl.Resources>
+
+        <Style x:Key="FieldValueStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="{StaticResource FieldValueFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="20" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <!-- The actions arriving under the pointer, the account card's timings. -->
+        <Storyboard x:Key="ActionsShow">
+            <DoubleAnimation Storyboard.TargetName="ActionLayer"
+                             Storyboard.TargetProperty="Opacity"
+                             To="1" Duration="0:0:0.18" />
+            <DoubleAnimation Storyboard.TargetName="ActionShift"
+                             Storyboard.TargetProperty="X"
+                             To="0" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Key="ActionsHide">
+            <DoubleAnimation Storyboard.TargetName="ActionLayer"
+                             Storyboard.TargetProperty="Opacity"
+                             To="0" Duration="0:0:0.14" />
+            <DoubleAnimation Storyboard.TargetName="ActionShift"
+                             Storyboard.TargetProperty="X"
+                             To="14" Duration="0:0:0.16">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+    </UserControl.Resources>
+
+    <Border x:Name="Shell"
+            Background="{StaticResource CardBackgroundBrush}"
+            BorderBrush="{StaticResource CardBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="26"
+            Padding="20"
+            DoubleTapped="OnDoubleTapped"
+            PointerEntered="OnCardPointerEntered"
+            PointerExited="OnCardPointerExited">
+
+        <Grid RowSpacing="22">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Identity row: the type's own mark, the name, and the node voice. -->
+            <Grid Grid.Row="0" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- The mark itself, scaled from its 64px tile to the card's 56. -->
+                <Viewbox Grid.Column="0"
+                         Width="56"
+                         Height="56">
+                    <controls:TypeMark Kind="Vps" />
+                </Viewbox>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="NameText"
+                               FontFamily="{StaticResource BalooSemiBoldFont}"
+                               FontSize="{StaticResource CardTitleFontSize}"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="22" />
+                    <TextBlock x:Name="CaptionText"
+                               Text="VPS record"
+                               FontFamily="{StaticResource BalooFont}"
+                               FontSize="{StaticResource FieldValueFontSize}"
+                               Foreground="{StaticResource CardMetaBrush}"
+                               Margin="0,2,0,0"
+                               TextTrimming="CharacterEllipsis"
+                               LineStackingStrategy="BlockLineHeight"
+                               LineHeight="20" />
+                </StackPanel>
+
+            </Grid>
+
+            <!-- Four of the record's answers, in the design's two-then-one. -->
+            <Grid Grid.Row="1" RowSpacing="18" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0">
+                    <controls:FieldLabel Text="SYSTEM" IconKind="Globe" />
+                    <TextBlock x:Name="SystemValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="1">
+                    <controls:FieldLabel Text="BALANCE" IconKind="Hash" />
+                    <TextBlock x:Name="BalanceValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="0">
+                    <controls:FieldLabel Text="SUBSCRIPTION" IconKind="Calendar" />
+                    <TextBlock x:Name="SubscriptionValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1">
+                    <controls:FieldLabel Text="COUNTRY" IconKind="GlobeMeridian" />
+                    <TextBlock x:Name="CountryValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+
+                <!-- Spans both columns: it is the one field with nothing beside it. -->
+                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
+                    <controls:FieldLabel Text="NOTE" IconKind="Info" />
+                    <TextBlock x:Name="NoteValue" Style="{StaticResource FieldValueStyle}" />
+                </StackPanel>
+            </Grid>
+
+            <!--
+                Edit and delete, anchored to the bottom-right corner of the card's
+                content box while the pointer is over the card or the actions hold
+                focus - the account card's arrangement, reasons and all.
+            -->
+            <StackPanel x:Name="ActionLayer"
+                        Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Orientation="Horizontal"
+                        Spacing="12"
+                        Opacity="0"
+                        IsHitTestVisible="False"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform x:Name="ActionShift" X="14" />
+                </StackPanel.RenderTransform>
+
+                <Button x:Name="EditAction"
+                        Width="46"
+                        Height="46"
+                        Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Edit"
+                        GotFocus="OnActionGotFocus"
+                        LostFocus="OnActionLostFocus"
+                        PointerEntered="OnActionPointerEntered"
+                        PointerExited="OnActionPointerExited"
+                        Click="OnEditClick">
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
+                            Background="{StaticResource BrandPrimaryBrush}">
+                        <controls:LineIcon Kind="EditSquare"
+                                           Width="21"
+                                           Height="21"
+                                           Foreground="White" />
+                    </Border>
+                </Button>
+
+                <Button x:Name="DeleteAction"
+                        Width="46"
+                        Height="46"
+                        Style="{StaticResource BareButtonStyle}"
+                        ToolTipService.ToolTip="Delete"
+                        GotFocus="OnActionGotFocus"
+                        LostFocus="OnActionLostFocus"
+                        PointerEntered="OnActionPointerEntered"
+                        PointerExited="OnActionPointerExited"
+                        Click="OnDeleteClick">
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="23"
+                            Background="{StaticResource DangerBrush}">
+                        <controls:LineIcon Kind="Trash"
+                                           Width="21"
+                                           Height="21"
+                                           Foreground="White" />
+                    </Border>
+                </Button>
+            </StackPanel>
+
+        </Grid>
+    </Border>
+</UserControl>

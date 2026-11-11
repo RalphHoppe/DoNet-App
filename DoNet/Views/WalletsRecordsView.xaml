@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Views.WalletsRecordsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    xmlns:models="using:DoNet.Models"
+    mc:Ignorable="d">
+
+    <!--
+        The wallets records list, inside the type screen's surface.
+
+        The reference's type screens are the header over open space, so the records
+        sit straight on the plate with no inner card around them - each record
+        is a card, and the plate is the surface. The repeater's source is
+        attached and detached around the screen's visibility from the
+        code-behind, for the collapsed-ItemsRepeater reason the app has met
+        before; an empty directory draws nothing at all, by the same reference.
+
+        Loading and error do draw: an encrypted open is slow enough to see, and
+        a refused store is a genuine failure the surface has to own.
+    -->
+
+    <UserControl.Resources>
+
+        <Style x:Key="StateTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooSemiBoldFont}" />
+            <Setter Property="FontSize" Value="{StaticResource CardTitleFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="22" />
+        </Style>
+
+        <Style x:Key="StateBodyStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BalooFont}" />
+            <Setter Property="FontSize" Value="{StaticResource SectionSubtitleFontSize}" />
+            <Setter Property="Foreground" Value="{StaticResource CardMetaBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="MaxWidth" Value="360" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="LineHeight" Value="22" />
+        </Style>
+
+        <!--
+            The card is its own control, like the other directories': a menu that
+            animates needs named elements, and names inside a DataTemplate cannot
+            be reached from code.
+        -->
+        <DataTemplate x:Key="WalletCardTemplate" x:DataType="models:WalletRecord">
+            <controls:WalletCard Record="{x:Bind}"
+                              OpenRequested="OnCardOpen"
+                              EditRequested="OnCardEdit"
+                              DeleteRequested="OnCardDelete" />
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <Grid>
+        <!--
+            Deliberately always visible. An ItemsRepeater inside a collapsed
+            ScrollViewer has no measured viewport, and a collection change
+            against one is the COMException this app has met before. The source
+            attach below is what guards the records, not the scroller's
+            visibility.
+        -->
+        <ScrollViewer x:Name="CardScroller"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollMode="Disabled"
+                      ViewChanged="OnCardScrollChanged"
+                      Padding="0,0,4,0">
+            <ItemsRepeater x:Name="CardRepeater"
+                           ItemTemplate="{StaticResource WalletCardTemplate}">
+                <ItemsRepeater.Layout>
+                    <!--
+                        MinItemWidth is what makes the grid responsive: two
+                        columns while they both fit, one column below that,
+                        with no size-watching code.
+                    -->
+                    <UniformGridLayout MinItemWidth="430"
+                                       MinColumnSpacing="20"
+                                       MinRowSpacing="20"
+                                       ItemsStretch="Fill" />
+                </ItemsRepeater.Layout>
+            </ItemsRepeater>
+        </ScrollViewer>
+
+        <!-- Loading -->
+        <Border Background="{StaticResource SurfaceBrush}"
+                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                   Kind="Loading"
+                                   IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+                <TextBlock Text="Opening the directory"
+                           Style="{StaticResource StateTitleStyle}"
+                           Margin="0,16,0,0" />
+                <TextBlock Text="Just a moment." Style="{StaticResource StateBodyStyle}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Error -->
+        <Border Background="{StaticResource SurfaceBrush}"
+                Visibility="{x:Bind ViewModel.IsError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                <controls:StateArt Width="112" Height="86" HorizontalAlignment="Center"
+                                   Kind="Error"
+                                   IsActive="{x:Bind ViewModel.IsError, Mode=OneWay}" />
+                <TextBlock Text="The records could not be opened"
+                           Style="{StaticResource StateTitleStyle}"
+                           Margin="0,16,0,0" />
+                <TextBlock Text="Nothing was changed. You can try again."
+                           Style="{StaticResource StateBodyStyle}" />
+                <Button Margin="0,20,0,0"
+                        HorizontalAlignment="Center"
+                        Style="{StaticResource BareButtonStyle}"
+                        Command="{x:Bind ViewModel.RetryCommand}">
+                    <Border CornerRadius="20"
+                            Height="40"
+                            Padding="22,0,22,0"
+                            Background="{StaticResource BrandPrimaryBrush}">
+                        <TextBlock Text="TRY AGAIN"
+                                   VerticalAlignment="Center"
+                                   FontFamily="{StaticResource JerseyFont}"
+                                   FontSize="{StaticResource ButtonFontSize}"
+                                   Foreground="#FFFFFF"
+                                   CharacterSpacing="40" />
+                    </Border>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

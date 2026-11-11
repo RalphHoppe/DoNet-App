@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.MapListRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:DoNet.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        One row of the map panel's list: a VPS in words, the map's marker in
+        list form - flag, name, country, and the record's place in the
+        network, stepped in by its depth so an open chain reads as the chain
+        it is.
+
+        The row is the honest place for the words a quiet map does not say
+        itself. Its rest is quiet; the pointer warms it; the selected row
+        carries the app's teal. Hovering the row stands its marker up on the
+        page, and clicking the row is clicking the marker - both belong to
+        the view that hosts this row.
+    -->
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="RowWarmBrush" Color="#F4F6F9" />
+        <SolidColorBrush x:Key="RowWarmBorderBrush" Color="#E4E6E9" />
+        <SolidColorBrush x:Key="RowClearBrush" Color="#00FFFFFF" />
+    </UserControl.Resources>
+
+    <Grid x:Name="Root"
+          MinHeight="50"
+          Background="Transparent">
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="HoverStates">
+                <VisualState x:Name="Rest">
+                    <VisualState.Setters>
+                        <Setter Target="Shell.Background" Value="{StaticResource RowClearBrush}" />
+                        <Setter Target="Shell.BorderBrush" Value="{StaticResource RowClearBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="PointerOver">
+                    <VisualState.Setters>
+                        <Setter Target="Shell.Background" Value="{StaticResource RowWarmBrush}" />
+                        <Setter Target="Shell.BorderBrush" Value="{StaticResource RowWarmBorderBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Button Style="{StaticResource BareButtonStyle}"
+                HorizontalAlignment="Stretch"
+                Click="OnClick">
+            <Border x:Name="Shell"
+                    CornerRadius="13"
+                    BorderThickness="1"
+                    Padding="{x:Bind Padding, Mode=OneWay}">
+                <Grid ColumnSpacing="9">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- The selected row's teal bar, at the shell's left. -->
+                    <Border x:Name="SelectBar"
+                            Grid.Column="0"
+                            Width="3"
+                            CornerRadius="2"
+                            Margin="0,6"
+                            VerticalAlignment="Stretch"
+                            Background="#4BAA98"
+                            Visibility="{x:Bind Model.IsSelected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                    <!-- The flag, or the globe when the record has no
+                         country; filled in code, once, from the model. -->
+                    <ContentControl x:Name="Mark"
+                                    Grid.Column="1"
+                                    Width="20"
+                                    Height="15"
+                                    VerticalAlignment="Center"
+                                    IsTabStop="False" />
+
+                    <StackPanel Grid.Column="2"
+                                Spacing="1"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="{x:Bind Model.Name, Mode=OneWay}"
+                                   FontFamily="{StaticResource BalooSemiBoldFont}"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxWidth="190" />
+                        <TextBlock Text="{x:Bind Model.Country, Mode=OneWay}"
+                                   FontFamily="{StaticResource BalooFont}"
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource CardMetaBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxWidth="210" />
+                    </StackPanel>
+
+                    <!-- The record's place in the network. -->
+                    <Border Grid.Column="3"
+                            CornerRadius="9"
+                            Padding="8,1"
+                            Background="#144BAA98"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{x:Bind Model.Meta, Mode=OneWay}"
+                                   FontFamily="{StaticResource BalooSemiBoldFont}"
+                                   FontSize="10.5"
+                                   Foreground="{StaticResource BrandPrimaryBrush}"
+                                   MaxWidth="150"
+                                   TextTrimming="CharacterEllipsis"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   LineHeight="14" />
+                    </Border>
+                </Grid>
+            </Border>
+        </Button>
+    </Grid>
+</UserControl>

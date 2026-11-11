@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.FieldLabel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DoNet.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    IsTabStop="False">
+
+    <!--
+        The small uppercase caption over a field, with its icon.
+
+        One control rather than an icon and a TextBlock repeated at every one of the
+        twenty-odd places a field is labelled. That is not only less markup: it is the
+        only way the card and the dialog are guaranteed to show the same mark for the
+        same field, which is the thing that goes wrong when the pairing lives in the
+        markup instead of in one table.
+
+        A Grid, not a StackPanel. A TextBlock in a horizontal StackPanel is measured
+        against infinite width, so CharacterEllipsis never triggers and a long caption
+        runs out of the card instead of trimming. The star column gives it a real
+        width to trim against.
+
+        The gap is the icon's margin rather than ColumnSpacing, because a Grid applies
+        spacing between columns that have collapsed to nothing as well, which would
+        indent every caption that has no icon.
+    -->
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <controls:LineIcon x:Name="Icon"
+                           Grid.Column="0"
+                           Width="12"
+                           Height="12"
+                           Margin="0,0,5,0"
+                           Visibility="Collapsed"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource FieldLabelBrush}" />
+
+        <TextBlock x:Name="Caption"
+                   Grid.Column="1"
+                   FontFamily="{StaticResource BalooFont}"
+                   FontSize="{StaticResource FieldLabelFontSize}"
+                   Foreground="{StaticResource FieldLabelBrush}"
+                   CharacterSpacing="60"
+                   TextTrimming="CharacterEllipsis"
+                   LineStackingStrategy="BlockLineHeight"
+                   LineHeight="14"
+                   VerticalAlignment="Center" />
+    </Grid>
+</UserControl>

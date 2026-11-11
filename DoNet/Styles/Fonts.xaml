@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The Google Fonts used by the design, embedded under Assets/Fonts.
+
+    The part after '#' must be the font's *family* name as recorded in its name table,
+    not the file name - "Baloo 2" and "Jersey 25" both contain a space.
+
+    Baloo 2 ships from Google as a wght variable font; Assets/Fonts/Baloo2-Regular.ttf
+    is a static wght=400 instance so XAML never has to guess which instance to load.
+
+    All three are SIL Open Font License 1.1 - see the OFL.txt files alongside them.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Logo wordmark -->
+    <FontFamily x:Key="PacificoFont">ms-appx:///Assets/Fonts/Pacifico-Regular.ttf#Pacifico</FontFamily>
+
+    <!-- Body copy, labels, field text -->
+    <FontFamily x:Key="BalooFont">ms-appx:///Assets/Fonts/Baloo2-Regular.ttf#Baloo 2</FontFamily>
+
+    <!--
+        Baloo 2 at weight 600, instanced from the same variable font.
+
+        It carries its own family name rather than declaring itself a bold member of
+        "Baloo 2". Two files claiming the same family is what made an earlier attempt
+        unusable - the loader could not tell them apart - and naming it outright means
+        the heading can never silently fall back to the regular weight.
+    -->
+    <FontFamily x:Key="BalooSemiBoldFont">ms-appx:///Assets/Fonts/Baloo2-SemiBold.ttf#Baloo 2 SemiBold</FontFamily>
+
+    <!--
+        Section headings on the content screens. Baumans is a geometric Bauhaus-derived
+        display face and is deliberately used at one size, for the screen title only.
+    -->
+    <FontFamily x:Key="BaumansFont">ms-appx:///Assets/Fonts/Baumans-Regular.ttf#Baumans</FontFamily>
+
+    <!-- Button captions -->
+    <FontFamily x:Key="JerseyFont">ms-appx:///Assets/Fonts/Jersey25-Regular.ttf#Jersey 25</FontFamily>
+
+    <!-- Type ramp .......................................................... -->
+    <x:Double x:Key="TitleFontSize">20</x:Double>
+    <x:Double x:Key="SubtitleFontSize">16</x:Double>
+    <x:Double x:Key="BodyFontSize">16</x:Double>
+    <x:Double x:Key="FieldFontSize">14</x:Double>
+    <x:Double x:Key="NoticeFontSize">12.5</x:Double>
+    <x:Double x:Key="LinkFontSize">14</x:Double>
+    <x:Double x:Key="ButtonFontSize">17</x:Double>
+
+    <!-- Directory screens: Persons, Sites, Accounts -->
+    <x:Double x:Key="SectionTitleFontSize">34</x:Double>
+    <x:Double x:Key="SectionSubtitleFontSize">14</x:Double>
+
+    <!--
+        The disc beside a section title, and the icon inside it. Shared keys rather
+        than three copies of the same numbers, because the three directory headers
+        have to stay identical and have already drifted apart once.
+
+        The icon is 28 in a 46 disc - a little over six-tenths of it. The disc grew
+        with the icon so the glyph keeps air around it instead of touching the rim,
+        and at 46 it still sits inside the 56px line box the title and subtitle make
+        together, so the header's height does not change.
+    -->
+    <x:Double x:Key="SectionDiscSize">46</x:Double>
+    <x:Double x:Key="SectionDiscIconSize">28</x:Double>
+    <CornerRadius x:Key="SectionDiscCorner">23</CornerRadius>
+    <x:Double x:Key="CardTitleFontSize">16</x:Double>
+    <x:Double x:Key="CardMetaFontSize">13</x:Double>
+    <x:Double x:Key="FieldLabelFontSize">11</x:Double>
+    <x:Double x:Key="FieldValueFontSize">14</x:Double>
+
+</ResourceDictionary>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -6,11 +6,44 @@
     <RootNamespace>DoNet</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
-    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+    <!--
+      One runtime per platform, resolved at build time: the self-contained
+      Release build needs to know which runtime to carry, and the installer
+      packages the build output directly - the folder the exe lands in is the
+      folder the setup installs.
+    -->
+    <RuntimeIdentifier Condition="'$(Platform)'=='x86'">win-x86</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(Platform)'=='x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(Platform)'=='ARM64'">win-arm64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
-    <EnableMsixTooling>true</EnableMsixTooling>
+
+    <!--
+      Unpackaged. The app ships as plain files - a setup.exe that installs into
+      Program Files - not as an MSIX. No package identity, no certificate, no
+      developer mode, no Windows policy between the recipient and the app; it
+      runs on any Windows 10 1809+ machine, offline included. Assets still
+      resolve through ms-appx because MRT Core reads them from the app's own
+      .pri, which the build drops beside the exe.
+    -->
+    <WindowsPackageType>None</WindowsPackageType>
+
+    <!-- The taskbar and window icon: with no package to carry one, the exe is
+         the icon. -->
+    <ApplicationIcon>Assets\DoNet.ico</ApplicationIcon>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!--
+    Hand-over build. A Release build carries both runtimes the app needs - the
+    .NET one and the Windows App SDK one - so the build output folder is the
+    whole app: copy it to any Windows 10 1809+ machine and the exe runs, with
+    nothing else present, no runtime downloads, no internet. The setup.exe is
+    little more than that folder with an installer wrapped around it. Debug
+    builds stay framework-dependent, which keeps the inner loop fast.
+  -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,37 +56,107 @@
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
 
+  <!--
+    Embedded fonts. Referenced from XAML as
+    "ms-appx:///Assets/Fonts/<file>#<family name>" - see Styles/Fonts.xaml.
+    All three are SIL Open Font License 1.1; the OFL.txt files ship with them to
+    satisfy the licence's attribution requirement.
+  -->
+  <ItemGroup>
+    <Content Include="Assets\Fonts\Pacifico-Regular.ttf" />
+    <Content Include="Assets\Fonts\Baloo2-Regular.ttf" />
+    <Content Include="Assets\Fonts\Baloo2-SemiBold.ttf" />
+    <Content Include="Assets\Fonts\Jersey25-Regular.ttf" />
+    <Content Include="Assets\Fonts\Baumans-Regular.ttf" />
+    <Content Include="Assets\Fonts\Pacifico-OFL.txt" />
+    <Content Include="Assets\Fonts\Baloo2-OFL.txt" />
+    <Content Include="Assets\Fonts\Jersey25-OFL.txt" />
+    <Content Include="Assets\Fonts\Baumans-OFL.txt" />
+  </ItemGroup>
+
+  <!--
+    Country flags, from the flag-icons pack by Yammadev (MIT). One file per country,
+    named by two-letter code; FlagData maps catalog names onto them. Each PNG is the
+    pack's 63x45 render, three times the 21x15 the UI draws it at, which covers 200
+    percent scaling without per-scale variants. The licence file ships alongside them
+    to satisfy MIT's attribution requirement.
+  -->
+  <ItemGroup>
+    <Content Include="Assets\Flags\**\*.png" />
+    <Content Include="Assets\Maps\**\*.png" />
+    <Content Include="Assets\Flags\LICENSE.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <!--
-    Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
-    Tools extension to be activated for this project even if the Windows App SDK Nuget
-    package has not yet been restored.
-  -->
-  <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-    <ProjectCapability Include="Msix" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+
+    <!-- Source-generated ObservableProperty / RelayCommand for the view models. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+
+    <!-- Composition root; see App.xaml.cs. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+
+    <!--
+      EF Core over SQLCipher. The .Core package is deliberate: the ordinary
+      Microsoft.EntityFrameworkCore.Sqlite package drags in bundle_e_sqlite3, whose
+      native library has no encryption and would win the reference fight against the
+      cipher build. Pairing .Core with bundle_e_sqlcipher is the supported way to get
+      an encrypted SQLite under EF.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.31" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
   </ItemGroup>
 
   <!--
-    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
-    Explorer "Package and Publish" context menu entry to be enabled for this project even if
-    the Windows App SDK Nuget package has not yet been restored.
+    Runtime tuning. These are the settings a desktop app wants and the defaults do not
+    always give it.
   -->
-  <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-    <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+  <PropertyGroup>
+    <!--
+      Workstation, concurrent GC. Server GC sizes its heaps per core and collects in
+      parallel, which suits a machine doing nothing but serving requests; in a desktop
+      app it costs memory and produces longer individual pauses. Concurrent (background)
+      collection keeps gen2 work off the thread that is drawing.
+    -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+
+    <!--
+      Dynamic PGO. The runtime watches which types and branches actually occur and
+      re-jits hot methods specialised for them - which matters here because the UI is
+      built on interface and virtual dispatch that PGO can devirtualise. On by default
+      in .NET 8; set explicitly so it survives a future default change.
+    -->
+    <TieredPGO>true</TieredPGO>
+
+    <!--
+      Static analysis. On by default for .NET 5+, stated here so it is visible. The
+      rule selection lives in .editorconfig at the repo root - a curated set where a
+      hit means a defect, rather than AnalysisMode=All and a wall of style opinions.
+
+      Analyzer findings stay warnings even under -warnaserror. A quality gate that
+      blocks a build is a gate someone turns off.
+    -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
 
   <!-- Publish Properties -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <!--
+      Trimming is off, including for Release. EF Core builds its model by reflecting
+      over entity types, and the trimmer cannot see those reference paths - it would
+      strip members the model needs and the failure would appear at runtime in a
+      packaged build, which is the worst place to discover it.
+    -->
+    <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
 </Project>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DoNet.Controls.TypeMark"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        One primary service type's tile: a 64px rounded square carrying the
+        type's gradient from the top-left corner to the bottom-right, with the
+        type's icon in white at its natural size centred inside - the colour
+        lives in the button, the icon stays white, exactly as the reference
+        draws it.
+
+        Built in code rather than XAML because the icons are data - the paths
+        come from the generated TypeMarkData sheet and each type draws a
+        different number of them (the wallet is three paths, the globe nine).
+        The icon is not scaled: the sheet keeps the source box, so the geometry
+        is never re-authored, and the 64px tile holds it at the size the
+        reference measures (roughly 16px of gradient on every side).
+    -->
+
+    <Border x:Name="Tile"
+            Width="64"
+            Height="64"
+            CornerRadius="28">
+        <Canvas x:Name="Sheet"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center" />
+    </Border>
+</UserControl>
