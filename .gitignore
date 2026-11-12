@@ -2,3 +2,12 @@ bin/
 obj/
 .vs/
 *.user
+
+AppPackages/
+*.pfx
+*.msix
+*.appx
+*.appxbundle
+*.appxupload
+*.appxsym
+*.cer
