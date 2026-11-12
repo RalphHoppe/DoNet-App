@@ -9,6 +9,7 @@ The checks a build would catch, for machines without a Windows build to hand.
   5. every C# file's braces balance, and generated files say so
   6. every framework type a file mentions has its namespace imported
   7. no XAML that WinUI's compiler would refuse: string figures, non-rect clips
+  8. no positional cancellation token in the serialiser's async calls
 
 Run from the repository root:   python3 tools/validate.py
 """
@@ -184,6 +185,26 @@ for path in XAML:
         if m.group(1) != "RectangleGeometry":
             problems.append(f"{rel}: Clip must be a RectangleGeometry, not {m.group(1)} "
                             f"(WMC0015) - UIElement.Clip accepts nothing else")
+
+# ---- 8. the serialiser's token is named, not positional ----------------------
+# SerializeAsync(stream, value, cancellationToken) does not bind the token to
+# the token parameter - it binds it to options, and the compiler answers
+# CS1503. The token must be named, or sit behind an explicit options value.
+# Written the day exactly that shipped. The comma count is honest for this
+# codebase: these calls pass plain identifiers, nothing nested.
+for path, body in cs_text.items():
+    for m in re.finditer(r'\b((?:Serialize|Deserialize)Async)(?:<[^>()]*>)?\(([^()]*)\)', body):
+        args = [a.strip() for a in m.group(2).split(',')]
+        if 'cancellationToken' not in args:
+            continue
+        index = args.index('cancellationToken')
+        needed = 3 if m.group(1) == 'SerializeAsync' else 2
+        if index < needed:
+            line = body[: m.start()].count('\n') + 1
+            problems.append(
+                f"{os.path.relpath(path, ROOT)}:{line}: {m.group(1)} - the cancellation "
+                f"token is positional at argument {index + 1}, where it would bind to "
+                f"options/typeInfo. Name it: cancellationToken: cancellationToken")
 
 print()
 if problems:

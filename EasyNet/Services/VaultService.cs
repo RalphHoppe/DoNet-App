@@ -109,7 +109,7 @@ public sealed class VaultService : IVaultService
         try
         {
             await using Stream stream = File.OpenRead(_vaultFile);
-            record = await JsonSerializer.DeserializeAsync<VaultRecord>(stream, cancellationToken)
+            record = await JsonSerializer.DeserializeAsync<VaultRecord>(stream, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception error) when (
@@ -208,7 +208,7 @@ public sealed class VaultService : IVaultService
 
         await using (Stream stream = File.Create(temporary))
         {
-            await JsonSerializer.SerializeAsync(stream, record, cancellationToken)
+            await JsonSerializer.SerializeAsync(stream, record, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
 
