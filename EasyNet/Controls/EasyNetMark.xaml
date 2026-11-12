@@ -1,0 +1,191 @@
+<UserControl
+    x:Class="EasyNet.Controls.EasyNetMark"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        Generated from new_design/easynet_animated_svgs by tools/easynet_geometry.py.
+        The geometry is the SVGs' own, verbatim; the named parts and transforms
+        exist for the animation code in EasyNetMark.xaml.cs, which mirrors the
+        SVG stylesheet's en-play entrance and en-loop cadence. Default states
+        are the settled logo: the halo and the travelling ticks are hidden, as
+        the static easynet-logo.svg shows them.
+    -->
+    <Viewbox Stretch="Uniform">
+        <Canvas x:Name="Root"
+                Width="910.0"
+                Height="790.0">
+            <Canvas.Resources>
+                <SolidColorBrush x:Key="MarkInkBrush" Color="#1D212C" />
+                <LinearGradientBrush x:Key="MarkBrandBrush"
+                                     StartPoint="1,0" EndPoint="0,1">
+                    <GradientStop Color="#FCBD2E" Offset="0" />
+                    <GradientStop Color="#F26A17" Offset="1" />
+                </LinearGradientBrush>
+                <!--
+                    The ring's gradient is painted in the art's own coordinates
+                    (the SVG's userSpaceOnUse brush), so every segment shades
+                    as part of one continuous sweep.
+                -->
+                <LinearGradientBrush x:Key="MarkRingBrush"
+                                     MappingMode="Absolute"
+                                     StartPoint="1030,200" EndPoint="240,800">
+                    <GradientStop Color="#FCBD2E" Offset="0" />
+                    <GradientStop Color="#F26A17" Offset="1" />
+                </LinearGradientBrush>
+            </Canvas.Resources>
+
+            <Canvas x:Name="Art"
+                    Canvas.Left="-180.0"
+                    Canvas.Top="-120.0">
+
+                <Ellipse x:Name="Halo"
+                         Canvas.Left="314.5"
+                         Canvas.Top="7.8"
+                         Width="679.8"
+                         Height="967.8"
+                         Opacity="0">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush>
+                            <!-- The SVG's stop-opacity .32 to 0, as colours:
+                                 XAML gradient stops carry no opacity of their
+                                 own. -->
+                            <GradientStop Color="#52F7961E" Offset="0" />
+                            <GradientStop Color="#00F7961E" Offset="1" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+
+                <Path x:Name="Slab1" Data="M359.0 525.2L357.9 525.0L357.5 523.0L357.5 412.0L358.5 409.0L358.5 397.0L359.5 394.0L359.5 387.0L360.5 384.0L361.7 374.0L366.7 354.0L374.7 332.0L381.3 319.0L381.7 317.0L387.7 306.0L396.7 292.0L400.3 288.0L405.0 280.6L416.5 267.0L430.0 253.5L449.6 237.0L468.0 224.7L483.0 217.3L485.0 215.7L503.0 207.7L528.0 199.7L553.0 194.5L558.0 194.5L561.0 193.5L566.0 193.5L570.0 192.5L787.0 192.5L789.0 192.7L790.0 193.6L791.5 197.0L790.3 202.0L784.3 213.0L775.5 224.0L730.0 270.5L719.0 278.3L711.0 282.3L703.0 285.3L692.0 287.5L611.0 287.5L608.0 288.5L596.0 288.5L593.0 289.5L590.0 289.5L576.0 292.7L560.0 298.7L550.0 303.7L530.6 317.0L521.0 325.5L506.0 341.6L466.0 394.4L443.0 422.6L439.0 428.4L435.0 432.6L426.0 444.4L421.0 449.6L414.0 459.4L396.0 481.4L391.0 486.6L364.0 520.4Z" Fill="{StaticResource MarkInkBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Slab1Shift" />
+                    </Path.RenderTransform>
+                </Path>
+                <Path x:Name="Slab2" Data="M704.0 835.3L563.0 835.5L560.0 834.5L554.0 834.5L551.0 833.5L540.0 832.3L517.0 826.3L501.0 820.3L484.0 812.3L466.0 801.3L454.6 793.0L443.0 783.5L424.5 765.0L411.0 748.4L402.7 737.0L400.7 732.0L429.0 742.3L459.0 750.3L491.0 756.5L511.0 758.7L514.3 761.0L515.7 770.0L520.7 781.0L523.5 785.0L530.0 791.5L537.0 796.3L546.0 800.3L558.0 802.5L570.0 801.3L576.0 799.3L584.0 795.3L588.0 792.5L596.5 784.0L599.0 780.5L601.0 779.5L648.0 789.5L658.0 790.5L673.0 793.5L678.0 793.5L689.0 795.5L695.0 795.5L698.0 796.5L707.0 796.5L710.0 797.5L722.0 797.5L725.0 798.5L775.0 798.5L779.0 797.5L791.0 797.5L794.0 796.5L801.0 796.5L804.0 795.5L810.0 795.5L813.0 794.5L825.0 793.5L838.0 791.2L840.0 790.0L844.0 790.5L847.2 789.0L843.0 788.5L840.0 790.0L805.0 789.5L802.0 788.5L789.0 788.5L786.0 787.5L778.0 787.5L775.0 786.5L768.0 786.5L765.0 785.5L751.0 784.5L742.0 782.5L737.0 782.5L689.0 773.3L644.0 762.3L608.0 752.3L606.7 751.0L604.3 740.0L601.3 734.0L596.5 727.0L590.4 721.0L584.0 716.7L573.0 711.7L568.0 710.5L550.0 710.7L539.0 714.7L533.0 718.7L528.0 722.5L519.0 732.3L510.0 731.5L481.0 726.3L465.0 722.3L442.0 715.3L426.0 709.3L408.0 701.3L392.0 692.3L382.6 686.0L377.7 680.0L373.7 673.0L369.7 664.0L364.7 649.0L361.5 635.0L360.5 624.0L359.5 621.0L359.5 602.0L362.7 584.0L366.7 572.0L370.7 563.0L377.7 551.0L387.0 538.6L415.0 506.4L420.5 499.0L439.0 480.5L449.0 472.7L466.0 461.7L480.0 454.7L487.0 451.7L505.0 445.7L527.0 440.7L538.0 439.5L541.0 438.5L547.0 438.5L550.0 437.5L568.0 437.9L568.3 439.0L561.3 455.0L493.7 598.0L492.5 603.0L492.5 609.0L494.7 616.0L497.5 620.0L502.0 624.5L515.4 635.0L520.6 640.0L546.4 660.0L567.6 678.0L573.4 682.0L587.0 693.3L598.0 700.3L610.0 706.3L622.0 710.3L635.0 712.5L678.0 712.5L682.0 711.5L738.0 711.5L742.0 710.5L801.0 710.5L805.0 711.7L810.0 715.5L826.0 731.5L829.0 733.5L859.0 763.5L862.0 765.5L884.0 787.5L887.5 790.0L891.0 794.5L894.0 796.5L904.0 806.5L912.3 816.0L915.5 823.0L915.3 828.0L913.0 830.3L904.0 832.5L898.0 832.5L895.0 833.5L839.0 833.5L835.0 834.5L707.0 834.5Z" Fill="{StaticResource MarkInkBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Slab2Shift" />
+                    </Path.RenderTransform>
+                </Path>
+
+                <Path x:Name="Bar1" Data="M435.0 484.4L433.9 484.0L435.5 481.0L442.0 472.3L483.0 421.3L488.0 416.1L501.0 399.3L517.2 380.0L533.0 364.2L551.0 350.5L563.0 343.5L565.0 343.1L569.0 340.5L580.0 335.5L596.0 330.5L614.0 327.3L880.0 327.3L882.0 327.5L884.5 330.0L884.5 335.0L878.5 348.0L858.9 381.0L851.5 395.0L845.5 404.0L841.8 409.0L831.7 419.0L824.0 424.5L813.0 430.5L801.0 434.5L795.0 435.7L787.0 435.7L784.0 436.7L560.0 436.7L556.0 437.7L546.0 437.7L543.0 438.7L538.0 438.7L507.0 444.9L497.0 448.5L494.0 448.9L479.0 454.9L469.0 459.9L451.0 470.9Z" Fill="{StaticResource MarkBrandBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Bar1Drift" />
+                    </Path.RenderTransform>
+                </Path>
+                <Path x:Name="Bar2" Data="M732.0 629.5L510.0 629.7L505.3 627.0L498.7 621.0L527.5 569.0L539.0 552.3L549.0 542.2L556.0 537.5L564.0 533.5L574.0 530.5L582.0 529.3L864.0 529.3L866.0 529.5L868.0 531.3L868.7 533.0L868.5 536.0L863.5 547.0L848.5 570.0L823.8 601.0L815.0 609.8L806.0 616.5L795.0 622.5L783.0 626.5L774.0 628.5L734.0 628.7Z" Fill="{StaticResource MarkBrandBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Bar2Drift" />
+                    </Path.RenderTransform>
+                </Path>
+
+                <Canvas x:Name="Ring">
+                    <Canvas.RenderTransform>
+                        <ScaleTransform x:Name="RingGrow"
+                                        CenterX="654.4" CenterY="491.7" />
+                    </Canvas.RenderTransform>
+                    <Path x:Name="RingSeg1" Data="M925.0 293.3L920.3 290.0L910.1 281.0L892.0 267.9L877.0 258.9L859.0 249.9L836.0 240.9L817.0 234.9L792.0 228.7L782.0 226.7L777.0 226.5L774.9 225.0L775.3 224.0L785.1 212.0L790.6 201.0L792.0 200.5L806.0 203.3L810.0 203.5L837.0 209.5L862.0 217.5L872.0 222.1L884.0 226.5L912.0 242.5L937.7 262.0L945.7 270.0L946.3 271.0L945.7 272.0L939.9 276.0L932.8 283.0L926.5 292.0Z" Fill="{StaticResource MarkRingBrush}" />
+                    <Path x:Name="RingSeg2" Data="M972.0 602.3L963.0 599.7L958.0 599.7L956.0 599.0L950.0 599.7L948.6 599.0L948.5 598.0L962.1 578.0L973.1 558.0L980.1 543.0L988.1 522.0L992.1 509.0L998.3 478.0L998.3 472.0L999.3 469.0L999.3 455.0L1000.3 450.0L1000.3 446.0L999.3 443.0L999.3 430.0L998.3 427.0L998.3 422.0L993.1 396.0L990.1 386.0L983.6 369.0L998.0 364.1L1005.0 360.1L1009.0 356.5L1010.0 356.6L1015.5 367.0L1024.5 392.0L1029.7 418.0L1029.7 423.0L1030.7 426.0L1030.7 439.0L1031.7 442.0L1031.7 452.0L1030.7 455.0L1030.7 469.0L1029.7 472.0L1029.7 479.0L1027.7 488.0L1027.7 492.0L1023.5 510.0L1017.5 528.0L1014.9 533.0L1012.5 540.0L1005.5 554.0L996.5 570.0L988.5 582.0L978.0 596.7Z" Fill="{StaticResource MarkRingBrush}" />
+                    <Path x:Name="RingSeg3" Data="M308.0 498.5L298.0 494.9L292.0 493.7L282.0 493.7L280.6 493.0L280.5 492.0L291.5 472.0L306.0 451.3L318.2 438.0L320.2 435.0L331.0 424.2L345.3 412.0L349.0 409.6L350.0 409.9L347.5 434.0L343.0 438.9L328.9 459.0L321.9 471.0L310.9 493.0L309.5 497.0Z" Fill="{StaticResource MarkRingBrush}" />
+                    <Path x:Name="RingSeg4" Data="M514.0 758.4L510.0 758.7L507.0 757.7L502.0 757.7L499.0 756.7L495.0 756.7L492.0 755.7L481.0 754.5L457.0 749.5L434.0 743.5L413.0 736.5L390.0 727.5L374.0 719.5L350.0 705.5L333.3 694.0L316.0 679.8L301.2 665.0L292.0 653.7L281.5 638.0L273.5 622.0L268.5 608.0L266.5 600.0L266.6 598.0L269.0 597.3L279.0 599.3L283.0 599.3L287.0 598.3L292.0 598.3L295.0 597.3L299.0 597.6L303.9 610.0L311.9 626.0L321.0 639.1L331.8 652.0L344.0 664.2L347.0 666.2L353.9 673.0L370.0 685.1L392.0 699.1L419.0 712.1L455.0 725.1L487.0 733.3L504.0 736.3L516.0 737.5L517.5 739.0L517.5 740.0L515.9 743.0L514.7 748.0L514.7 757.0Z" Fill="{StaticResource MarkRingBrush}" />
+                    <Path x:Name="RingSeg5" Data="M830.0 732.5L827.3 732.0L817.0 721.8L814.0 719.8L809.3 715.0L808.7 714.0L809.3 713.0L830.0 703.1L832.0 701.5L834.0 701.0L855.0 689.1L875.0 676.1L894.1 662.0L902.3 655.0L904.0 654.6L906.9 667.0L911.5 675.0L911.0 677.7L902.7 685.0L878.0 703.5L858.0 716.5Z" Fill="{StaticResource MarkRingBrush}" />
+                    <Path x:Name="RingSeg6" Data="M768.0 798.5L737.0 798.7L734.0 797.7L715.0 797.7L712.0 796.7L703.0 796.7L700.0 795.7L684.0 794.7L681.0 793.7L676.0 793.7L673.0 792.7L669.0 792.7L648.0 788.7L644.0 788.5L628.0 784.7L615.0 782.5L603.0 779.5L599.9 778.0L603.1 772.0L605.1 766.0L606.6 758.0L609.0 757.3L644.0 766.1L665.0 770.3L675.0 771.5L694.0 775.3L705.0 776.5L712.0 778.3L716.0 778.5L748.0 784.3L753.0 784.3L764.0 786.3L771.0 786.3L774.0 787.3L781.0 787.3L784.0 788.3L795.0 788.3L798.0 789.3L834.0 789.3L841.8 790.0L837.0 790.4L835.0 791.5L831.0 791.7L822.0 793.7L810.0 794.7L807.0 795.7L789.0 796.7L786.0 797.7L770.0 797.7Z" Fill="{StaticResource MarkRingBrush}" />
+                </Canvas>
+
+                <!--
+                    The travelling ticks: the orbit stroked twice, in dashes,
+                    clipped to the ring's own segments so the light only ever
+                    rides the visible ring - the SVG's en-ro mask, translated.
+                -->
+                <Canvas x:Name="Ticks" Opacity="0">
+                    <Canvas.Clip>
+                        <GeometryGroup>
+                            <PathGeometry Figures="M925.0 293.3L920.3 290.0L910.1 281.0L892.0 267.9L877.0 258.9L859.0 249.9L836.0 240.9L817.0 234.9L792.0 228.7L782.0 226.7L777.0 226.5L774.9 225.0L775.3 224.0L785.1 212.0L790.6 201.0L792.0 200.5L806.0 203.3L810.0 203.5L837.0 209.5L862.0 217.5L872.0 222.1L884.0 226.5L912.0 242.5L937.7 262.0L945.7 270.0L946.3 271.0L945.7 272.0L939.9 276.0L932.8 283.0L926.5 292.0Z" />
+                            <PathGeometry Figures="M972.0 602.3L963.0 599.7L958.0 599.7L956.0 599.0L950.0 599.7L948.6 599.0L948.5 598.0L962.1 578.0L973.1 558.0L980.1 543.0L988.1 522.0L992.1 509.0L998.3 478.0L998.3 472.0L999.3 469.0L999.3 455.0L1000.3 450.0L1000.3 446.0L999.3 443.0L999.3 430.0L998.3 427.0L998.3 422.0L993.1 396.0L990.1 386.0L983.6 369.0L998.0 364.1L1005.0 360.1L1009.0 356.5L1010.0 356.6L1015.5 367.0L1024.5 392.0L1029.7 418.0L1029.7 423.0L1030.7 426.0L1030.7 439.0L1031.7 442.0L1031.7 452.0L1030.7 455.0L1030.7 469.0L1029.7 472.0L1029.7 479.0L1027.7 488.0L1027.7 492.0L1023.5 510.0L1017.5 528.0L1014.9 533.0L1012.5 540.0L1005.5 554.0L996.5 570.0L988.5 582.0L978.0 596.7Z" />
+                            <PathGeometry Figures="M308.0 498.5L298.0 494.9L292.0 493.7L282.0 493.7L280.6 493.0L280.5 492.0L291.5 472.0L306.0 451.3L318.2 438.0L320.2 435.0L331.0 424.2L345.3 412.0L349.0 409.6L350.0 409.9L347.5 434.0L343.0 438.9L328.9 459.0L321.9 471.0L310.9 493.0L309.5 497.0Z" />
+                            <PathGeometry Figures="M514.0 758.4L510.0 758.7L507.0 757.7L502.0 757.7L499.0 756.7L495.0 756.7L492.0 755.7L481.0 754.5L457.0 749.5L434.0 743.5L413.0 736.5L390.0 727.5L374.0 719.5L350.0 705.5L333.3 694.0L316.0 679.8L301.2 665.0L292.0 653.7L281.5 638.0L273.5 622.0L268.5 608.0L266.5 600.0L266.6 598.0L269.0 597.3L279.0 599.3L283.0 599.3L287.0 598.3L292.0 598.3L295.0 597.3L299.0 597.6L303.9 610.0L311.9 626.0L321.0 639.1L331.8 652.0L344.0 664.2L347.0 666.2L353.9 673.0L370.0 685.1L392.0 699.1L419.0 712.1L455.0 725.1L487.0 733.3L504.0 736.3L516.0 737.5L517.5 739.0L517.5 740.0L515.9 743.0L514.7 748.0L514.7 757.0Z" />
+                            <PathGeometry Figures="M830.0 732.5L827.3 732.0L817.0 721.8L814.0 719.8L809.3 715.0L808.7 714.0L809.3 713.0L830.0 703.1L832.0 701.5L834.0 701.0L855.0 689.1L875.0 676.1L894.1 662.0L902.3 655.0L904.0 654.6L906.9 667.0L911.5 675.0L911.0 677.7L902.7 685.0L878.0 703.5L858.0 716.5Z" />
+                            <PathGeometry Figures="M768.0 798.5L737.0 798.7L734.0 797.7L715.0 797.7L712.0 796.7L703.0 796.7L700.0 795.7L684.0 794.7L681.0 793.7L676.0 793.7L673.0 792.7L669.0 792.7L648.0 788.7L644.0 788.5L628.0 784.7L615.0 782.5L603.0 779.5L599.9 778.0L603.1 772.0L605.1 766.0L606.6 758.0L609.0 757.3L644.0 766.1L665.0 770.3L675.0 771.5L694.0 775.3L705.0 776.5L712.0 778.3L716.0 778.5L748.0 784.3L753.0 784.3L764.0 786.3L771.0 786.3L774.0 787.3L781.0 787.3L784.0 788.3L795.0 788.3L798.0 789.3L834.0 789.3L841.8 790.0L837.0 790.4L835.0 791.5L831.0 791.7L822.0 793.7L810.0 794.7L807.0 795.7L789.0 796.7L786.0 797.7L770.0 797.7Z" />
+                        </GeometryGroup>
+                    </Canvas.Clip>
+                    <!--
+                        The amber tick's 0.55 opacity is baked into its
+                        stroke colour: shapes carry no stroke opacity of
+                        their own.
+                    -->
+                    <Ellipse x:Name="TickA"
+                             Canvas.Left="382.5"
+                             Canvas.Top="119.4"
+                             Width="543.8"
+                             Height="744.6"
+                             Stroke="#8CFFD37A"
+                             StrokeThickness="84.0"
+                             StrokeDashArray="5.3327,18.9068"
+                             StrokeDashOffset="5.3327">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform Angle="73.63"
+                                             CenterX="271.9" CenterY="372.3" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Ellipse x:Name="TickB"
+                             Canvas.Left="382.5"
+                             Canvas.Top="119.4"
+                             Width="543.8"
+                             Height="744.6"
+                             Stroke="#FFF6D8"
+                             StrokeThickness="84.0"
+                             StrokeDashArray="1.4544,22.7852"
+                             StrokeDashOffset="1.4544">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform Angle="73.63"
+                                             CenterX="271.9" CenterY="372.3" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                </Canvas>
+
+                <Ellipse x:Name="Node1"
+                         Canvas.Left="927.8"
+                         Canvas.Top="271.2"
+                         Width="92.0"
+                         Height="92.0"
+                         Fill="{StaticResource MarkBrandBrush}">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="Node1Grow" CenterX="46.0" CenterY="46.0" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+                <Ellipse x:Name="Node2"
+                         Canvas.Left="237.4"
+                         Canvas.Top="498.8"
+                         Width="93.6"
+                         Height="93.6"
+                         Fill="{StaticResource MarkBrandBrush}">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="Node2Grow" CenterX="46.8" CenterY="46.8" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+                <Ellipse x:Name="Node3"
+                         Canvas.Left="910.0"
+                         Canvas.Top="604.1"
+                         Width="88.2"
+                         Height="88.2"
+                         Fill="{StaticResource MarkBrandBrush}">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="Node3Grow" CenterX="44.1" CenterY="44.1" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+                <Ellipse x:Name="Node4"
+                         Canvas.Left="519.7"
+                         Canvas.Top="715.5"
+                         Width="80.8"
+                         Height="80.8"
+                         Fill="{StaticResource MarkBrandBrush}">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="Node4Grow" CenterX="40.4" CenterY="40.4" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+            </Canvas>
+        </Canvas>
+    </Viewbox>
+</UserControl>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="EasyNet.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="EasyNet">
+
+    <!--
+        No SystemBackdrop: the design is flat white edge to edge, and Mica
+        would tint it. The system title bar is removed entirely in the
+        code-behind, so the pages own the whole window and the close button
+        below is the only window chrome - the mockups show a single X at the
+        top right and nothing else.
+    -->
+    <Grid Background="{ThemeResource PaperBrush}">
+
+        <Frame x:Name="RootFrame">
+            <Frame.ContentTransitions>
+                <TransitionCollection>
+                    <!-- The platform's own quiet cross-fade between screens. -->
+                    <NavigationThemeTransition />
+                </TransitionCollection>
+            </Frame.ContentTransitions>
+        </Frame>
+
+        <!--
+            Declared to the window manager as the caption region in the
+            code-behind, which is what makes dragging, double-click maximise,
+            the right-click system menu and edge snapping work. There is
+            deliberately no PointerPressed handler: emulating a drag from one
+            is what breaks all of the above.
+        -->
+        <Grid x:Name="DragRegion"
+              Height="48"
+              VerticalAlignment="Top"
+              Background="Transparent">
+
+            <Button x:Name="CloseButton"
+                    Width="44"
+                    Height="40"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Margin="0,0,6,0"
+                    TabIndex="0"
+                    Click="OnCloseClick">
+                <Button.Resources>
+                    <!--
+                        The stock hover chrome would draw a grey plate the
+                        design never asked for; the plate below is deliberately
+                        quieter, and only on hover.
+                    -->
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F2F3F5" />
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#E9EAEE" />
+                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+                </Button.Resources>
+                <Button.Content>
+                    <!--
+                        The X is drawn rather than glyphed, so its weight matches
+                        the design's measured strokes and it cannot fall back to
+                        a missing-glyph box on any machine.
+                    -->
+                    <Canvas Width="16" Height="16">
+                        <Path Stroke="{ThemeResource CloseBrush}"
+                              StrokeThickness="1.6"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              Data="M1.5,1.5 L14.5,14.5 M14.5,1.5 L1.5,14.5" />
+                    </Canvas>
+                </Button.Content>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>
