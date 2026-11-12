@@ -25,12 +25,14 @@ Change the SVGs, run the script, commit the result.
 
 The tokens are the SVGs' own: ink `#1D212C`, line `#E2E5EB`, the brand
 gradient `#FCBD2E` to `#F26A17` top-right to bottom-left, the paper `#FFFFFF`.
-They live in `App.xaml`, named for what they are.
+They live in `App.xaml`, named for what they are. The type is Nunito - the
+design's own choice - instanced statically from Google's variable font (OFL
+1.1, licence bundled) and referenced per weight.
 
 Motion follows the SVGs' stylesheet, translated property by property: the
 splash's entrance (slabs slide, ring cascades, letters rise) then the living
-logo (light travels the ring, nodes pulse in phase, bars drift, halo
-breathes). All of it runs on transforms, opacity and dash offsets - nothing
+logo (two waves of light walk the ring's segments, nodes pulse in phase, bars
+drift, halo breathes). All of it runs on transforms, opacity and dash offsets - nothing
 animates layout - and none of it runs when the system says animations are off.
 
 ## The layout of the code

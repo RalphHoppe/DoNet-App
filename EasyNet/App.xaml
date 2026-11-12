@@ -50,14 +50,15 @@
             </LinearGradientBrush>
 
             <!--
-                The UI's type. The wordmark is drawn, not typeset, so this only
-                ever speaks for sentences - and the system face is the right one
-                for those: it is present everywhere, it renders fast, and it
-                never ships a fallback box. Variable falls back to plain on
-                Windows 10 by family name.
+                The UI's type: Nunito, the design's own choice. The wordmark is
+                drawn, not typeset, so this only ever speaks for sentences.
+                Each weight is its own instanced file, referenced by its own
+                resource, so a FontWeight in XAML always means the face that
+                file already is - nothing is synthesised, nothing falls back.
             -->
-            <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
-            <FontFamily x:Key="TextFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+            <FontFamily x:Key="DisplayFont">ms-appx:///Assets/Fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="TextFont">ms-appx:///Assets/Fonts/Nunito-Regular.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="BoldFont">ms-appx:///Assets/Fonts/Nunito-Bold.ttf#Nunito</FontFamily>
 
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
         </ResourceDictionary>

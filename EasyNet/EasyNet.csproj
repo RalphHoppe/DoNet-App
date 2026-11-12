@@ -48,6 +48,19 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
 
+  <!--
+    Nunito, the design's own face, from Google's fonts repository (OFL 1.1 -
+    the licence file ships beside the fonts to satisfy its attribution
+    requirement). Referenced from XAML as
+    "ms-appx:///Assets/Fonts/<file>#Nunito" through the resources in App.xaml.
+    The weights are instanced statically from the variable font, so what
+    renders is exactly the weight asked for on every machine.
+  -->
+  <ItemGroup>
+    <Content Include="Assets\Fonts\*.ttf" />
+    <Content Include="Assets\Fonts\OFL.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>

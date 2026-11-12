@@ -8,6 +8,7 @@ The checks a build would catch, for machines without a Windows build to hand.
   4. every x:Bind ViewModel.<member> resolves against the real view model
   5. every C# file's braces balance, and generated files say so
   6. every framework type a file mentions has its namespace imported
+  7. no XAML that WinUI's compiler would refuse: string figures, non-rect clips
 
 Run from the repository root:   python3 tools/validate.py
 """
@@ -166,6 +167,23 @@ for path, body in cs_text.items():
             problems.append(
                 f"{os.path.relpath(path, ROOT)}: mentions '{token}' "
                 f"but imports none of the namespaces that carry it")
+
+# ---- 7. XAML the compiler would refuse ----------------------------------------
+# Written the day a clipped canvas shipped: UIElement.Clip is RectangleGeometry
+# only, and PathGeometry.Figures takes no path-string - both WMC errors that
+# only a Windows build reports. Check 1 proves the files parse; this proves
+# they would compile.
+for path in XAML:
+    src = open(path, encoding="utf-8-sig").read()
+    rel = os.path.relpath(path, ROOT)
+    for m in re.finditer(r'Figures="([^"]*)"', src):
+        if m.group(1).lstrip().startswith(("M", "m", "F", "f")):
+            problems.append(f"{rel}: PathGeometry.Figures cannot take a path string "
+                            f"(WMC0055) - use Path.Data, or element-syntax figures")
+    for m in re.finditer(r'\.Clip>\s*<(\w+)', src):
+        if m.group(1) != "RectangleGeometry":
+            problems.append(f"{rel}: Clip must be a RectangleGeometry, not {m.group(1)} "
+                            f"(WMC0015) - UIElement.Clip accepts nothing else")
 
 print()
 if problems:

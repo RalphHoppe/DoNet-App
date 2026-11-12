@@ -33,17 +33,20 @@ public enum MarkMode
 /// EasyNetMark.geometry.cs, generated from the SVGs.
 /// </para>
 /// <para>
-/// The one deliberate departure: the SVG reveals its ring through an animated
-/// mask that sweeps the ellipse, which XAML cannot do without animating a
-/// geometry. The ring's five segments arrive in a staggered cascade instead -
-/// the same half-second window, the same ease, the same arrival-before-the-
-/// nodes order, read as a sweep.
-/// </para>
+/// Two deliberate departures, both forced by what XAML can animate: the SVG
+/// reveals its ring through a mask that sweeps the ellipse, so the ring's
+/// six segments arrive in a staggered cascade instead - the same window,
+/// the same ease, the same arrival-before-the-nodes order, read as a sweep;
+/// and the SVG's travelling light is a dash riding the whole orbit behind
+/// that mask, so the light here is a pair of shine waves walking the
+/// segments themselves - a broad amber one and a brief cream one, half a
+/// cycle apart, visiting the segments in the orbit's own order.
+///</para>
 /// <para>
-/// Everything runs on the composition-friendly properties - transforms,
-/// opacity, dash offsets - so the loops cost no layout and no CPU beyond the
-/// ticking clock. When the system says animations are off, none of this runs:
-/// the settled logo the XAML declares is what shows.
+/// Everything runs on the composition-friendly properties - transforms and
+/// opacity - so the loops cost no layout and no CPU beyond the ticking
+/// clock. When the system says animations are off, none of this runs: the
+/// settled logo the XAML declares is what shows.
 ///</para>
 ///</remarks>
 public sealed partial class EasyNetMark : UserControl
@@ -139,7 +142,7 @@ public sealed partial class EasyNetMark : UserControl
         foreach (UIElement part in new UIElement[]
                  {
                      Slab1, Slab2, Bar1, Bar2, Halo,
-                     RingSeg1, RingSeg2, RingSeg3, RingSeg4, RingSeg5,
+                     RingSeg1, RingSeg2, RingSeg3, RingSeg4, RingSeg5, RingSeg6,
                      Node1, Node2, Node3, Node4,
                  })
         {
@@ -154,14 +157,14 @@ public sealed partial class EasyNetMark : UserControl
         SlideIn(board, Bar2, Bar2Drift, fromX: 170, fromY: 0, delay: 0.52);
 
         // The ring: the whole orbit settles from a breath smaller while its
-        // five segments cascade in - a half-second window starting at the
+        // six segments cascade in - a half-second window starting at the
         // stylesheet's own 0.6s mark, which is when its mask began to sweep.
         RingGrow.ScaleX = 0.965;
         RingGrow.ScaleY = 0.965;
         Add(board, Anim(0.965, 1, Seconds(0.9), QuintOut()), RingGrow, "ScaleX", delay: 0.6);
         Add(board, Anim(0.965, 1, Seconds(0.9), QuintOut()), RingGrow, "ScaleY", delay: 0.6);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < SegmentPhases.Length; i++)
         {
             Add(board, Anim(0, 1, Seconds(0.45), QuintOut()), RingSegment(i), "Opacity",
                 delay: 0.60 + (0.12 * i));
@@ -224,26 +227,27 @@ public sealed partial class EasyNetMark : UserControl
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// The living logo: light travels the ring in two rhythms, the nodes
+    /// The living logo: two waves of light walk the ring's segments - a broad
+    /// amber one and a brief cream one, half a cycle apart - while the nodes
     /// pulse in their own phases, the bars drift a breath to the right and
-    /// back, and the halo breathes - all on the stylesheet's period.
+    /// back, and the halo breathes, all on the stylesheet's period.
     /// </summary>
     private Storyboard BuildLoop()
     {
         Storyboard board = new();
 
-        // The travelling ticks arrive with the loop and stay for good.
-        Add(board, Anim(0, 1, Seconds(0.5), QuintOut()), Ticks, "Opacity", delay: 0);
+        for (int i = 0; i < SegmentPhases.Length; i++)
+        {
+            double phase = SegmentPhases[i] * LoopPeriodSeconds;
 
-        Duration period = Seconds(LoopPeriodSeconds);
+            // The amber wave: broad and soft, like the design's long arc.
+            ShineWave(board, ShineA(i), LoopPeriodSeconds, phase,
+                peak: 0.50, rise: 0.10, fall: 0.55);
 
-        DoubleAnimation tickA = Anim(TickAOffsetFrom, TickAOffsetTo, period, ease: null);
-        tickA.RepeatBehavior = RepeatBehavior.Forever;
-        Add(board, tickA, TickA, "StrokeDashOffset", delay: 0);
-
-        DoubleAnimation tickB = Anim(TickBOffsetFrom, TickBOffsetTo, period, ease: null);
-        tickB.RepeatBehavior = RepeatBehavior.Forever;
-        Add(board, tickB, TickB, "StrokeDashOffset", delay: 0);
+            // The cream wave: a brief glint, half a cycle behind the amber.
+            ShineWave(board, ShineB(i), LoopPeriodSeconds, phase + (LoopPeriodSeconds / 2),
+                peak: 0.35, rise: 0.05, fall: 0.25);
+        }
 
         // The nodes' pulses: up to 1.35 by the period's own 5%, settled again
         // by 18%, each offset by its phase so the ring never pulses as one.
@@ -266,6 +270,49 @@ public sealed partial class EasyNetMark : UserControl
         Breathe(board, delay: 0);
 
         return board;
+    }
+
+    /// <summary>
+    /// One wave of light over one segment: nothing, up to its peak, and away -
+    /// repeated every period, so the wave walks the ring segment by segment.
+    /// </summary>
+    /// <remarks>
+    /// The rise and fall are clipped to the period's end rather than allowed
+    /// to spill past it; a segment near the cycle's seam gets a shorter fall
+    /// rather than a broken one.
+    /// </remarks>
+    private static void ShineWave(
+        Storyboard board,
+        UIElement shine,
+        double periodSeconds,
+        double phase,
+        double peak,
+        double rise,
+        double fall)
+    {
+        double start = phase % periodSeconds;
+
+        if (start + rise >= periodSeconds)
+        {
+            // The wave's moment fell exactly on the seam; it simply does not
+            // show this cycle rather than showing half of one.
+            return;
+        }
+
+        fall = Math.Min(fall, periodSeconds - start - rise);
+
+        var wave = new DoubleAnimationUsingKeyFrames
+        {
+            Duration = Seconds(periodSeconds),
+            RepeatBehavior = RepeatBehavior.Forever,
+        };
+
+        wave.KeyFrames.Add(Linear(start, 0));
+        wave.KeyFrames.Add(Spline(start + rise, peak, 0.16, 1.0, 0.3, 1.0));
+        wave.KeyFrames.Add(Spline(start + rise + fall, 0, 0.3, 0.0, 0.4, 1.0));
+        wave.KeyFrames.Add(Linear(periodSeconds, 0));
+
+        Add(board, wave, shine, "Opacity", delay: 0);
     }
 
     /// <summary>One node's pulse, as scale keyframes over one whole period.</summary>
@@ -353,6 +400,14 @@ public sealed partial class EasyNetMark : UserControl
             },
         };
 
+    /// <summary>A hold-until keyframe: the wave's quiet before and after.</summary>
+    private static LinearDoubleKeyFrame Linear(double keySeconds, double value) =>
+        new()
+        {
+            KeyTime = TimeSpan.FromSeconds(keySeconds),
+            Value = value,
+        };
+
     private static void Add(
         Storyboard board, Timeline animation, DependencyObject target, string property, double delay)
     {
@@ -368,7 +423,28 @@ public sealed partial class EasyNetMark : UserControl
         1 => RingSeg2,
         2 => RingSeg3,
         3 => RingSeg4,
-        _ => RingSeg5,
+        4 => RingSeg5,
+        _ => RingSeg6,
+    };
+
+    private UIElement ShineA(int index) => index switch
+    {
+        0 => ShineA1,
+        1 => ShineA2,
+        2 => ShineA3,
+        3 => ShineA4,
+        4 => ShineA5,
+        _ => ShineA6,
+    };
+
+    private UIElement ShineB(int index) => index switch
+    {
+        0 => ShineB1,
+        1 => ShineB2,
+        2 => ShineB3,
+        3 => ShineB4,
+        4 => ShineB5,
+        _ => ShineB6,
     };
 
     private UIElement NodeElement(int index) => index switch

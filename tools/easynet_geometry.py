@@ -67,31 +67,35 @@ ell = re.search(
     r'rx="([\d.]+)" ry="([\d.]+)" transform="rotate\(([\d.-]+)', src)
 ell_cx, ell_cy, ell_rx, ell_ry, ell_rot = (float(g) for g in ell.groups())
 
+
+def orbit_angle(data):
+    """A segment's place around the orbit, as its parametric angle.
+
+    The shine wave visits the segments in the order the SVG's own travelling
+    light moves: along the ellipse's own direction. The segment's centroid,
+    un-rotated into the ellipse's frame, gives that as one atan2.
+    """
+    pts = path_coords(data)
+    px = sum(point[0] for point in pts) / len(pts)
+    py = sum(point[1] for point in pts) / len(pts)
+    angle = math.radians(-ell_rot)
+    dx = px - ell_cx
+    dy = py - ell_cy
+    return math.atan2(
+        ((dx * math.sin(angle)) + (dy * math.cos(angle))) / ell_ry,
+        ((dx * math.cos(angle)) - (dy * math.sin(angle))) / ell_rx) % (2 * math.pi)
+
+
+# The segments, walked in the orbit's own order - which is the order the
+# generated RingSeg names and the shine wave both follow.
+ring_segments.sort(key=orbit_angle)
+segment_phases = [orbit_angle(d) / (2 * math.pi) for d in ring_segments]
+
 halo = re.search(r'<ellipse class="en-halo" cx="([\d.]+)" cy="([\d.]+)" '
                  r'rx="([\d.]+)" ry="([\d.]+)"', read("easynet-splash.svg"))
 halo_cx, halo_cy, halo_rx, halo_ry = (float(g) for g in halo.groups())
 
 letters = re.findall(r'<path class="en-ch (en-ink|en-or)" style="--i:(\d+)" d="([^"]+)"', src)
-
-# ---- the travelling ticks' dash math ---------------------------------------
-#
-# The SVG normalises the orbit with pathLength=100 and speaks in percents;
-# XAML dash arrays are multiples of the stroke thickness. One perimeter,
-# computed once, converts between the two.
-
-perimeter = math.pi * (3 * (ell_rx + ell_ry)
-                       - math.sqrt((3 * ell_rx + ell_ry) * (ell_rx + 3 * ell_ry)))
-stroke = 84.0
-
-
-def dash(fraction):
-    return round(fraction * perimeter / stroke, 4)
-
-
-tick_a_dash, tick_a_gap = dash(0.22), dash(0.78)
-tick_b_dash, tick_b_gap = dash(0.06), dash(0.94)
-tick_a_from, tick_a_to = dash(0.22), -dash(0.78)
-tick_b_from, tick_b_to = dash(0.06), -dash(0.94)
 
 # ---- the mark canvas -------------------------------------------------------
 # The loader-icon variant's viewBox frames the mark alone; the wordmark gets
@@ -128,8 +132,9 @@ mark_xaml = f'''<UserControl
         The geometry is the SVGs' own, verbatim; the named parts and transforms
         exist for the animation code in EasyNetMark.xaml.cs, which mirrors the
         SVG stylesheet's en-play entrance and en-loop cadence. Default states
-        are the settled logo: the halo and the travelling ticks are hidden, as
-        the static easynet-logo.svg shows them.
+        are the settled logo: the halo and the ring's shine are hidden, as the
+        static easynet-logo.svg shows them. The RingSeg and Shine names run in
+        the orbit's own order, which is the order the light walks them in.
     -->
     <Viewbox Stretch="Uniform">
         <Canvas x:Name="Root"
@@ -188,51 +193,9 @@ mark_xaml = f'''<UserControl
 {chr(10).join(f'                    <Path x:Name="RingSeg{index}" Data="{esc(d)}" Fill="{{StaticResource MarkRingBrush}}" />' for index, d in enumerate(ring_segments, 1))}
                 </Canvas>
 
-                <!--
-                    The travelling ticks: the orbit stroked twice, in dashes,
-                    clipped to the ring's own segments so the light only ever
-                    rides the visible ring - the SVG's en-ro mask, translated.
-                -->
-                <Canvas x:Name="Ticks" Opacity="0">
-                    <Canvas.Clip>
-                        <GeometryGroup>
-{chr(10).join(f'                            <PathGeometry Figures="{esc(d)}" />' for d in ring_segments)}
-                        </GeometryGroup>
-                    </Canvas.Clip>
-                    <!--
-                        The amber tick's 0.55 opacity is baked into its
-                        stroke colour: shapes carry no stroke opacity of
-                        their own.
-                    -->
-                    <Ellipse x:Name="TickA"
-                             Canvas.Left="{round(ell_cx - ell_rx, 1)}"
-                             Canvas.Top="{round(ell_cy - ell_ry, 1)}"
-                             Width="{round(ell_rx * 2, 1)}"
-                             Height="{round(ell_ry * 2, 1)}"
-                             Stroke="#8CFFD37A"
-                             StrokeThickness="{stroke}"
-                             StrokeDashArray="{tick_a_dash},{tick_a_gap}"
-                             StrokeDashOffset="{tick_a_from}">
-                        <Ellipse.RenderTransform>
-                            <RotateTransform Angle="{ell_rot}"
-                                             CenterX="{ell_rx}" CenterY="{ell_ry}" />
-                        </Ellipse.RenderTransform>
-                    </Ellipse>
-                    <Ellipse x:Name="TickB"
-                             Canvas.Left="{round(ell_cx - ell_rx, 1)}"
-                             Canvas.Top="{round(ell_cy - ell_ry, 1)}"
-                             Width="{round(ell_rx * 2, 1)}"
-                             Height="{round(ell_ry * 2, 1)}"
-                             Stroke="{TICK_B_COLOUR}"
-                             StrokeThickness="{stroke}"
-                             StrokeDashArray="{tick_b_dash},{tick_b_gap}"
-                             StrokeDashOffset="{tick_b_from}">
-                        <Ellipse.RenderTransform>
-                            <RotateTransform Angle="{ell_rot}"
-                                             CenterX="{ell_rx}" CenterY="{ell_ry}" />
-                        </Ellipse.RenderTransform>
-                    </Ellipse>
-                </Canvas>
+{chr(10).join(f'                <Path x:Name="ShineA{index}"' + chr(10) + f'                      Data="{esc(d)}"' + chr(10) + '                      Fill="#FFD37A"' + chr(10) + '                      Opacity="0" />' for index, d in enumerate(ring_segments, 1))}
+
+{chr(10).join(f'                <Path x:Name="ShineB{index}"' + chr(10) + f'                      Data="{esc(d)}"' + chr(10) + '                      Fill="#FFF6D8"' + chr(10) + '                      Opacity="0" />' for index, d in enumerate(ring_segments, 1))}
 
 {chr(10).join(f'                <Ellipse x:Name="Node{index}"' + chr(10) + f'                         Canvas.Left="{round(float(cx) - float(r), 1)}"' + chr(10) + f'                         Canvas.Top="{round(float(cy) - float(r), 1)}"' + chr(10) + f'                         Width="{round(float(r) * 2, 1)}"' + chr(10) + f'                         Height="{round(float(r) * 2, 1)}"' + chr(10) + '                         Fill="{StaticResource MarkBrandBrush}">' + chr(10) + '                    <Ellipse.RenderTransform>' + chr(10) + f'                        <ScaleTransform x:Name="Node{index}Grow" CenterX="{float(r)}" CenterY="{float(r)}" />' + chr(10) + '                    </Ellipse.RenderTransform>' + chr(10) + '                </Ellipse>' for index, (_, _, cx, cy, r) in enumerate(nodes, 1))}
             </Canvas>
@@ -246,12 +209,14 @@ mark_xaml = f'''<UserControl
 # --------------------------------------------------------------------------- #
 node_phases = ", ".join(f"{n[0]}" for n in nodes)
 node_delays = ", ".join(f"{n[1]}" for n in nodes)
+segment_list = ", ".join(f"{p:.4f}" for p in segment_phases)
 
 mark_geometry = f'''// <auto-generated>
 // Generated from new_design/easynet_animated_svgs by tools/easynet_geometry.py.
 // The SVG stylesheet's own numbers: loop period (--T), the splash's loop
-// delay (--ld), each node's pulse phase (--f) and pop delay (--d), and the
-// ticks' dash offsets in XAML's units (multiples of the stroke thickness).
+// delay (--ld), and each node's pulse phase (--f) and pop delay (--d). The
+// ring segments' own places around the orbit are here too: the shine wave
+// walks them in that order.
 // </autogenerated>
 namespace EasyNet.Controls;
 
@@ -269,17 +234,11 @@ public sealed partial class EasyNetMark
     /// <summary>Pop delays for the nodes' entrance, in seconds -- the SVG's --d.</summary>
     internal static readonly double[] NodePopDelays = {{ {node_delays} }};
 
-    /// <summary>The amber tick's dash offset, from and to, over one period.</summary>
-    internal const double TickAOffsetFrom = {tick_a_from};
-
-    /// <summary>See <see cref="TickAOffsetFrom"/>.</summary>
-    internal const double TickAOffsetTo = {tick_a_to};
-
-    /// <summary>The cream tick's dash offset, from and to, over one period.</summary>
-    internal const double TickBOffsetFrom = {tick_b_from};
-
-    /// <summary>See <see cref="TickBOffsetFrom"/>.</summary>
-    internal const double TickBOffsetTo = {tick_b_to};
+    /// <summary>
+    /// Each ring segment's place around the orbit, as a fraction of one loop
+    /// - the shine wave visits them in this order.
+    /// </summary>
+    internal static readonly double[] SegmentPhases = {{ {segment_list} }};
 }}
 '''
 
@@ -371,5 +330,4 @@ for path, text in [
         handle.write(text)
     print(f"wrote {os.path.relpath(path, ROOT)}")
 
-print(f"orbit perimeter {perimeter:.1f} units; "
-      f"ticks {tick_a_dash}/{tick_a_gap} and {tick_b_dash}/{tick_b_gap} thicknesses")
+print(f"ring segments in orbit order at phases {['%.2f' % p for p in segment_phases]}")
