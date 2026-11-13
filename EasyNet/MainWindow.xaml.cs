@@ -25,16 +25,16 @@ public sealed partial class MainWindow : Window
     // The design's window: a comfortable desktop opening - the small thing
     // on screen is the card each entry screen centres, not the window, so
     // the window simply gives that card room.
-    private const int DesignWidth = 900;
-    private const int DesignHeight = 640;
+    private const int DesignWidth = 800;
+    private const int DesignHeight = 540;
 
     // ...but never edge to edge.
     private const double MaxWorkAreaFraction = 0.92;
 
     // The smallest window the card still breathes in: its narrow posture
     // plus the page's breathing margin either side.
-    private const int MinimumWidth = 520;
-    private const int MinimumHeight = 560;
+    private const int MinimumWidth = 740;
+    private const int MinimumHeight = 480;
 
     // Resize-border metrics, for keeping the window's grab edges out of the caption.
     private const int SmCxSizeFrame = 32;

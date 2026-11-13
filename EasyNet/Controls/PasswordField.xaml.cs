@@ -17,6 +17,11 @@ namespace EasyNet.Controls;
 ///</remarks>
 public sealed partial class PasswordField : UserControl
 {
+    /// <summary>Identifies the <see cref="Label"/> property.</summary>
+    public static readonly DependencyProperty LabelProperty = DependencyProperty.Register(
+        nameof(Label), typeof(string), typeof(PasswordField),
+        new PropertyMetadata(string.Empty));
+
     /// <summary>Identifies the <see cref="Placeholder"/> property.</summary>
     public static readonly DependencyProperty PlaceholderProperty = DependencyProperty.Register(
         nameof(Placeholder), typeof(string), typeof(PasswordField),
@@ -25,6 +30,13 @@ public sealed partial class PasswordField : UserControl
     public PasswordField()
     {
         InitializeComponent();
+    }
+
+    /// <summary>The line above the pill, e.g. "Password".</summary>
+    public string Label
+    {
+        get => (string)GetValue(LabelProperty);
+        set => SetValue(LabelProperty, value);
     }
 
     /// <summary>The word shown when nothing has been typed, e.g. "Enter your password".</summary>
@@ -44,8 +56,8 @@ public sealed partial class PasswordField : UserControl
     public event EventHandler? Submitted;
 
     /// <summary>
-    /// Turns the padlock red, or back. The word's own judgement lives in the
-    /// page; this only says how it looks.
+    /// Turns the field's edges to ink, or back. The word's own judgement
+    /// lives in the page; this only says how it looks.
     /// </summary>
     public void SetValidity(bool valid) =>
         _ = VisualStateManager.GoToState(this, valid ? "Valid" : "Invalid", useTransitions: true);

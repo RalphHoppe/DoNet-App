@@ -59,6 +59,7 @@
   <ItemGroup>
     <Content Include="Assets\Fonts\*.ttf" />
     <Content Include="Assets\Fonts\OFL.txt" />
+    <Content Include="Assets\Shadows\*.png" />
   </ItemGroup>
 
   <ItemGroup>

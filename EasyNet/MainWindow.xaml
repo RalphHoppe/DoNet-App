@@ -9,8 +9,10 @@
         No SystemBackdrop: the design is flat white edge to edge, and Mica
         would tint it. The system title bar is removed entirely in the
         code-behind, so the pages own the whole window and the close button
-        below is the only window chrome - the mockups show a single X at the
-        top right and nothing else.
+        below is the only window chrome - the design shows a single round
+        X at the top right and nothing else. The window opens at a
+        comfortable desktop size and can shrink to the composition plus
+        its margins; below that there is nothing left to show.
     -->
     <Grid Background="{ThemeResource PageBrush}">
 
@@ -36,29 +38,23 @@
               Background="Transparent">
 
             <!--
-                The window's X: the glass language in the round - glassy frame,
-                white core, the design's own X icon inside it.
+                The window's X: the design's own round, 32 px across, 16 px
+                from the corner, with the drawn X inside - weight exact, no
+                glyph fallback on any machine.
             -->
             <Button x:Name="CloseButton"
-                    Width="38"
-                    Height="38"
-                    Padding="0"
+                    Width="32"
+                    Height="32"
                     HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Margin="0,0,10,0"
-                    TabIndex="0"
-                    Style="{StaticResource GlassButtonStyle}"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,16,0"
+                    Style="{StaticResource CloseButtonStyle}"
                     Click="OnCloseClick">
-                <!--
-                    The X is the design's own vector, drawn rather than
-                    glyphed, so its weight is exact and it cannot fall back to
-                    a missing-glyph box on any machine.
-                -->
-                <Path Stretch="Uniform"
-                      Width="12"
-                      Height="12"
+                <Path Width="10.6"
+                      Height="10.6"
+                      Stretch="None"
                       Fill="{ThemeResource CloseBrush}"
-                      Data="M10.2991 1.57893C10.6603 1.21773 10.6603 0.632102 10.2991 0.270901C9.93789 -0.0903004 9.35227 -0.0903004 8.99106 0.270901L5.285 3.97697L1.57894 0.270901C1.21774 -0.0902995 0.632113 -0.0902999 0.270912 0.270901C-0.0902888 0.632103 -0.0902885 1.21773 0.270912 1.57893L3.97698 5.28499L0.270901 8.99107C-0.0903 9.35227 -0.0903004 9.9379 0.270901 10.2991C0.632102 10.6603 1.21772 10.6603 1.57893 10.2991L5.285 6.59302L8.99108 10.2991C9.35228 10.6603 9.9379 10.6603 10.2991 10.2991C10.6603 9.9379 10.6603 9.35227 10.2991 8.99107L6.59302 5.28499L10.2991 1.57893Z" />
+                      Data="M10.3 1.58C10.66 1.22 10.66 0.63 10.3 0.27C9.94 -0.09 9.35 -0.09 8.99 0.27L5.28 3.98L1.58 0.27C1.22 -0.09 0.63 -0.09 0.27 0.27C-0.09 0.63 -0.09 1.22 0.27 1.58L3.98 5.28L0.27 8.99C-0.09 9.35 -0.09 9.94 0.27 10.3C0.63 10.66 1.22 10.66 1.58 10.3L5.28 6.59L8.99 10.3C9.35 10.66 9.94 10.66 10.3 10.3C10.66 9.94 10.66 9.35 10.3 8.99L6.59 5.28L10.3 1.58Z" />
             </Button>
         </Grid>
     </Grid>

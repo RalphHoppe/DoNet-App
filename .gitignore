@@ -12,3 +12,4 @@ AppPackages/
 *.appxsym
 *.cer
 *.review.png
+__pycache__/
