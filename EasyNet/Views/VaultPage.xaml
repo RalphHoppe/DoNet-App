@@ -34,7 +34,7 @@
 
                 <TextBlock Margin="0,6,0,0"
                            HorizontalAlignment="Center"
-                           FontFamily="{StaticResource LightFont}"
+                           FontFamily="{StaticResource TextFont}"
                            FontSize="14"
                            Foreground="{ThemeResource InkSoftBrush}"
                            Text="The vault's screens are waiting on their designs." />

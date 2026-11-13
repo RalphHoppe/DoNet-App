@@ -60,6 +60,7 @@
     <Content Include="Assets\Fonts\*.ttf" />
     <Content Include="Assets\Fonts\OFL.txt" />
     <Content Include="Assets\Shadows\*.png" />
+    <Content Include="Assets\Brand\*.png" />
   </ItemGroup>
 
   <ItemGroup>

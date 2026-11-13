@@ -3,21 +3,22 @@ using System.Numerics;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Hosting;
-using Microsoft.UI.Xaml.Media;
 
 namespace EasyNet.Controls;
 
 /// <summary>
-/// The design's one shadow recipe, measured from its SVG: every floating
-/// piece casts its own shape shrunk by 8 px, moved 10 px down, blurred
-/// softly, in plain black at 7.84% - a whisper of depth, not a statement.
+/// The design's one shadow recipe, from its handoff: every floating piece
+/// casts its own shape shrunk by 8 px (a spread of -8), moved 10 px down,
+/// blurred softly, in plain black at 7.84% - a whisper of depth, not a
+/// statement.
 /// </summary>
 /// <remarks>
 /// The shrunken shape lives as a small white-on-transparent PNG under
 /// Assets/Shadows (one per piece geometry). Set the attached property on a
 /// transparent layer element placed behind the piece, and the layer grows
-/// a composition drop shadow shaped by that mask. The composition is fixed
-/// size - the design never scales - so the mask's aspect always matches.
+/// a composition drop shadow shaped by that mask. The mask stretches with
+/// the piece, so a filling pill keeps its shadow as the window resizes;
+/// size changes simply re-cast it.
 /// </remarks>
 public sealed class PieceShadow
 {
@@ -32,22 +33,21 @@ public sealed class PieceShadow
     public static void SetMask(FrameworkElement element, string value) => element.SetValue(MaskProperty, value);
 
     // The measured recipe, in the design's own pixels.
-    private const double Erode = 8;       // the shape shrinks 8 px before it is cast
-    private const double OffsetY = 10;    // and falls 10 px down
-    private const double Blur = 30;       // resvg's 12-sigma gaussian, in blur radius
+    private const double Erode = 8;             // the shape shrinks 8 px before it is cast
+    private const double OffsetY = 10;          // and falls 10 px down
+    private const double Blur = 24;             // the handoff's blur radius
     private const float ShadowOpacity = 0.0784f; // black at 7.84%
 
     private static void OnMaskChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var element = (FrameworkElement)d;
+        element.Loaded -= OnElementLoaded;
+        element.Loaded += OnElementLoaded;
+        element.SizeChanged -= OnElementSizeChanged;
+        element.SizeChanged += OnElementSizeChanged;
         if (element.IsLoaded)
         {
             Attach(element);
-        }
-        else
-        {
-            element.Loaded -= OnElementLoaded;
-            element.Loaded += OnElementLoaded;
         }
     }
 
@@ -57,6 +57,9 @@ public sealed class PieceShadow
         element.Loaded -= OnElementLoaded;
         Attach(element);
     }
+
+    private static void OnElementSizeChanged(object sender, SizeChangedEventArgs e) =>
+        Attach((FrameworkElement)sender);
 
     private static void Attach(FrameworkElement element)
     {
@@ -70,7 +73,7 @@ public sealed class PieceShadow
         double height = element.ActualHeight;
         if (width <= Erode * 2 || height <= Erode * 2)
         {
-            return; // not measured, or too small to hold the shadow
+            return; // not measured yet, or too small to hold the shadow
         }
 
         Visual visual = ElementCompositionPreview.GetElementVisual(element);
@@ -91,7 +94,7 @@ public sealed class PieceShadow
 
         var sprite = compositor.CreateSpriteVisual();
         sprite.Size = new Vector2((float)(width - Erode * 2), (float)(height - Erode * 2));
-        sprite.Offset = new Vector3((float)Erode, (float)(Erode + OffsetY), 0);
+        sprite.Offset = new Vector3((float)Erode, (float)Erode, 0);
         sprite.Shadow = shadow;
 
         ElementCompositionPreview.SetElementChildVisual(element, sprite);

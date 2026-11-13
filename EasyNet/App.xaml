@@ -12,13 +12,11 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!--
-                The design's tokens, every one measured from its SVG. The page
-                is plain white; the interactive pieces are white at four
-                fifths, edged in a grey so quiet it only says "here is an
-                edge", and each is lifted by the one shadow recipe (see
-                PieceShadow). The inks are a four-step scale: strong for
-                headings, ink for labels and actions, the X's own near-ink,
-                and soft for everything secondary.
+                The design's tokens, from its handoff. The page is plain
+                white; the interactive pieces are white at four fifths,
+                each wearing an inset ring of a grey so quiet it only says
+                "here is an edge", and each lifted by the one shadow recipe
+                (see PieceShadow). The inks are a four-step scale.
             -->
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
@@ -47,12 +45,11 @@
 
             <!--
                 Nunito, per weight, each loaded from its own file so the
-                weight never depends on a matcher. The design's type scale,
-                measured from its outlined text: headings ExtraBold 25,
-                supporting lines Light 14, labels Bold 14, the word and
-                buttons Regular/Bold 15.
+                weight never depends on a matcher. The design's measured
+                type scale: headings ExtraBold 25/32, supporting lines
+                Regular 14/20, labels Bold 14/20, the word and buttons
+                Regular/Bold 15.
             -->
-            <FontFamily x:Key="LightFont">ms-appx:///Assets/Fonts/Nunito-Light.ttf#Nunito</FontFamily>
             <FontFamily x:Key="TextFont">ms-appx:///Assets/Fonts/Nunito-Regular.ttf#Nunito</FontFamily>
             <FontFamily x:Key="BoldFont">ms-appx:///Assets/Fonts/Nunito-Bold.ttf#Nunito</FontFamily>
             <FontFamily x:Key="ExtraBoldFont">ms-appx:///Assets/Fonts/Nunito-ExtraBold.ttf#Nunito</FontFamily>
@@ -75,10 +72,10 @@
             </Style>
 
             <!--
-                The action button: a full pill, 48 tall, shadowed by the
-                recipe, with its content left-anchored 20 px in - the icon
-                first, then 19 px of air, then the word. Its width follows
-                its content, floored at the design's 148.
+                The action button, per the handoff: a full pill 48 tall,
+                hugging its content with a floor of 148; the icon-and-word
+                group sits centred with 16 of air either side and 8 between
+                icon and word.
             -->
             <Style x:Key="ActionButtonStyle" TargetType="Button">
                 <Setter Property="Height" Value="48" />
@@ -93,9 +90,9 @@
                                 <Border CornerRadius="24"
                                         Background="{ThemeResource PieceFillBrush}"
                                         BorderBrush="{ThemeResource PieceEdgeBrush}"
-                                        BorderThickness="2.75">
-                                    <ContentPresenter Margin="20,0"
-                                                      HorizontalAlignment="Left"
+                                        BorderThickness="5.5">
+                                    <ContentPresenter Margin="16,0"
+                                                      HorizontalAlignment="Center"
                                                       VerticalAlignment="Center" />
                                 </Border>
                             </Grid>
@@ -106,7 +103,7 @@
 
             <!--
                 The window's close button: the design's own round, a 32 px
-                circle 16 px from the corner, with the thinner 1.75 edge and
+                circle 16 px from the corner, with the thinner 1.75 ring and
                 the X drawn rather than glyphed, so its weight is exact and
                 it cannot fall back to a missing-glyph box on any machine.
             -->

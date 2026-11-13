@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="EasyNet.Controls.Screen"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        The design's screen scaffold: a white page that centres its content,
+        gives it the design's outer padding (26 all sides) and stops it
+        growing at the design's content maximum (767 plus the padding).
+        When the window is too short for the content, the centring hands
+        over to scrolling so nothing is ever clipped out of reach - the
+        handoff's rule for short viewports.
+    -->
+    <Grid Background="{ThemeResource PageBrush}">
+        <ScrollViewer x:Name="Scroll"
+                      HorizontalScrollMode="Disabled"
+                      VerticalScrollMode="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalContentAlignment="Center"
+                      VerticalContentAlignment="Center">
+            <Grid x:Name="Host"
+                  Padding="26"
+                  MaxWidth="819">
+                <ContentPresenter Content="{x:Bind Content, Mode=OneWay}" />
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

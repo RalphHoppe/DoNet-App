@@ -9,85 +9,123 @@
     mc:Ignorable="d">
 
     <!--
-        The lock screen, laid out exactly as its SVG draws it: a white page,
-        the brand standing at the left, the form at the right, the whole
-        700 x 400 composition centred in whatever room the window has. The
-        type is the measured scale - ExtraBold 25 for the heading, Light 14
-        beneath it - and the action carries the design's open padlock.
+        The lock screen, per the handoff: the logo and the form side by
+        side while the window is at least 588 wide, stacked - logo above
+        form, still left - below that; the form taking the remaining width
+        beside the logo; the whole content centred, padded 26, capped at
+        767, scrolling rather than clipping when the window is short. The
+        type is the handoff's scale: ExtraBold 25/32, Regular 14/20.
     -->
-    <Grid Background="{ThemeResource PageBrush}">
-        <ScrollViewer HorizontalContentAlignment="Center"
-                      VerticalContentAlignment="Center"
-                      HorizontalScrollMode="Disabled">
-            <Grid Width="700" Height="400">
+    <controls:Screen>
+        <Grid>
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="LayoutStates">
+                    <!-- Side by side: 26 + 212 + 28 + 296 + 26 = 588. -->
+                    <VisualState x:Name="Wide">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="588" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="Form.(Grid.Column)" Value="2" />
+                            <Setter Target="Form.(Grid.Row)" Value="0" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <!-- Stacked: the logo above the form, both left. -->
+                    <VisualState x:Name="Narrow" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
 
-                <!-- The brand: the mark and the word, still, in their 112 box. -->
-                <StackPanel Width="112"
-                            Height="112"
-                            Margin="36,144,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Top"
-                            Spacing="3">
-                    <controls:EasyNetMark Mode="Static" Width="71" HorizontalAlignment="Center" />
-                    <controls:EasyNetWordmark Mode="Static" Width="97" HorizontalAlignment="Center" />
-                </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="212" />
+                    <ColumnDefinition Width="28" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="28" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-                <!-- The form: text left-aligned at the field's left edge. -->
-                <StackPanel Margin="176,0,36,0"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Top">
-                    <TextBlock Margin="0,90,0,0"
-                               FontFamily="{StaticResource ExtraBoldFont}"
-                               FontSize="25"
-                               Foreground="{ThemeResource InkStrongBrush}"
-                               Text="Unlock to access your data." />
+                <!-- The brand: the design's own raster, contained, never shrunk. -->
+                <Image x:Name="Logo"
+                       Grid.Column="0"
+                       Grid.Row="0"
+                       Width="212"
+                       Height="212"
+                       Stretch="Uniform"
+                       Source="ms-appx:///Assets/Brand/logo.png" />
 
-                    <TextBlock Margin="0,6,0,0"
-                               MaxWidth="430"
-                               FontFamily="{StaticResource LightFont}"
-                               FontSize="14"
-                               Foreground="{ThemeResource InkSoftBrush}"
-                               TextWrapping="Wrap"
-                               Text="Enter your password to unlock the app and access your locked data." />
+                <!-- The form: introduction, then the password section. -->
+                <StackPanel x:Name="Form"
+                            Grid.Column="0"
+                            Grid.Row="2"
+                            MinWidth="296"
+                            HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="6">
+                        <TextBlock FontFamily="{StaticResource ExtraBoldFont}"
+                                   FontSize="25"
+                                   LineHeight="32"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   Foreground="{ThemeResource InkStrongBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="Unlock to access your data." />
+                        <TextBlock FontFamily="{StaticResource TextFont}"
+                                   FontSize="14"
+                                   LineHeight="20"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   Foreground="{ThemeResource InkSoftBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="Enter your password to unlock the app and access your locked data." />
+                    </StackPanel>
 
-                    <controls:PasswordField Margin="0,21,0,0"
-                                            x:Name="PasswordField"
-                                            Label="Password"
-                                            Placeholder="Enter your password" />
+                    <StackPanel Margin="0,20,0,0">
+                        <controls:PasswordField x:Name="PasswordField"
+                                                Label="Password"
+                                                Placeholder="Enter your password" />
 
-                    <TextBlock x:Name="ErrorLine"
-                               Margin="58,8,0,0"
-                               FontFamily="{StaticResource LightFont}"
-                               FontSize="13"
-                               Foreground="{ThemeResource InkSoftBrush}"
-                               Text="That password doesn't match this vault."
-                               Visibility="{x:Bind ViewModel.HasError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock x:Name="ErrorLine"
+                                   Margin="0,8,0,0"
+                                   FontFamily="{StaticResource TextFont}"
+                                   FontSize="13"
+                                   Foreground="{ThemeResource InkSoftBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="That password doesn't match this vault."
+                                   Visibility="{x:Bind ViewModel.HasError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
 
-                    <!-- The action: the design's open padlock beside the word. -->
-                    <Button Margin="0,16,0,0"
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource ActionButtonStyle}"
-                            IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
-                            Click="OnUnlockClick">
-                        <StackPanel Orientation="Horizontal" Spacing="19">
-                            <Path Width="12" Height="16.2"
-                                  VerticalAlignment="Center"
-                                  Stretch="None"
-                                  Stroke="{ThemeResource InkBrush}"
-                                  StrokeThickness="1.6"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Data="M2 7.2H10C11.1 7.2 12 8.1 12 9.2V14.2C12 15.3 11.1 16.2 10 16.2H2C0.9 16.2 0 15.3 0 14.2V9.2C0 8.1 0.9 7.2 2 7.2Z M3 7.2V4.2C2.99 3.31 3.27 2.44 3.81 1.72C4.35 1.01 5.11 0.5 5.97 0.27C6.83 0.04 7.75 0.11 8.57 0.46C9.39 0.81 10.07 1.42 10.5 2.2 M6 10.2V13.2" />
-                            <TextBlock VerticalAlignment="Center"
-                                       FontFamily="{StaticResource BoldFont}"
-                                       FontSize="15"
-                                       Foreground="{ThemeResource InkBrush}"
-                                       Text="Unlock" />
-                        </StackPanel>
-                    </Button>
+                        <!--
+                            The action: the icon-and-word group centred in a
+                            pill that hugs it, floored at 148 - the design's
+                            open padlock beside the word.
+                        -->
+                        <Button Margin="0,16,0,0"
+                                HorizontalAlignment="Left"
+                                Style="{StaticResource ActionButtonStyle}"
+                                IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
+                                Click="OnUnlockClick">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Grid Width="20" Height="20" VerticalAlignment="Center">
+                                    <Path HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Stroke="{ThemeResource InkBrush}"
+                                          StrokeThickness="1.6"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"
+                                          Data="M2 7.2H10C11.1 7.2 12 8.1 12 9.2V14.2C12 15.3 11.1 16.2 10 16.2H2C0.9 16.2 0 15.3 0 14.2V9.2C0 8.1 0.9 7.2 2 7.2Z M3 7.2V4.2C2.99 3.31 3.27 2.44 3.81 1.72C4.35 1.01 5.11 0.5 5.97 0.27C6.83 0.04 7.75 0.11 8.57 0.46C9.39 0.81 10.07 1.42 10.5 2.2 M6 10.2V13.2" />
+                                </Grid>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontFamily="{StaticResource BoldFont}"
+                                           FontSize="15"
+                                           LineHeight="20"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           Foreground="{ThemeResource InkBrush}"
+                                           Text="Unlock" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
-        </ScrollViewer>
-    </Grid>
+        </Grid>
+    </controls:Screen>
 </Page>

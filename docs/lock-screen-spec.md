@@ -1,3 +1,8 @@
+> **Superseded** by `docs/lock-screen-handoff.md` - the designer's
+> auto-layout handoff for the 800 x 420 responsive redesign. This
+> document remains as the record of the first (fixed 700 x 400)
+> export's measurements.
+
 # Lock Screen — Measured Specification
 
 Source of truth: `new_design/screens_svg/lock_screen.svg` (Figma export, pushed by
