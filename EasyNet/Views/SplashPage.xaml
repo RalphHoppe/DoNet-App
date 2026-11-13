@@ -14,7 +14,7 @@
         while the app decides where this run is going. Nothing else is on the
         screen, which is the whole point of a splash: one thing, held well.
     -->
-    <Grid Background="{ThemeResource PaperBrush}">
+    <Grid Background="{ThemeResource PageBrush}">
         <StackPanel HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Spacing="14">

@@ -22,18 +22,19 @@ namespace EasyNet;
 ///</remarks>
 public sealed partial class MainWindow : Window
 {
-    // The design's window: a startup screen, small and centred - the Visual
-    // Studio splash's register, not a main window's. Every screen is a
-    // centred column, so a larger window only adds air.
-    private const int DesignWidth = 540;
-    private const int DesignHeight = 660;
+    // The design's window: a comfortable desktop opening - the small thing
+    // on screen is the card each entry screen centres, not the window, so
+    // the window simply gives that card room.
+    private const int DesignWidth = 900;
+    private const int DesignHeight = 640;
 
     // ...but never edge to edge.
     private const double MaxWorkAreaFraction = 0.92;
 
-    // The smallest window the column still breathes in.
-    private const int MinimumWidth = 500;
-    private const int MinimumHeight = 600;
+    // The smallest window the card still breathes in: its narrow posture
+    // plus the page's breathing margin either side.
+    private const int MinimumWidth = 520;
+    private const int MinimumHeight = 560;
 
     // Resize-border metrics, for keeping the window's grab edges out of the caption.
     private const int SmCxSizeFrame = 32;

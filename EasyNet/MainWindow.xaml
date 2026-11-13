@@ -12,7 +12,7 @@
         below is the only window chrome - the mockups show a single X at the
         top right and nothing else.
     -->
-    <Grid Background="{ThemeResource PaperBrush}">
+    <Grid Background="{ThemeResource PageBrush}">
 
         <Frame x:Name="RootFrame">
             <Frame.ContentTransitions>

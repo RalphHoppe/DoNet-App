@@ -11,21 +11,21 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!--
-                The design's tokens, measured from the mockups and read from the
-                SVGs' own stylesheet. Names say what a colour IS, not where it is
-                used, so a screen can reach for the right one without knowing the
-                others exist.
+                The design's tokens. Names say what a colour IS, not where it
+                is used, so a screen can reach for the right one without
+                knowing the others exist.
 
-                Paper    the white the whole app is drawn on
-                Ink      the brand's dark, the wordmark's "Easy" and the slabs
-                InkSoft  labels and quiet actions - one step lighter than ink
-                Title    screen titles - the mockups' measured heading colour
-                Meta     subtitles, placeholders, resting icons
-                Line     hairlines and tracks, the SVGs' own line token
-                Brand    the amber-to-orange gradient, always one direction
+                The app floats its content in light: a quiet neutral page, a
+                near-white card upon it, and on the card the interactive
+                pieces - frosted-white glass with pure-white cores, each
+                lifted off the page by a soft shadow. The lightness ladder is
+                the whole design: page, card, frame, core, each a step
+                brighter than the last.
             -->
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="PageBrush" Color="#F1F2F5" />
+                    <SolidColorBrush x:Key="CardBrush" Color="#FAFBFC" />
                     <SolidColorBrush x:Key="PaperBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="InkBrush" Color="#1D212C" />
                     <SolidColorBrush x:Key="InkSoftBrush" Color="#424349" />
@@ -33,7 +33,6 @@
                     <SolidColorBrush x:Key="MetaBrush" Color="#74757A" />
                     <SolidColorBrush x:Key="LineBrush" Color="#E2E5EB" />
                     <SolidColorBrush x:Key="CloseBrush" Color="#494242" />
-                    <SolidColorBrush x:Key="HoverBrush" Color="#F2F3F5" />
                     <SolidColorBrush x:Key="DangerBrush" Color="#E5484D" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
@@ -41,8 +40,8 @@
             <!--
                 The brand gradient, in the SVGs' own direction: top-right amber
                 to bottom-left orange. Elements that need it in their own local
-                coordinates (the wordmark's letters) declare their own copy; this
-                one is for everything else.
+                coordinates (the wordmark's letters) declare their own copy;
+                this one is for everything else.
             -->
             <LinearGradientBrush x:Key="BrandBrush" StartPoint="1,0" EndPoint="0,1">
                 <GradientStop Color="#FCBD2E" Offset="0" />
@@ -50,33 +49,41 @@
             </LinearGradientBrush>
 
             <!--
-                The glass language, per the design: a transparent glassy frame
-                with the white button inside it, and the icon inside that.
-                Everything interactive wears it - the window's X, the fields'
-                three separate pieces, the actions. CornerRadius 999 is "fully
-                rounded": XAML clamps it to half the element's size, so one
-                value serves circles and pills alike, outer frame and inner
-                white core staying concentric.
+                The glass language, in my own values: a frosted-white frame -
+                white at four fifths - edged in pure white, with the pure-white
+                core inside it and a soft shadow underneath that lifts the
+                whole thing off whatever it sits on. One CornerRadius (999,
+                clamped to half the element) keeps frame and core concentric
+                for circles and pills alike.
             -->
-            <SolidColorBrush x:Key="GlassFillBrush" Color="#0A1D212C" />
-            <SolidColorBrush x:Key="GlassEdgeBrush" Color="#2B1D212C" />
-            <SolidColorBrush x:Key="GlassFillHoverBrush" Color="#141D212C" />
-            <SolidColorBrush x:Key="GlassEdgeHoverBrush" Color="#421D212C" />
-            <SolidColorBrush x:Key="GlassFillPressedBrush" Color="#1F1D212C" />
-            <SolidColorBrush x:Key="GlassEdgePressedBrush" Color="#551D212C" />
-            <SolidColorBrush x:Key="GlassFillDisabledBrush" Color="#061D212C" />
-            <SolidColorBrush x:Key="GlassEdgeDisabledBrush" Color="#121D212C" />
+            <SolidColorBrush x:Key="GlassFillBrush" Color="#CCFFFFFF" />
+            <SolidColorBrush x:Key="GlassEdgeBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="GlassFillHoverBrush" Color="#E6FFFFFF" />
+            <SolidColorBrush x:Key="GlassEdgeHoverBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="GlassFillPressedBrush" Color="#F2FFFFFF" />
+            <SolidColorBrush x:Key="GlassEdgePressedBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="GlassFillDisabledBrush" Color="#73FFFFFF" />
+            <SolidColorBrush x:Key="GlassEdgeDisabledBrush" Color="#B3FFFFFF" />
+
+            <!--
+                The elevation: the platform's own theme shadow, shared by every
+                floating piece. Receiving happens on whatever sits behind - the
+                page, the card - and each wearer's Translation decides how far
+                it floats.
+            -->
+            <ThemeShadow x:Key="ElevationShadow" />
 
             <!--
                 The glass button: frame outside, white core inside, content in
-                the core. Padding lands on the content (the frame's own 2px
-                inset is what keeps the white visibly inside the glass).
+                the core, shadowed off the surface. Padding lands on the
+                content; the frame's own inset is what keeps the white visibly
+                inside the glass.
             -->
             <Style x:Key="GlassButtonStyle" TargetType="Button">
                 <Setter Property="CornerRadius" Value="999" />
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="Padding" Value="14,8" />
+                <Setter Property="Padding" Value="16,9" />
                 <Setter Property="MinWidth" Value="0" />
                 <Setter Property="MinHeight" Value="0" />
                 <Setter Property="UseSystemFocusVisuals" Value="False" />
@@ -88,7 +95,9 @@
                                     Background="{StaticResource GlassFillBrush}"
                                     BorderBrush="{StaticResource GlassEdgeBrush}"
                                     BorderThickness="1"
-                                    Padding="2">
+                                    Padding="2"
+                                    Shadow="{StaticResource ElevationShadow}"
+                                    Translation="0,0,8">
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
                                         <VisualState x:Name="Normal" />

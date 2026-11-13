@@ -9,84 +9,85 @@
     mc:Ignorable="d">
 
     <!--
-        The same column as the create screen - the two doors are the same
-        shape or the app feels askew walking between them - with the one
-        field a lock asks for, and the open padlock beside the action.
+        The second door: the same card, the same skeleton - the two doors are
+        the same shape or the app feels askew walking between them - with the
+        one field a lock asks for, and the open padlock beside the action.
     -->
-    <Grid Background="{ThemeResource PaperBrush}">
-        <StackPanel VerticalAlignment="Center"
-                    Margin="70,0"
-                    MaxWidth="400">
+    <Grid Background="{ThemeResource PageBrush}">
+        <controls:AuthCard>
+            <controls:AuthCard.FormContent>
+                <StackPanel MaxWidth="360">
 
-            <StackPanel HorizontalAlignment="Center"
-                        Spacing="4">
-                <controls:EasyNetMark Mode="Static" Width="84" />
-                <controls:EasyNetWordmark Mode="Static" Width="118" />
-            </StackPanel>
-
-            <TextBlock Margin="0,28,0,0"
-                       Text="Unlock to access your data."
-                       FontFamily="{StaticResource DisplayFont}"
-                       FontSize="30"
-                       FontWeight="SemiBold"
-                       Foreground="{ThemeResource TitleBrush}" />
-
-            <TextBlock Margin="0,8,0,0"
-                       FontFamily="{StaticResource TextFont}"
-                       FontSize="15"
-                       Foreground="{ThemeResource MetaBrush}"
-                       TextWrapping="Wrap"
-                       Text="Enter your password to unlock the app and access your locked data." />
-
-            <controls:PasswordField x:Name="PasswordField"
-                                    Margin="0,30,0,0"
-                                    Placeholder="Enter your password" />
-
-            <TextBlock x:Name="ErrorLine"
-                       Margin="2,6,0,0"
-                       FontFamily="{StaticResource TextFont}"
-                       FontSize="13"
-                       Foreground="{ThemeResource DangerBrush}"
-                       Visibility="{x:Bind ViewModel.HasError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
-                       Text="That password doesn't match this vault." />
-
-            <!--
-                The action: the glass language with the design's own open
-                padlock - the 14x18 icon, its shackle swung open, the keyhole
-                a stroke below it.
-            -->
-            <Button x:Name="UnlockAction"
-                    Margin="0,32,0,0"
-                    HorizontalAlignment="Left"
-                    Height="50"
-                    Style="{StaticResource GlassButtonStyle}"
-                    IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
-                    Click="OnUnlockClick">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <Viewbox Stretch="Uniform" Width="18" Height="23">
-                        <Canvas Width="14" Height="18">
-                            <Path Stroke="{ThemeResource InkSoftBrush}"
-                                  StrokeThickness="1.6"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Data="M2.80005 7.86446H10.8C11.9046 7.86446 12.8 8.75989 12.8 9.86446V14.8645C12.8 15.969 11.9046 16.8645 10.8 16.8645H2.80005C1.69548 16.8645 0.800049 15.969 0.800049 14.8645V9.86446C0.800049 8.75989 1.69548 7.86446 2.80005 7.86446Z" />
-                            <Path Stroke="{ThemeResource InkSoftBrush}"
-                                  StrokeThickness="1.6"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Data="M3.80008 7.86445V4.86445C3.7857 3.97217 4.07012 3.10071 4.60808 2.38869C5.14604 1.67668 5.90665 1.165 6.76891 0.935065C7.63117 0.705128 8.54557 0.770136 9.36663 1.11975C10.1877 1.46936 10.8683 2.08349 11.3001 2.86445M6.80008 10.8645V13.8645" />
-                        </Canvas>
-                    </Viewbox>
-                    <TextBlock VerticalAlignment="Center"
+                    <TextBlock Text="Unlock to access your data."
                                FontFamily="{StaticResource DisplayFont}"
-                               FontSize="17"
+                               FontSize="26"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource TitleBrush}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Margin="0,8,0,0"
+                               FontFamily="{StaticResource TextFont}"
+                               FontSize="15"
+                               Foreground="{ThemeResource MetaBrush}"
+                               TextWrapping="Wrap"
+                               Text="Enter your password to unlock the app and access your locked data." />
+
+                    <TextBlock Margin="8,26,0,6"
+                               FontFamily="{StaticResource TextFont}"
+                               FontSize="13"
                                FontWeight="SemiBold"
                                Foreground="{ThemeResource InkSoftBrush}"
-                               Text="Unlock" />
+                               Text="PASSWORD" />
+
+                    <controls:PasswordField x:Name="PasswordField"
+                                            Placeholder="Enter your password" />
+
+                    <TextBlock x:Name="ErrorLine"
+                               Margin="8,6,0,0"
+                               FontFamily="{StaticResource TextFont}"
+                               FontSize="13"
+                               Foreground="{ThemeResource DangerBrush}"
+                               Visibility="{x:Bind ViewModel.HasError, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                               Text="That password doesn't match this vault." />
+
+                    <!--
+                        The action: the glass language with the open padlock -
+                        the shackle swung, the keyhole a stroke beside it.
+                    -->
+                    <Button x:Name="UnlockAction"
+                            Margin="0,30,0,0"
+                            HorizontalAlignment="Left"
+                            Height="48"
+                            Style="{StaticResource GlassButtonStyle}"
+                            IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
+                            Click="OnUnlockClick">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Viewbox Stretch="Uniform" Width="18" Height="23">
+                                <Canvas Width="14" Height="18">
+                                    <Path Stroke="{ThemeResource InkSoftBrush}"
+                                          StrokeThickness="1.6"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"
+                                          Data="M2.80005 7.86446H10.8C11.9046 7.86446 12.8 8.75989 12.8 9.86446V14.8645C12.8 15.969 11.9046 16.8645 10.8 16.8645H2.80005C1.69548 16.8645 0.800049 15.969 0.800049 14.8645V9.86446C0.800049 8.75989 1.69548 7.86446 2.80005 7.86446Z" />
+                                    <Path Stroke="{ThemeResource InkSoftBrush}"
+                                          StrokeThickness="1.6"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"
+                                          Data="M3.80008 7.86445V4.86445C3.7857 3.97217 4.07012 3.10071 4.60808 2.38869C5.14604 1.67668 5.90665 1.165 6.76891 0.935065C7.63117 0.705128 8.54557 0.770136 9.36663 1.11975C10.1877 1.46936 10.8683 2.08349 11.3001 2.86445M6.80008 10.8645V13.8645" />
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock VerticalAlignment="Center"
+                                       FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{ThemeResource InkSoftBrush}"
+                                       Text="Unlock" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
-            </Button>
-        </StackPanel>
+            </controls:AuthCard.FormContent>
+        </controls:AuthCard>
     </Grid>
 </Page>

@@ -29,12 +29,16 @@ They live in `App.xaml`, named for what they are. The type is Nunito - the
 design's own choice - instanced statically from Google's variable font (OFL
 1.1, licence bundled) and referenced per weight.
 
-The window is a startup screen's register - small and centred, like the
-Visual Studio splash - with one centred column per screen. Everything
-interactive wears the glass language: a transparent glassy frame, the white
-button inside it, the icon inside that - the window's X, each field's three
-separate pieces (padlock, word, eye), and every action. The icons are the
-design's own vectors, redrawn as strokes on their own canvases.
+The app floats its content in light: a quiet neutral page, a near-white
+card centred upon it, and on the card the interactive pieces - frosted
+glass frames with pure-white cores, each lifted by a soft shadow. The entry
+screens (create password, unlock) share one card that reflows by width -
+the brand beside the form when there is room, above it when there is not -
+centring when the window has space and scrolling when it does not, so no
+window size ever clips the form. Everything interactive wears the glass
+language: the window's X, each field's three separate pieces (padlock,
+word, eye), and every action. The icons are the design's own vectors,
+redrawn as strokes on their own canvases.
 
 Motion follows the SVGs' stylesheet, translated property by property: the
 splash's entrance (slabs slide, ring cascades, letters rise) then the living
