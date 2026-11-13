@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="EasyNet.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:EasyNet.Converters">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--
+                The design's tokens. Names say what a colour IS, not where it
+                is used, so a screen can reach for the right one without
+                knowing the others exist.
+
+                The app floats its content in light: a quiet neutral page, a
+                near-white card upon it, and on the card the interactive
+                pieces - frosted-white glass with pure-white cores, each
+                lifted off the page by a soft shadow. The lightness ladder is
+                the whole design: page, card, frame, core, each a step
+                brighter than the last.
+            -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="PageBrush" Color="#F1F2F5" />
+                    <SolidColorBrush x:Key="CardBrush" Color="#FAFBFC" />
+                    <SolidColorBrush x:Key="PaperBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="InkBrush" Color="#1D212C" />
+                    <SolidColorBrush x:Key="InkSoftBrush" Color="#424349" />
+                    <SolidColorBrush x:Key="TitleBrush" Color="#303138" />
+                    <SolidColorBrush x:Key="MetaBrush" Color="#74757A" />
+                    <SolidColorBrush x:Key="LineBrush" Color="#E2E5EB" />
+                    <SolidColorBrush x:Key="CloseBrush" Color="#494242" />
+                    <SolidColorBrush x:Key="DangerBrush" Color="#E5484D" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <!--
+                The brand gradient, in the SVGs' own direction: top-right amber
+                to bottom-left orange. Elements that need it in their own local
+                coordinates (the wordmark's letters) declare their own copy;
+                this one is for everything else.
+            -->
+            <LinearGradientBrush x:Key="BrandBrush" StartPoint="1,0" EndPoint="0,1">
+                <GradientStop Color="#FCBD2E" Offset="0" />
+                <GradientStop Color="#F26A17" Offset="1" />
+            </LinearGradientBrush>
+
+            <!--
+                The glass language, in my own values: a frosted-white frame -
+                white at four fifths - edged in pure white, with the pure-white
+                core inside it and a soft shadow underneath that lifts the
+                whole thing off whatever it sits on. One CornerRadius (999,
+                clamped to half the element) keeps frame and core concentric
+                for circles and pills alike.
+            -->
+            <SolidColorBrush x:Key="GlassFillBrush" Color="#CCFFFFFF" />
+            <SolidColorBrush x:Key="GlassEdgeBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="GlassFillHoverBrush" Color="#E6FFFFFF" />
+            <SolidColorBrush x:Key="GlassEdgeHoverBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="GlassFillPressedBrush" Color="#F2FFFFFF" />
+            <SolidColorBrush x:Key="GlassEdgePressedBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="GlassFillDisabledBrush" Color="#73FFFFFF" />
+            <SolidColorBrush x:Key="GlassEdgeDisabledBrush" Color="#B3FFFFFF" />
+
+            <!--
+                The elevation: the platform's own theme shadow, shared by every
+                floating piece. Receiving happens on whatever sits behind - the
+                page, the card - and each wearer's Translation decides how far
+                it floats.
+            -->
+            <ThemeShadow x:Key="ElevationShadow" />
+
+            <!--
+                The glass button: frame outside, white core inside, content in
+                the core, shadowed off the surface. Padding lands on the
+                content; the frame's own inset is what keeps the white visibly
+                inside the glass.
+            -->
+            <Style x:Key="GlassButtonStyle" TargetType="Button">
+                <Setter Property="CornerRadius" Value="999" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="16,9" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Frame"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    Background="{StaticResource GlassFillBrush}"
+                                    BorderBrush="{StaticResource GlassEdgeBrush}"
+                                    BorderThickness="1"
+                                    Padding="2"
+                                    Shadow="{StaticResource ElevationShadow}"
+                                    Translation="0,0,8">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Frame.Background" Value="{StaticResource GlassFillHoverBrush}" />
+                                                <Setter Target="Frame.BorderBrush" Value="{StaticResource GlassEdgeHoverBrush}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Frame.Background" Value="{StaticResource GlassFillPressedBrush}" />
+                                                <Setter Target="Frame.BorderBrush" Value="{StaticResource GlassEdgePressedBrush}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters>
+                                                <Setter Target="Frame.Background" Value="{StaticResource GlassFillDisabledBrush}" />
+                                                <Setter Target="Frame.BorderBrush" Value="{StaticResource GlassEdgeDisabledBrush}" />
+                                                <Setter Target="Core.Opacity" Value="0.45" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="Core"
+                                        CornerRadius="999"
+                                        Background="{ThemeResource PaperBrush}">
+                                    <ContentPresenter Content="{TemplateBinding Content}"
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Margin="{TemplateBinding Padding}" />
+                                </Border>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--
+                The UI's type: Nunito, the design's own choice. The wordmark is
+                drawn, not typeset, so this only ever speaks for sentences.
+                Each weight is its own instanced file, referenced by its own
+                resource, so a FontWeight in XAML always means the face that
+                file already is - nothing is synthesised, nothing falls back.
+            -->
+            <FontFamily x:Key="DisplayFont">ms-appx:///Assets/Fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="TextFont">ms-appx:///Assets/Fonts/Nunito-Regular.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="BoldFont">ms-appx:///Assets/Fonts/Nunito-Bold.ttf#Nunito</FontFamily>
+
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

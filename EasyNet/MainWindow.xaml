@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="EasyNet.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="EasyNet">
+
+    <!--
+        No SystemBackdrop: the design is flat white edge to edge, and Mica
+        would tint it. The system title bar is removed entirely in the
+        code-behind, so the pages own the whole window and the close button
+        below is the only window chrome - the mockups show a single X at the
+        top right and nothing else.
+    -->
+    <Grid Background="{ThemeResource PageBrush}">
+
+        <Frame x:Name="RootFrame">
+            <Frame.ContentTransitions>
+                <TransitionCollection>
+                    <!-- The platform's own quiet cross-fade between screens. -->
+                    <NavigationThemeTransition />
+                </TransitionCollection>
+            </Frame.ContentTransitions>
+        </Frame>
+
+        <!--
+            Declared to the window manager as the caption region in the
+            code-behind, which is what makes dragging, double-click maximise,
+            the right-click system menu and edge snapping work. There is
+            deliberately no PointerPressed handler: emulating a drag from one
+            is what breaks all of the above.
+        -->
+        <Grid x:Name="DragRegion"
+              Height="48"
+              VerticalAlignment="Top"
+              Background="Transparent">
+
+            <!--
+                The window's X: the glass language in the round - glassy frame,
+                white core, the design's own X icon inside it.
+            -->
+            <Button x:Name="CloseButton"
+                    Width="38"
+                    Height="38"
+                    Padding="0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Margin="0,0,10,0"
+                    TabIndex="0"
+                    Style="{StaticResource GlassButtonStyle}"
+                    Click="OnCloseClick">
+                <!--
+                    The X is the design's own vector, drawn rather than
+                    glyphed, so its weight is exact and it cannot fall back to
+                    a missing-glyph box on any machine.
+                -->
+                <Path Stretch="Uniform"
+                      Width="12"
+                      Height="12"
+                      Fill="{ThemeResource CloseBrush}"
+                      Data="M10.2991 1.57893C10.6603 1.21773 10.6603 0.632102 10.2991 0.270901C9.93789 -0.0903004 9.35227 -0.0903004 8.99106 0.270901L5.285 3.97697L1.57894 0.270901C1.21774 -0.0902995 0.632113 -0.0902999 0.270912 0.270901C-0.0902888 0.632103 -0.0902885 1.21773 0.270912 1.57893L3.97698 5.28499L0.270901 8.99107C-0.0903 9.35227 -0.0903004 9.9379 0.270901 10.2991C0.632102 10.6603 1.21772 10.6603 1.57893 10.2991L5.285 6.59302L8.99108 10.2991C9.35228 10.6603 9.9379 10.6603 10.2991 10.2991C10.6603 9.9379 10.6603 9.35227 10.2991 8.99107L6.59302 5.28499L10.2991 1.57893Z" />
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

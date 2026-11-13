@@ -1,0 +1,85 @@
+<UserControl
+    x:Class="EasyNet.Controls.EasyNetWordmark"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        Generated from new_design/easynet_animated_svgs by tools/easynet_geometry.py.
+        Seven letterforms: Easy in ink, Net in the brand gradient - the wordmark
+        is drawn, not typeset, so it is the same at every size and never depends
+        on a font being present. The canvas is measured to the letters' own
+        bounds, so a Width on this control scales the word exactly.
+    -->
+    <Viewbox Stretch="Uniform">
+        <Canvas x:Name="Root"
+                Width="1091.2"
+                Height="214.2">
+            <Canvas.Resources>
+                <SolidColorBrush x:Key="MarkInkBrush" Color="#1D212C" />
+                <LinearGradientBrush x:Key="MarkBrandBrush"
+                                     StartPoint="1,0" EndPoint="0,1">
+                    <GradientStop Color="#FCBD2E" Offset="0" />
+                    <GradientStop Color="#F26A17" Offset="1" />
+                </LinearGradientBrush>
+            </Canvas.Resources>
+
+            <Canvas x:Name="Art"
+                    Canvas.Left="-84.5"
+                    Canvas.Top="-906.3">
+
+                <Path x:Name="Letter1"
+                      Data="M255.0 1083.3L127.0 1083.5L120.0 1082.3L114.0 1080.3L104.0 1075.3L97.5 1070.0L89.7 1059.0L85.5 1046.0L85.5 1030.0L84.5 1025.0L85.5 1018.0L85.5 952.0L88.7 941.0L91.7 935.0L97.0 927.6L103.0 921.5L108.0 917.7L115.0 913.7L123.0 910.7L135.0 908.5L265.0 908.5L267.0 908.7L268.5 910.0L269.3 912.0L268.3 914.0L257.3 933.0L252.5 940.0L246.0 945.3L239.0 947.5L228.0 947.5L225.0 948.5L162.0 948.5L158.0 947.5L142.0 947.5L139.0 948.5L133.0 948.7L131.0 949.7L126.7 954.0L124.5 960.0L124.5 978.0L125.0 979.2L130.0 980.5L244.0 980.5L246.4 981.0L247.3 983.0L246.3 985.0L233.3 1008.0L228.0 1013.5L225.0 1015.3L217.0 1017.5L126.0 1017.5L125.0 1017.8L124.5 1019.0L124.5 1032.0L126.7 1039.0L131.0 1043.5L134.0 1045.3L140.0 1046.5L255.0 1046.7L256.3 1048.0L256.5 1051.0L256.5 1081.0Z"
+                      Fill="{StaticResource MarkInkBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Letter1Rise" />
+                    </Path.RenderTransform>
+                </Path>
+                <Path x:Name="Letter2"
+                      Data="M415.0 1083.3L297.0 1083.5L285.0 1080.3L275.0 1074.5L269.7 1069.0L265.7 1061.0L263.7 1055.0L263.5 1037.0L265.7 1028.0L269.7 1020.0L272.5 1016.0L277.0 1011.7L284.0 1007.7L297.0 1003.5L374.0 1003.5L376.0 1002.0L374.3 996.0L370.4 992.0L368.0 990.7L361.0 989.5L348.0 989.5L345.0 990.5L340.0 990.5L336.0 989.5L273.0 989.3L271.7 988.0L272.7 984.0L287.5 958.0L292.0 955.5L379.0 955.5L389.0 957.7L394.0 959.7L403.0 965.5L408.5 971.0L411.3 975.0L415.3 985.0L416.5 992.0L416.5 1080.0L416.3 1082.0ZM364.5 1051.0L369.0 1049.3L372.0 1047.2L374.3 1044.0L375.5 1041.0L375.0 1034.8L312.0 1034.5L305.6 1037.0L303.5 1041.0L303.7 1047.0L305.0 1049.2L309.0 1051.5L362.0 1051.5Z"
+                      Fill="{StaticResource MarkInkBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Letter2Rise" />
+                    </Path.RenderTransform>
+                </Path>
+                <Path x:Name="Letter3"
+                      Data="M513.0 1083.3L424.0 1083.5L422.6 1083.0L420.7 1081.0L421.7 1078.0L423.3 1076.0L430.7 1061.0L435.7 1052.0L438.0 1049.7L442.0 1048.5L506.0 1048.5L510.0 1046.5L512.3 1043.0L512.3 1040.0L509.0 1035.7L504.0 1034.5L463.0 1034.5L460.0 1033.5L457.0 1033.5L446.0 1030.3L442.0 1028.3L436.6 1025.0L433.0 1021.4L428.7 1014.0L425.5 1002.0L425.5 993.0L426.7 987.0L429.7 978.0L435.0 969.6L438.6 966.0L446.0 960.7L452.0 957.7L461.0 955.5L545.0 955.5L550.0 954.5L552.0 954.7L554.2 956.0L554.3 960.0L549.3 969.0L541.0 982.4L535.0 988.3L531.0 989.5L473.0 989.5L469.0 990.7L466.7 993.0L466.7 999.0L471.0 1002.3L510.0 1002.5L513.0 1003.5L519.0 1003.5L525.0 1004.7L531.0 1006.7L541.0 1011.7L545.5 1016.0L548.3 1020.0L551.3 1026.0L553.5 1034.0L553.5 1045.0L552.3 1052.0L549.3 1060.0L542.5 1070.0L536.0 1075.3L526.0 1080.3Z"
+                      Fill="{StaticResource MarkInkBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Letter3Rise" />
+                    </Path.RenderTransform>
+                </Path>
+                <Path x:Name="Letter4"
+                      Data="M657.0 1120.3L575.0 1120.5L573.0 1120.3L571.7 1119.0L571.7 1116.0L579.7 1101.0L586.7 1090.0L589.0 1087.7L592.0 1086.5L648.0 1086.5L653.0 1085.3L657.0 1081.4L658.3 1079.0L658.5 1069.0L658.0 1067.8L654.0 1067.5L651.0 1068.5L644.0 1068.5L641.0 1069.5L624.0 1069.5L621.0 1070.5L602.0 1070.5L584.0 1066.3L575.6 1061.0L570.0 1055.4L564.7 1046.0L562.5 1038.0L562.5 957.0L564.0 954.7L574.0 954.5L577.0 955.5L599.2 956.0L599.5 1027.0L601.0 1032.4L605.0 1036.3L608.0 1037.5L653.0 1037.5L657.0 1035.5L659.3 1033.0L660.5 1029.0L660.8 956.0L664.0 954.5L674.0 954.5L679.0 955.5L684.0 955.5L689.0 954.5L698.0 954.5L699.4 955.0L701.3 957.0L701.5 1070.0L699.3 1085.0L697.3 1091.0L691.3 1102.0L683.4 1110.0L673.0 1116.3L663.0 1119.3Z"
+                      Fill="{StaticResource MarkInkBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Letter4Rise" />
+                    </Path.RenderTransform>
+                </Path>
+                <Path x:Name="Letter5"
+                      Data="M885.0 1087.5L868.0 1087.7L862.0 1086.5L855.0 1084.5L845.0 1078.8L834.2 1068.0L823.0 1053.9L761.0 981.0L760.7 988.0L759.7 992.0L759.4 1083.0L756.0 1084.7L727.0 1084.7L718.0 1083.5L717.0 1082.7L716.3 1080.0L716.3 929.0L717.5 923.0L720.5 917.0L726.0 911.2L733.0 907.5L737.0 906.5L751.0 906.3L759.0 908.5L765.0 912.2L773.0 920.3L806.0 961.1L817.0 973.3L842.0 1004.1L853.0 1016.3L857.0 1022.1L864.8 1031.0L866.0 1031.3L866.3 942.0L867.3 938.0L867.3 927.0L866.3 924.0L866.3 921.0L867.3 917.0L867.6 908.0L869.0 907.3L906.0 907.3L909.0 908.3L909.7 911.0L909.7 1064.0L908.5 1070.0L906.5 1075.0L900.0 1081.8L893.0 1085.5Z"
+                      Fill="{StaticResource MarkBrandBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Letter5Rise" />
+                    </Path.RenderTransform>
+                </Path>
+                <Path x:Name="Letter6"
+                      Data="M1050.0 1084.5L964.0 1084.7L961.0 1083.7L956.0 1083.5L949.0 1081.5L942.0 1078.5L936.0 1074.8L930.2 1069.0L926.5 1064.0L923.5 1058.0L921.5 1052.0L921.3 1048.0L920.3 1045.0L920.3 1000.0L921.3 997.0L921.5 993.0L924.5 983.0L932.2 971.0L936.3 967.0L946.0 960.5L956.0 956.5L962.0 955.3L1037.0 955.3L1049.0 958.5L1054.0 960.5L1060.0 964.2L1069.8 974.0L1073.5 980.0L1075.5 985.0L1077.7 995.0L1077.5 1019.0L1075.5 1026.0L1073.0 1029.7L1068.7 1034.0L1064.0 1036.5L1060.0 1037.7L966.0 1037.7L964.2 1038.0L963.7 1039.0L963.9 1042.0L965.0 1044.1L968.9 1048.0L972.0 1049.3L1073.0 1049.5L1074.5 1051.0L1074.5 1054.0L1066.5 1069.0L1058.0 1080.8ZM1035.8 1004.0L1036.3 1001.0L1035.0 997.0L1031.0 992.9L1028.0 991.7L1020.0 991.7L1017.0 990.7L980.0 990.7L977.0 991.7L972.0 991.7L966.9 994.0L963.7 1000.0L963.7 1003.0L965.0 1004.3Z"
+                      Fill="{StaticResource MarkBrandBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Letter6Rise" />
+                    </Path.RenderTransform>
+                </Path>
+                <Path x:Name="Letter7"
+                      Data="M1172.0 1084.5L1129.0 1084.7L1126.0 1083.7L1121.0 1083.5L1114.0 1081.5L1105.0 1076.5L1099.2 1071.0L1095.5 1066.0L1091.5 1056.0L1091.3 1052.0L1090.3 1049.0L1090.3 996.0L1091.3 992.0L1090.3 988.0L1090.3 981.0L1091.3 977.0L1090.3 973.0L1090.3 968.0L1091.3 965.0L1091.3 940.0L1093.0 937.5L1128.0 924.5L1132.0 923.3L1134.0 923.5L1135.7 926.0L1135.7 953.0L1137.0 957.0L1171.0 957.3L1173.5 959.0L1173.7 989.0L1172.0 991.8L1167.0 993.7L1136.0 993.7L1135.0 994.2L1134.7 996.0L1134.7 1038.0L1135.9 1042.0L1140.0 1047.2L1144.0 1049.1L1171.0 1049.3L1174.4 1051.0L1174.7 1057.0L1175.7 1061.0L1175.7 1066.0L1174.7 1069.0L1174.7 1082.0L1174.0 1083.5Z"
+                      Fill="{StaticResource MarkBrandBrush}">
+                    <Path.RenderTransform>
+                        <TranslateTransform x:Name="Letter7Rise" />
+                    </Path.RenderTransform>
+                </Path>
+            </Canvas>
+        </Canvas>
+    </Viewbox>
+</UserControl>
