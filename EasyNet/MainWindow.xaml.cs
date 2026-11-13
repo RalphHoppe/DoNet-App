@@ -15,25 +15,26 @@ namespace EasyNet;
 /// The shell window: a chrome-free white frame that hosts every page.
 /// </summary>
 /// <remarks>
-/// The window opens at the design's own artboard size - the mockups are
-/// 1400x800 - and never runs edge to edge on a display that cannot hold that,
-/// because a window exactly the size of the work area reads as a botched
-/// maximise rather than a deliberate default.
+/// The window opens at the handoff's own reference posture, 800 x 400, and
+/// never runs edge to edge on a display that cannot hold that, because a
+/// window exactly the size of the work area reads as a botched maximise
+/// rather than a deliberate default.
 ///</remarks>
 public sealed partial class MainWindow : Window
 {
-    // The design's window: a comfortable desktop opening - the small thing
-    // on screen is the card each entry screen centres, not the window, so
-    // the window simply gives that card room.
+    // The design's window: the handoff's reference width, and the height
+    // that leaves its centred composition exactly the air it specifies.
     private const int DesignWidth = 800;
-    private const int DesignHeight = 420;
+    private const int DesignHeight = 400;
 
     // ...but never edge to edge.
     private const double MaxWorkAreaFraction = 0.92;
 
-    // The smallest window the card still breathes in: its narrow posture
-    // plus the page's breathing margin either side.
-    private const int MinimumWidth = 348;
+    // The smallest window the composition still breathes in: the design's
+    // 348 of content plus the window's own resize borders, which the
+    // design's artboard has no concept of - about eight a side at 100%,
+    // scaled with the DPI like everything else here.
+    private const int MinimumWidth = 364;
     private const int MinimumHeight = 400;
 
     // Resize-border metrics, for keeping the window's grab edges out of the caption.

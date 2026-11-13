@@ -19,13 +19,35 @@
         <ScrollViewer x:Name="Scroll"
                       HorizontalScrollMode="Disabled"
                       VerticalScrollMode="Auto"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalContentAlignment="Center"
-                      VerticalContentAlignment="Center">
-            <Grid x:Name="Host"
-                  Padding="26"
-                  MaxWidth="819">
-                <ContentPresenter Content="{x:Bind Content, Mode=OneWay}" />
+                      VerticalScrollBarVisibility="Auto">
+
+            <!--
+                The fitter: never shorter than the viewport. Content that
+                fits centres inside it; content that does not grows it, and
+                so stays within the scroller's reach. A centred child taller
+                than the viewport is the one thing a ScrollViewer otherwise
+                clips with no way back - the top and the bottom of the
+                composition both vanish, which is exactly what it did the
+                day this wrapper was rebuilt around a measured screenshot.
+            -->
+            <Grid MinHeight="{x:Bind Scroll.ViewportHeight, Mode=OneWay}">
+
+                <!--
+                    The host: the viewport's own width until the design's
+                    content maximum, then capped and centred - fill up to
+                    the cap, centre beyond it. The width is bound rather
+                    than stretched because a stretch-capped element hugs
+                    the left of its slot, and the composition should not
+                    care how wide the window happens to be.
+                -->
+                <Grid x:Name="Host"
+                      Width="{x:Bind Scroll.ViewportWidth, Mode=OneWay}"
+                      MaxWidth="819"
+                      Padding="26"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center">
+                    <ContentPresenter Content="{x:Bind Content, Mode=OneWay}" />
+                </Grid>
             </Grid>
         </ScrollViewer>
     </Grid>

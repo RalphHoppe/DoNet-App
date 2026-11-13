@@ -91,9 +91,20 @@ stacked is a separate, unmade choice). Short viewports **scroll**; the
 
 - `Controls/Screen` owns the scaffold: white page, scroll-when-short,
   centring that yields to scrolling so nothing clips, padding 26, content
-  max 767 (+52).
-- Wrap is a visual state at window width 588 (`AdaptiveTrigger`), not a
-  panel that guesses.
+  max 767 (+52). The centre-or-scroll behaviour is structural: the scroll
+  content is a fitter that is never shorter than the viewport, and the
+  host's width is the viewport's own until the 819 cap, then centred —
+  fill up to the cap, centre beyond it.
+- Wrap is a switch in each page's code-behind at width 588, measured on
+  the page itself. It was an `AdaptiveTrigger` visual state first and
+  never fired on a window 800 wide — the stacked base state shipped as-is
+  and the form squeezed into the logo's 212 px column. The stacked
+  posture is the form spanning all three columns, not sitting in the
+  logo's; measured evidence in the build history.
+- The window opens at 800 × 400 (the 420 reference minus the line of air
+  the design never asked for), minimum 364 × 400 — the design's 348 of
+  content plus the window's own resize borders, which the artboard has
+  no concept of.
 - The shadow recipe lives in `Controls/PieceShadow`; masks in
   `Assets/Shadows` are the eroded shapes.
 - The logo raster is `Assets/Brand/logo.png` (the original 1254 × 1254),
