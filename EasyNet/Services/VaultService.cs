@@ -208,7 +208,7 @@ public sealed class VaultService : IVaultService
 
         await using (Stream stream = File.Create(temporary))
         {
-            await JsonSerializer.SerializeAsync(stream, record, cancellationToken: cancellationToken)
+            await JsonSerializer.SerializeAsync(stream, record, cancellationToken:  cancellationToken)
                 .ConfigureAwait(false);
         }
 
