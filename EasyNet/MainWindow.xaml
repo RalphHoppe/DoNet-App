@@ -35,39 +35,30 @@
               VerticalAlignment="Top"
               Background="Transparent">
 
+            <!--
+                The window's X: the glass language in the round - glassy frame,
+                white core, the design's own X icon inside it.
+            -->
             <Button x:Name="CloseButton"
-                    Width="44"
-                    Height="40"
+                    Width="38"
+                    Height="38"
+                    Padding="0"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
-                    Margin="0,0,6,0"
+                    Margin="0,0,10,0"
                     TabIndex="0"
+                    Style="{StaticResource GlassButtonStyle}"
                     Click="OnCloseClick">
-                <Button.Resources>
-                    <!--
-                        The stock hover chrome would draw a grey plate the
-                        design never asked for; the plate below is deliberately
-                        quieter, and only on hover.
-                    -->
-                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F2F3F5" />
-                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#E9EAEE" />
-                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
-                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
-                </Button.Resources>
-                <Button.Content>
-                    <!--
-                        The X is drawn rather than glyphed, so its weight matches
-                        the design's measured strokes and it cannot fall back to
-                        a missing-glyph box on any machine.
-                    -->
-                    <Canvas Width="16" Height="16">
-                        <Path Stroke="{ThemeResource CloseBrush}"
-                              StrokeThickness="1.6"
-                              StrokeStartLineCap="Round"
-                              StrokeEndLineCap="Round"
-                              Data="M1.5,1.5 L14.5,14.5 M14.5,1.5 L1.5,14.5" />
-                    </Canvas>
-                </Button.Content>
+                <!--
+                    The X is the design's own vector, drawn rather than
+                    glyphed, so its weight is exact and it cannot fall back to
+                    a missing-glyph box on any machine.
+                -->
+                <Path Stretch="Uniform"
+                      Width="12"
+                      Height="12"
+                      Fill="{ThemeResource CloseBrush}"
+                      Data="M10.2991 1.57893C10.6603 1.21773 10.6603 0.632102 10.2991 0.270901C9.93789 -0.0903004 9.35227 -0.0903004 8.99106 0.270901L5.285 3.97697L1.57894 0.270901C1.21774 -0.0902995 0.632113 -0.0902999 0.270912 0.270901C-0.0902888 0.632103 -0.0902885 1.21773 0.270912 1.57893L3.97698 5.28499L0.270901 8.99107C-0.0903 9.35227 -0.0903004 9.9379 0.270901 10.2991C0.632102 10.6603 1.21772 10.6603 1.57893 10.2991L5.285 6.59302L8.99108 10.2991C9.35228 10.6603 9.9379 10.6603 10.2991 10.2991C10.6603 9.9379 10.6603 9.35227 10.2991 8.99107L6.59302 5.28499L10.2991 1.57893Z" />
             </Button>
         </Grid>
     </Grid>

@@ -9,15 +9,10 @@ namespace EasyNet.Views;
 
 /// <summary>
 /// The unlock screen. See the XAML for its layout; this wires the field's
-/// word into the view model, clears it when a try is refused, and keeps the
-/// width states honest as the window resizes.
+/// word into the view model and clears it when a try is refused.
 /// </summary>
 public sealed partial class UnlockPage : Page
 {
-    // The create screen's own threshold: the two doors are the same width or
-    // the app feels askew walking between them.
-    private const double WideStateMinimumWidth = 1160;
-
     public UnlockPage()
     {
         ViewModel = App.Current.Services.GetRequiredService<UnlockViewModel>();
@@ -29,7 +24,6 @@ public sealed partial class UnlockPage : Page
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
-        SizeChanged += (_, _) => ApplyWidthState();
         Loaded += OnLoaded;
     }
 
@@ -40,18 +34,11 @@ public sealed partial class UnlockPage : Page
     {
         Loaded -= OnLoaded;
 
-        ApplyWidthState();
         PasswordField.FocusInput();
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs args) =>
         Frame?.BackStack.Clear();
-
-    private void ApplyWidthState() =>
-        _ = VisualStateManager.GoToState(
-            this,
-            ActualWidth >= WideStateMinimumWidth ? "WideState" : "NarrowState",
-            useTransitions: false);
 
     /// <summary>
     /// The verdict's consequences on the field itself: a refused try empties

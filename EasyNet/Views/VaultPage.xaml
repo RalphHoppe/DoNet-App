@@ -11,47 +11,72 @@
     <!--
         An honest placeholder, not a pretend home: the vault is open, the
         next screens are waiting on their designs, and the one thing this
-        page can do for real - lock again - is offered plainly. When the
-        vault's own screens arrive, this page is replaced rather than
-        decorated around.
+        page can do for real - lock again - is offered in the glass language
+        with the design's own padlock-and-clock icon. When the vault's own
+        screens arrive, this page is replaced rather than decorated around.
     -->
     <Grid Background="{ThemeResource PaperBrush}">
         <StackPanel HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Spacing="12">
-            <controls:EasyNetMark Mode="Loop" Width="170" />
-            <TextBlock Margin="0,26,0,0"
+                    Spacing="10">
+            <controls:EasyNetMark Mode="Loop" Width="130" />
+            <TextBlock Margin="0,22,0,0"
                        HorizontalAlignment="Center"
                        FontFamily="{StaticResource DisplayFont}"
-                       FontSize="32"
+                       FontSize="24"
                        FontWeight="SemiBold"
                        Foreground="{ThemeResource TitleBrush}"
                        Text="The vault is open." />
             <TextBlock HorizontalAlignment="Center"
                        FontFamily="{StaticResource TextFont}"
-                       FontSize="16"
+                       FontSize="14"
                        Foreground="{ThemeResource MetaBrush}"
                        Text="The vault's screens are waiting on their designs - this is a placeholder." />
-            <Button Margin="0,40,0,0"
+            <Button Margin="0,34,0,0"
                     HorizontalAlignment="Center"
-                    MinWidth="0"
-                    MinHeight="0"
-                    Padding="12,6"
-                    CornerRadius="10"
+                    Height="46"
+                    Style="{StaticResource GlassButtonStyle}"
                     Command="{x:Bind ViewModel.LockCommand}">
-                <Button.Resources>
-                    <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F2F3F5" />
-                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#E9EAEE" />
-                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
-                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
-                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
-                </Button.Resources>
-                <TextBlock FontFamily="{StaticResource TextFont}"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           Foreground="{ThemeResource MetaBrush}"
-                           Text="Lock" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <!--
+                        The design's 19x20 padlock-and-clock: the lock at rest
+                        and time beside it, redrawn as strokes on its canvas.
+                    -->
+                    <Viewbox Stretch="Uniform" Width="19" Height="20">
+                        <Canvas Width="19" Height="20">
+                            <Path Stroke="{ThemeResource InkSoftBrush}"
+                                  StrokeThickness="2"
+                                  StrokeLineJoin="Round"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Data="M3.55,8.4 V3.82 A3.79,3.79 0 0 1 10.91,3.82 V8.4" />
+                            <Path Stroke="{ThemeResource InkSoftBrush}"
+                                  StrokeThickness="2"
+                                  StrokeLineJoin="Round"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Data="M3.27,9.11 H9.16 A2,2 0 0 1 11.16,11.11 V16.72 A2,2 0 0 1 9.16,18.72 H3.27 A2,2 0 0 1 1.27,16.72 V11.11 A2,2 0 0 1 3.27,9.11 Z" />
+                            <Ellipse Canvas.Left="8.24"
+                                     Canvas.Top="10.03"
+                                     Width="9.5"
+                                     Height="9.5"
+                                     Stroke="{ThemeResource InkSoftBrush}"
+                                     StrokeThickness="2" />
+                            <Path Stroke="{ThemeResource InkSoftBrush}"
+                                  StrokeThickness="2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Data="M12.99,12.62 V14.7 L14.05,15.45" />
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock VerticalAlignment="Center"
+                               FontFamily="{StaticResource DisplayFont}"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource InkSoftBrush}"
+                               Text="Lock" />
+                </StackPanel>
             </Button>
         </StackPanel>
     </Grid>

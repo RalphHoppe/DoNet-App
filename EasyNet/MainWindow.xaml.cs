@@ -22,19 +22,18 @@ namespace EasyNet;
 ///</remarks>
 public sealed partial class MainWindow : Window
 {
-    // The design's artboard: the mockups' 1400x800.
-    private const int DesignWidth = 1400;
-    private const int DesignHeight = 800;
+    // The design's window: a startup screen, small and centred - the Visual
+    // Studio splash's register, not a main window's. Every screen is a
+    // centred column, so a larger window only adds air.
+    private const int DesignWidth = 540;
+    private const int DesignHeight = 660;
 
     // ...but never edge to edge.
     private const double MaxWorkAreaFraction = 0.92;
 
-    // The smallest window the layout still works in: the create and unlock
-    // screens reflow below 1160, and their content column plus breathing room
-    // fits at 980; the splash is centered and needs less, so 980x640 is the
-    // floor for every screen, not the tightest one.
-    private const int MinimumWidth = 980;
-    private const int MinimumHeight = 640;
+    // The smallest window the column still breathes in.
+    private const int MinimumWidth = 500;
+    private const int MinimumHeight = 600;
 
     // Resize-border metrics, for keeping the window's grab edges out of the caption.
     private const int SmCxSizeFrame = 32;

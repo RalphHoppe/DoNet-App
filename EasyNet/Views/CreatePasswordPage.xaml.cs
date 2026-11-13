@@ -8,16 +8,10 @@ namespace EasyNet.Views;
 
 /// <summary>
 /// The create-password screen. See the XAML for its layout; this wires the
-/// fields' words into the view model, submits on Enter as on click, and
-/// keeps the width states honest as the window resizes.
+/// fields' words into the view model and submits on Enter as on click.
 /// </summary>
 public sealed partial class CreatePasswordPage : Page
 {
-    // The wide layout's threshold: below it, the lockup steps aside. 1160 is
-    // where the form's own 840 no longer clears the lockup's 352 with margin
-    // to breathe (1160 - 352 - 840 < 0 begins to squeeze at the tightest).
-    private const double WideStateMinimumWidth = 1160;
-
     public CreatePasswordPage()
     {
         ViewModel = App.Current.Services.GetRequiredService<CreatePasswordViewModel>();
@@ -29,7 +23,6 @@ public sealed partial class CreatePasswordPage : Page
         PasswordField.Submitted += OnSubmitted;
         ConfirmField.Submitted += OnSubmitted;
 
-        SizeChanged += (_, _) => ApplyWidthState();
         Loaded += OnLoaded;
     }
 
@@ -40,18 +33,11 @@ public sealed partial class CreatePasswordPage : Page
     {
         Loaded -= OnLoaded;
 
-        ApplyWidthState();
         PasswordField.FocusInput();
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs args) =>
         Frame?.BackStack.Clear();
-
-    private void ApplyWidthState() =>
-        _ = VisualStateManager.GoToState(
-            this,
-            ActualWidth >= WideStateMinimumWidth ? "WideState" : "NarrowState",
-            useTransitions: false);
 
     private void OnSubmitted(object? sender, System.EventArgs args) => TryCreate();
 

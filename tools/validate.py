@@ -186,6 +186,14 @@ for path in XAML:
             problems.append(f"{rel}: Clip must be a RectangleGeometry, not {m.group(1)} "
                             f"(WMC0015) - UIElement.Clip accepts nothing else")
 
+    # Properties that exist in SVG or WPF but not on WinUI shapes. Each of
+    # these has cost a build cycle; the compiler reports them one at a time.
+    for m in re.finditer(r'\s(StrokeLineCap|StrokeLinecap|StrokeOpacity|FillRule)=', src):
+        problems.append(f"{rel}:{src[: m.start()].count(chr(10)) + 1}: '{m.group(1)}' is not a "
+                        f"WinUI shape property - SVG/WPF naming that the "
+                        f"compiler refuses (use Start/End caps, colour alpha, "
+                        f"or the path's own F0/F1 rule)")
+
 # ---- 8. the serialiser's token is named, not positional ----------------------
 # SerializeAsync(stream, value, cancellationToken) does not bind the token to
 # the token parameter - it binds it to options, and the compiler answers

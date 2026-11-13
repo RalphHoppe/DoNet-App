@@ -50,6 +50,85 @@
             </LinearGradientBrush>
 
             <!--
+                The glass language, per the design: a transparent glassy frame
+                with the white button inside it, and the icon inside that.
+                Everything interactive wears it - the window's X, the fields'
+                three separate pieces, the actions. CornerRadius 999 is "fully
+                rounded": XAML clamps it to half the element's size, so one
+                value serves circles and pills alike, outer frame and inner
+                white core staying concentric.
+            -->
+            <SolidColorBrush x:Key="GlassFillBrush" Color="#0A1D212C" />
+            <SolidColorBrush x:Key="GlassEdgeBrush" Color="#2B1D212C" />
+            <SolidColorBrush x:Key="GlassFillHoverBrush" Color="#141D212C" />
+            <SolidColorBrush x:Key="GlassEdgeHoverBrush" Color="#421D212C" />
+            <SolidColorBrush x:Key="GlassFillPressedBrush" Color="#1F1D212C" />
+            <SolidColorBrush x:Key="GlassEdgePressedBrush" Color="#551D212C" />
+            <SolidColorBrush x:Key="GlassFillDisabledBrush" Color="#061D212C" />
+            <SolidColorBrush x:Key="GlassEdgeDisabledBrush" Color="#121D212C" />
+
+            <!--
+                The glass button: frame outside, white core inside, content in
+                the core. Padding lands on the content (the frame's own 2px
+                inset is what keeps the white visibly inside the glass).
+            -->
+            <Style x:Key="GlassButtonStyle" TargetType="Button">
+                <Setter Property="CornerRadius" Value="999" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="14,8" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Frame"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    Background="{StaticResource GlassFillBrush}"
+                                    BorderBrush="{StaticResource GlassEdgeBrush}"
+                                    BorderThickness="1"
+                                    Padding="2">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Frame.Background" Value="{StaticResource GlassFillHoverBrush}" />
+                                                <Setter Target="Frame.BorderBrush" Value="{StaticResource GlassEdgeHoverBrush}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Frame.Background" Value="{StaticResource GlassFillPressedBrush}" />
+                                                <Setter Target="Frame.BorderBrush" Value="{StaticResource GlassEdgePressedBrush}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters>
+                                                <Setter Target="Frame.Background" Value="{StaticResource GlassFillDisabledBrush}" />
+                                                <Setter Target="Frame.BorderBrush" Value="{StaticResource GlassEdgeDisabledBrush}" />
+                                                <Setter Target="Core.Opacity" Value="0.45" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="Core"
+                                        CornerRadius="999"
+                                        Background="{ThemeResource PaperBrush}">
+                                    <ContentPresenter Content="{TemplateBinding Content}"
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Margin="{TemplateBinding Padding}" />
+                                </Border>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--
                 The UI's type: Nunito, the design's own choice. The wordmark is
                 drawn, not typeset, so this only ever speaks for sentences.
                 Each weight is its own instanced file, referenced by its own
