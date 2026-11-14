@@ -40,11 +40,14 @@ all sides and caps content at 767; the logo (the design's original
 form while the window is at least 596 wide and stacks above it below that;
 the form fills the remaining width with a floor of 304; the input fills
 between the two fixed 52 px circles with a floor of 180; the control row
-never wraps. The window opens at 800 x 450 (DPI-aware,
-clamped to the work area) and can shrink to 372 x 400 - the composition's
-356 of content plus the window's own resize borders - and short windows
-scroll instead of clipping. The icons are the design's own vectors,
-verbatim, verified pixel for pixel against its render.
+never wraps. The window is a fixed 800 x 450 card - borderless,
+shadowless, not resizable, rounded by the system where the platform
+offers it (Windows 11) - opened centred and clamped to the work area;
+the screens still lay out responsively inside it should that ever
+change, and short viewports scroll instead of clipping. The X stays
+hidden until the splash has handed over to a real screen. The icons are
+the design's own vectors, verbatim, verified pixel for pixel against
+their renders - including the create button's padlock-and-clock.
 
 Motion lives on the splash alone, per the design's word: the entrance (slabs
 slide, ring cascades, letters rise) then the living logo (two waves of light

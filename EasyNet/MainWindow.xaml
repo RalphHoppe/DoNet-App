@@ -42,7 +42,13 @@
                 from the corner, with the drawn X inside - weight exact, no
                 glyph fallback on any machine.
             -->
+            <!--
+                Hidden while the splash owns the window - the brand's moment
+                plays alone - and shown by the code-behind the moment a real
+                screen takes over.
+            -->
             <Button x:Name="CloseButton"
+                    Visibility="Collapsed"
                     Width="32"
                     Height="32"
                     HorizontalAlignment="Right"

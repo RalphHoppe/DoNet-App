@@ -20,7 +20,7 @@ public sealed partial class PasswordField : UserControl
     /// <summary>Identifies the <see cref="Label"/> property.</summary>
     public static readonly DependencyProperty LabelProperty = DependencyProperty.Register(
         nameof(Label), typeof(string), typeof(PasswordField),
-        new PropertyMetadata(string.Empty));
+        new PropertyMetadata(string.Empty, OnLabelChanged));
 
     /// <summary>Identifies the <see cref="Placeholder"/> property.</summary>
     public static readonly DependencyProperty PlaceholderProperty = DependencyProperty.Register(
@@ -30,6 +30,10 @@ public sealed partial class PasswordField : UserControl
     public PasswordField()
     {
         InitializeComponent();
+
+        // A field declared with no label never fires the changed callback,
+        // so the initial state is applied here as well.
+        ApplyLabelLayout();
     }
 
     /// <summary>The line above the pill, e.g. "Password".</summary>
@@ -70,6 +74,22 @@ public sealed partial class PasswordField : UserControl
 
     private static void OnPlaceholderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
         ((PasswordField)d).Input.PlaceholderText = (string)e.NewValue;
+
+    /// <summary>
+    /// A field with no label - the create screen's second field, which the
+    /// first field's label already speaks for - collapses the line and its
+    /// gap, so an empty label costs no space and leaves no seam.
+    /// </summary>
+    private static void OnLabelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
+        ((PasswordField)d).ApplyLabelLayout();
+
+    private void ApplyLabelLayout()
+    {
+        bool labelled = !string.IsNullOrWhiteSpace(Label);
+
+        LabelLine.Visibility = labelled ? Visibility.Visible : Visibility.Collapsed;
+        Row.Margin = labelled ? new Thickness(0, 8, 0, 0) : new Thickness(0);
+    }
 
     private void OnInputPasswordChanged(object sender, RoutedEventArgs args) =>
         PasswordChanged?.Invoke(this, EventArgs.Empty);

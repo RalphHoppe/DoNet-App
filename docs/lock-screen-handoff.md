@@ -16,6 +16,18 @@ positioning or proportional scaling.
 > floor **356**, window minimum **372 × 400** with the resize borders.
 > Sections 1–5 below keep the handoff's own numbers as it was given.
 
+> **Second round, same day** (after reviewing the 52s build): the fields'
+> pill rounds a little under its full capsule — radius **22** on the 52
+> tall pill — and the submit buttons grow to **56 tall with a 168 floor**,
+> rounded **24**. The window becomes a **fixed 800 × 450 card**: borderless
+> (no frame, no system shadow), not resizable, its corners rounded by DWM
+> where the platform offers it (Windows 11; older systems keep it square).
+> The X appears only once the splash has handed over to a real screen. The
+> create screen's second field carries no label — the first field's
+> "Password" speaks for both, the mismatch hint is its only word. The
+> create button's padlock-and-clock is now the designer's own vector,
+> verbatim (mask-resolved, render-verified IoU 1.000).
+
 ---
 
 ## 1. Overall layout
@@ -112,9 +124,11 @@ stacked is a separate, unmade choice). Short viewports **scroll**; the
   and the form squeezed into the logo's 212 px column. The stacked
   posture is the form spanning all three columns, not sitting in the
   logo's; measured evidence in the build history.
-- The window opens at 800 × 450 (the user's ask), minimum 372 × 400 —
-  the composition's 356 of content (26 + 304 + 26) plus the window's own
-  resize borders, which the artboard has no concept of.
+- The window is a fixed 800 × 450 card: `SetBorderAndTitleBar(false,
+  false)` takes the frame and the DWM shadow with it, `IsResizable` is
+  false, and DWM's corner preference (attribute 33) asks for rounding on
+  Windows 11. The X stays hidden until the splash hands the frame to a
+  real screen (`RootFrame.Navigated`).
 - The shadow recipe lives in `Controls/PieceShadow`; masks in
   `Assets/Shadows` are the eroded shapes.
 - The logo raster is `Assets/Brand/logo.png` (the original 1254 × 1254),
