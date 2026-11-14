@@ -41,8 +41,8 @@ form while the window is at least 596 wide and stacks above it below that;
 the form fills the remaining width with a floor of 304; the input fills
 between the two fixed 52 px circles with a floor of 180; the control row
 never wraps. The window is a fixed 800 x 450 card - borderless,
-shadowless, not resizable, rounded by the system where the platform
-offers it (Windows 11) - opened centred and clamped to the work area;
+shadowless, not resizable, square at the corners - opened centred and
+clamped to the work area;
 the screens still lay out responsively inside it should that ever
 change, and short viewports scroll instead of clipping. The X stays
 hidden until the splash has handed over to a real screen. The icons are

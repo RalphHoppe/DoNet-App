@@ -78,25 +78,24 @@
             </Style>
 
             <!--
-                The action button: a pill 56 tall - a little taller and a
-                little wider than the fields, the one piece that asks to be
-                pressed - hugging its content with a floor of 168; the
-                icon-and-word group sits centred with 16 of air either side
-                and 8 between icon and word. The corner radius sits just
-                under the full half-height: a little less round than a
-                capsule, like the fields.
+                The action button: a pill the fields' own 52 height but a
+                little wider - the one piece that asks to be pressed - with
+                a floor of 168; the icon-and-word group sits centred with 16
+                of air either side and 8 between icon and word. The corner
+                radius sits just under the full half-height, like the
+                fields': a little less round than a capsule.
             -->
             <Style x:Key="ActionButtonStyle" TargetType="Button">
-                <Setter Property="Height" Value="56" />
+                <Setter Property="Height" Value="52" />
                 <Setter Property="MinWidth" Value="168" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="TabNavigation" Value="Local" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid Height="56" MinWidth="168" HorizontalAlignment="Left">
-                                <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/button56.png" />
-                                <Border CornerRadius="24"
+                            <Grid Height="52" MinWidth="168" HorizontalAlignment="Left">
+                                <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/button52.png" />
+                                <Border CornerRadius="22"
                                         Background="{ThemeResource PieceFillBrush}"
                                         BorderBrush="{ThemeResource PieceEdgeBrush}"
                                         BorderThickness="5.5">

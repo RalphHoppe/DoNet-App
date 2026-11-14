@@ -18,10 +18,11 @@ positioning or proportional scaling.
 
 > **Second round, same day** (after reviewing the 52s build): the fields'
 > pill rounds a little under its full capsule — radius **22** on the 52
-> tall pill — and the submit buttons grow to **56 tall with a 168 floor**,
-> rounded **24**. The window becomes a **fixed 800 × 450 card**: borderless
-> (no frame, no system shadow), not resizable, its corners rounded by DWM
-> where the platform offers it (Windows 11; older systems keep it square).
+> tall pill — and the submit buttons widen to a **168 floor** at the
+> fields' own 52 height, rounded **22** (wider, not taller — the taller
+> 56 was a misread, taken back). The window becomes a **fixed 800 × 450
+> card**: borderless (no frame, no system shadow), not resizable, its
+> corners square — a round-corner request was tried and withdrawn.
 > The X appears only once the splash has handed over to a real screen. The
 > create screen's second field carries no label — the first field's
 > "Password" speaks for both, the mismatch hint is its only word. The
@@ -126,9 +127,8 @@ stacked is a separate, unmade choice). Short viewports **scroll**; the
   logo's; measured evidence in the build history.
 - The window is a fixed 800 × 450 card: `SetBorderAndTitleBar(false,
   false)` takes the frame and the DWM shadow with it, `IsResizable` is
-  false, and DWM's corner preference (attribute 33) asks for rounding on
-  Windows 11. The X stays hidden until the splash hands the frame to a
-  real screen (`RootFrame.Navigated`).
+  false, and the corners are square. The X stays hidden until the splash
+  hands the frame to a real screen (`RootFrame.Navigated`).
 - The shadow recipe lives in `Controls/PieceShadow`; masks in
   `Assets/Shadows` are the eroded shapes.
 - The logo raster is `Assets/Brand/logo.png` (the original 1254 × 1254),

@@ -30,10 +30,6 @@ public sealed partial class MainWindow : Window
     // ...but never edge to edge.
     private const double MaxWorkAreaFraction = 0.92;
 
-    // DWM's window corner preference: attribute 33, value 2 = round.
-    private const int DwmwaWindowCornerPreference = 33;
-    private const int DwmwcpRound = 2;
-
     private readonly IntPtr _handle;
 
     /// <summary>Last known scale factor, to spot the window moving to another monitor.</summary>
@@ -69,9 +65,6 @@ public sealed partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);
 
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
-
     /// <summary>
     /// Removes the system chrome outright and fixes the window's size: no
     /// title bar, no border, no resize edges, no shadow.
@@ -84,11 +77,9 @@ public sealed partial class MainWindow : Window
     /// that no longer resizes.
     /// </para>
     /// <para>
-    /// Rounded corners are DWM's to give: Windows 11 honours the request
-    /// with its own radius, and older systems simply keep the window square.
-    /// The platform offers no custom radius, and the tricks that fake one
-    /// break windows drawn the way this one is - so the request is made and
-    /// nothing more is forced.
+    /// The corners stay square: the platform's own rounding is DWM's to
+    /// give with its fixed radius, and the window is drawn square on
+    /// purpose.
     /// </para>
     /// </remarks>
     private void ConfigureWindowChrome()
@@ -98,9 +89,6 @@ public sealed partial class MainWindow : Window
             presenter.SetBorderAndTitleBar(hasBorder: false, hasTitleBar: false);
             presenter.IsResizable = false;
         }
-
-        int round = DwmwcpRound;
-        _ = DwmSetWindowAttribute(_handle, DwmwaWindowCornerPreference, ref round, sizeof(int));
     }
 
     /// <summary>
