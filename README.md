@@ -37,12 +37,12 @@ and buttons 15.
 The layout is nested and responsive, never absolute: the screen pads 26
 all sides and caps content at 767; the logo (the design's original
 1254 px raster, contained in a non-shrinking 212 px box) sits beside the
-form while the window is at least 588 wide and stacks above it below that;
-the form fills the remaining width with a floor of 296; the input fills
-between the two fixed 48 px circles with a floor of 180; the control row
-never wraps. The window opens at 800 x 400 (DPI-aware,
-clamped to the work area) and can shrink to 364 x 400 - the design's
-348 of content plus the window's own resize borders - and short windows
+form while the window is at least 596 wide and stacks above it below that;
+the form fills the remaining width with a floor of 304; the input fills
+between the two fixed 52 px circles with a floor of 180; the control row
+never wraps. The window opens at 800 x 450 (DPI-aware,
+clamped to the work area) and can shrink to 372 x 400 - the composition's
+356 of content plus the window's own resize borders - and short windows
 scroll instead of clipping. The icons are the design's own vectors,
 verbatim, verified pixel for pixel against its render.
 
@@ -79,3 +79,7 @@ creation makes an actual vault (`%LOCALAPPDATA%\EasyNet\vault.json` - a
 PBKDF2-derived key sealing a verifier with AES-GCM; no data in it yet), and
 unlock really unlocks. The vault's own screens - where the records will live -
 are the next design's to give.
+
+While the create-password screen is still being reviewed against its design,
+delete that `vault.json` to see it again: with the file gone the splash routes
+back to creation, exactly as on a first run.

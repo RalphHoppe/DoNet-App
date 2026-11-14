@@ -44,6 +44,13 @@ public sealed partial class UnlockViewModel : ObservableObject
     }
 
     /// <summary>Tries the password against the vault.</summary>
+    /// <remarks>
+    /// The vault's own verdicts come back as booleans; anything unexpected is
+    /// folded into the same honest answer - a vault that cannot be asked is a
+    /// vault that does not open - and the busy flag is cleared no matter
+    /// what, because the one thing worse than a refused password is an
+    /// action that quietly stops answering.
+    ///</remarks>
     [RelayCommand]
     private async Task UnlockAsync()
     {
@@ -54,9 +61,19 @@ public sealed partial class UnlockViewModel : ObservableObject
 
         IsBusy = true;
 
-        bool opened = await _vault.TryUnlockAsync(_password);
-
-        IsBusy = false;
+        bool opened;
+        try
+        {
+            opened = await _vault.TryUnlockAsync(_password);
+        }
+        catch
+        {
+            opened = false;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
 
         if (opened)
         {

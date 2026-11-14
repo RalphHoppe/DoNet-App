@@ -11,7 +11,7 @@
 
     <!--
         The lock screen, per the handoff: the logo and the form side by
-        side while there is room for both - 588 - and stacked, logo above
+        side while there is room for both - 596 - and stacked, logo above
         form, below that; the form taking the remaining width beside the
         logo and the whole width below it; the composition centred by the
         Screen, scrolling rather than clipping when the window is short.
@@ -19,7 +19,7 @@
 
         The beside/stacked markup below is the beside one - the handoff's
         own reference arrangement - and the stacked one is applied from
-        the code-behind below 588. An AdaptiveTrigger owned that switch
+        the code-behind below 596. An AdaptiveTrigger owned that switch
         first and never fired on a window eight hundred wide: the base
         state shipped as-is, the form squeezed into the logo's column and
         the whole composition clipped. A switch this central cannot be
@@ -51,7 +51,7 @@
             <StackPanel x:Name="Form"
                         Grid.Column="2"
                         Grid.Row="0"
-                        MinWidth="296"
+                        MinWidth="304"
                         HorizontalAlignment="Stretch">
                 <StackPanel Spacing="6">
                     <TextBlock FontFamily="{StaticResource ExtraBoldFont}"
@@ -90,7 +90,7 @@
                         open padlock beside the word.
                     -->
                     <Button Margin="0,16,0,0"
-                            HorizontalAlignment="Center"
+                            HorizontalAlignment="Left"
                             Style="{StaticResource ActionButtonStyle}"
                             IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
                             Click="OnUnlockClick">

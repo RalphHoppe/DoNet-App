@@ -13,10 +13,11 @@ namespace EasyNet.Views;
 /// </summary>
 public sealed partial class CreatePasswordPage : Page
 {
-    // The handoff's wrap point: 26 + 212 + 28 + 296 + 26. This wide or
+    // The wrap point: 26 + 212 + 28 + 304 + 26, the form's floor being
+    // 52 + 10 + 180 + 10 + 52 since the pieces grew to 52. This wide or
     // wider, the form stands beside the logo; narrower, the logo stacks
     // above it and the form takes the whole width.
-    private const double SideBySideWidth = 588;
+    private const double SideBySideWidth = 596;
 
     public CreatePasswordPage()
     {

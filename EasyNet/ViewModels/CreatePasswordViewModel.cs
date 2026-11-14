@@ -64,6 +64,11 @@ public sealed partial class CreatePasswordViewModel : ObservableObject
     }
 
     /// <summary>Makes the vault - and the screen after it is the vault itself, unlocked.</summary>
+    /// <remarks>
+    /// The busy flag is cleared in a finally, so even a creation that throws
+    /// cannot leave the action permanently disabled: a button that stops
+    /// answering is its own kind of lock, and not the kind this app is for.
+    ///</remarks>
     [RelayCommand]
     private async Task CreateAsync()
     {
@@ -75,7 +80,15 @@ public sealed partial class CreatePasswordViewModel : ObservableObject
         IsBusy = true;
         Refresh();
 
-        await _vault.CreateAsync(_password);
+        try
+        {
+            await _vault.CreateAsync(_password);
+        }
+        finally
+        {
+            IsBusy = false;
+            Refresh();
+        }
 
         _password = string.Empty;
         _confirm = string.Empty;

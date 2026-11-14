@@ -153,7 +153,14 @@ public sealed class VaultService : IVaultService
         try
         {
             using var cipher = new AesGcm(key, TagBytes);
-            cipher.Decrypt(nonce, seal, seal.AsSpan(TokenBytes), token);
+
+            // The seal is token-then-tag: the ciphertext is only its first
+            // TokenBytes. Handing the whole seal in as the ciphertext asked
+            // for a 48-byte plaintext into a 32-byte buffer, and the cipher
+            // answered with an argument error no catch clause here was for -
+            // which is how every unlock attempt once died silently and took
+            // the button's enabled state down with it.
+            cipher.Decrypt(nonce, seal.AsSpan(0, TokenBytes), seal.AsSpan(TokenBytes), token);
         }
         catch (CryptographicException)
         {

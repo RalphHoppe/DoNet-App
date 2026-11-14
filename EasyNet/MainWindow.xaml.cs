@@ -15,26 +15,26 @@ namespace EasyNet;
 /// The shell window: a chrome-free white frame that hosts every page.
 /// </summary>
 /// <remarks>
-/// The window opens at the handoff's own reference posture, 800 x 400, and
-/// never runs edge to edge on a display that cannot hold that, because a
-/// window exactly the size of the work area reads as a botched maximise
-/// rather than a deliberate default.
+/// The window opens at the handoff's reference width and the height asked
+/// for, 800 x 450, and never runs edge to edge on a display that cannot
+/// hold that, because a window exactly the size of the work area reads as
+/// a botched maximise rather than a deliberate default.
 ///</remarks>
 public sealed partial class MainWindow : Window
 {
-    // The design's window: the handoff's reference width, and the height
-    // that leaves its centred composition exactly the air it specifies.
+    // The design's window: the handoff's reference width, 450 tall.
     private const int DesignWidth = 800;
-    private const int DesignHeight = 400;
+    private const int DesignHeight = 450;
 
     // ...but never edge to edge.
     private const double MaxWorkAreaFraction = 0.92;
 
     // The smallest window the composition still breathes in: the design's
-    // 348 of content plus the window's own resize borders, which the
-    // design's artboard has no concept of - about eight a side at 100%,
-    // scaled with the DPI like everything else here.
-    private const int MinimumWidth = 364;
+    // 356 of content (26 + the form's 304 floor + 26) plus the window's own
+    // resize borders, which the design's artboard has no concept of -
+    // about eight a side at 100%, scaled with the DPI like everything else
+    // here.
+    private const int MinimumWidth = 372;
     private const int MinimumHeight = 400;
 
     // Resize-border metrics, for keeping the window's grab edges out of the caption.

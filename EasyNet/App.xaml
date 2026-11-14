@@ -58,6 +58,10 @@
                 A ghost button: no chrome at all, just its content. Used
                 where the piece around the button is the visible thing - the
                 eye inside its round - so the button itself must be nothing.
+                The template still carries the control's own Background as
+                its hit area: an element with no background is not hit
+                testable, and a ghost with nothing to click is just a
+                decoration that lies about being a button.
             -->
             <Style x:Key="GhostButtonStyle" TargetType="Button">
                 <Setter Property="Padding" Value="0" />
@@ -65,29 +69,33 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <ContentPresenter />
+                            <Grid Background="{TemplateBinding Background}">
+                                <ContentPresenter />
+                            </Grid>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
             </Style>
 
             <!--
-                The action button, per the handoff: a full pill 48 tall,
+                The action button, per the handoff: a full pill 52 tall,
                 hugging its content with a floor of 148; the icon-and-word
                 group sits centred with 16 of air either side and 8 between
-                icon and word.
+                icon and word. The corner radius is half the height, the
+                designer's own 26 - which is what the inspector said all
+                along, back when the pieces still looked 48 tall.
             -->
             <Style x:Key="ActionButtonStyle" TargetType="Button">
-                <Setter Property="Height" Value="48" />
+                <Setter Property="Height" Value="52" />
                 <Setter Property="MinWidth" Value="148" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="TabNavigation" Value="Local" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid Height="48" MinWidth="148" HorizontalAlignment="Left">
-                                <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/button48.png" />
-                                <Border CornerRadius="24"
+                            <Grid Height="52" MinWidth="148" HorizontalAlignment="Left">
+                                <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/button52.png" />
+                                <Border CornerRadius="26"
                                         Background="{ThemeResource PieceFillBrush}"
                                         BorderBrush="{ThemeResource PieceEdgeBrush}"
                                         BorderThickness="5.5">

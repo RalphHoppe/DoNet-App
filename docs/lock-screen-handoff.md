@@ -6,6 +6,16 @@ earlier fixed 700 × 400 export). Every value below is **the design's own**;
 the app reproduces them with nested responsive layout, never absolute
 positioning or proportional scaling.
 
+> **Corrections from the user, 2026-10-05** (after reviewing the build):
+> the pieces are **52 tall, not 48** — and the rounds 52 × 52 — so the
+> corner radius is **26** (the inspector's 26 was the truth all along;
+> the SVG exports' 48/24 was the export's own rounding). The submit
+> button sits **left**, not centred. The window opens at **800 × 450**.
+> The derived numbers move with the heights: form floor **304**
+> (52+10+180+10+52), wrap threshold **596** (26+212+28+304+26), screen
+> floor **356**, window minimum **372 × 400** with the resize borders.
+> Sections 1–5 below keep the handoff's own numbers as it was given.
+
 ---
 
 ## 1. Overall layout
@@ -95,16 +105,16 @@ stacked is a separate, unmade choice). Short viewports **scroll**; the
   content is a fitter that is never shorter than the viewport, and the
   host's width is the viewport's own until the 819 cap, then centred —
   fill up to the cap, centre beyond it.
-- Wrap is a switch in each page's code-behind at width 588, measured on
+- Wrap is a switch in each page's code-behind at width 596 (the 52s moved
+  it from the handoff's 588), measured on
   the page itself. It was an `AdaptiveTrigger` visual state first and
   never fired on a window 800 wide — the stacked base state shipped as-is
   and the form squeezed into the logo's 212 px column. The stacked
   posture is the form spanning all three columns, not sitting in the
   logo's; measured evidence in the build history.
-- The window opens at 800 × 400 (the 420 reference minus the line of air
-  the design never asked for), minimum 364 × 400 — the design's 348 of
-  content plus the window's own resize borders, which the artboard has
-  no concept of.
+- The window opens at 800 × 450 (the user's ask), minimum 372 × 400 —
+  the composition's 356 of content (26 + 304 + 26) plus the window's own
+  resize borders, which the artboard has no concept of.
 - The shadow recipe lives in `Controls/PieceShadow`; masks in
   `Assets/Shadows` are the eroded shapes.
 - The logo raster is `Assets/Brand/logo.png` (the original 1254 × 1254),
