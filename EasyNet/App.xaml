@@ -29,6 +29,9 @@
                     <SolidColorBrush x:Key="InkBrush" Color="#424349" />
                     <SolidColorBrush x:Key="CloseBrush" Color="#494242" />
                     <SolidColorBrush x:Key="InkSoftBrush" Color="#74757A" />
+                    <!-- The home screen's sidebar panel, and its active piece's ring. -->
+                    <SolidColorBrush x:Key="HomePanelBrush" Color="#F8F8F8" />
+                    <SolidColorBrush x:Key="PieceEdgeActiveBrush" Color="#52F8A622" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 

@@ -92,12 +92,27 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Shows the X once the splash has handed the window to a real screen.
+    /// Shows the X once the splash has handed the window to a real screen,
+    /// and sizes the window to the screen's own design.
     /// </summary>
-    private void OnRootFrameNavigated(object sender, NavigationEventArgs args) =>
+    private void OnRootFrameNavigated(object sender, NavigationEventArgs args)
+    {
         CloseButton.Visibility = args.SourcePageType == typeof(SplashPage)
             ? Visibility.Collapsed
             : Visibility.Visible;
+
+        // The window is fixed, so its size is the screen's to declare: the
+        // vault's sidebar is 850 tall at its natural size, everything else
+        // takes the shell's default.
+        if (args.Content is IPreferredWindowSize preferred)
+        {
+            SizeAndCentre(preferred.PreferredWidth, preferred.PreferredHeight);
+        }
+        else
+        {
+            SizeAndCentre(DesignWidth, DesignHeight);
+        }
+    }
 
     private void OnRootFrameLoaded(object sender, RoutedEventArgs args)
     {

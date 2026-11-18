@@ -9,64 +9,253 @@
     mc:Ignorable="d">
 
     <!--
-        An honest placeholder, in the design's language: the vault is open,
-        its screens are waiting on their designs, and the one thing this
-        page can do for real - lock again - is offered with the padlock-
-        and-clock. When the vault's own screens arrive, this page is
-        replaced rather than decorated around.
+        The vault's home, from the designer's screen: a grey sidebar panel
+        floating on the white page with sixteen of air and rounded corners,
+        carrying the brand's small lockup, the WORKSPACE label, the active
+        category card in its amber ring, the four category rows, and at the
+        bottom the compact-view line and the lock. The main area beside it
+        is the next design's to give; it holds one honest sentence until
+        then. Every number here is measured from the design's own render,
+        recorded in docs/home-screen.md.
     -->
+
+    <Page.Resources>
+        <!--
+            The home action: the design's own smaller pill - 36 tall, floor
+            148, the same anatomy as the lock screen's button at the size
+            this screen draws it.
+        -->
+        <Style x:Key="HomeActionStyle" TargetType="Button">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="MinWidth" Value="148" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="TabNavigation" Value="Local" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Height="36" MinWidth="148" HorizontalAlignment="Left">
+                            <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/button36.png" />
+                            <Border CornerRadius="18"
+                                    Background="{ThemeResource PieceFillBrush}">
+                                <ContentPresenter Margin="16,0"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
     <Grid Background="{ThemeResource PageBrush}">
-        <ScrollViewer HorizontalContentAlignment="Center"
-                      VerticalContentAlignment="Center"
-                      HorizontalScrollMode="Disabled">
-            <StackPanel HorizontalAlignment="Center">
-                <StackPanel HorizontalAlignment="Center" Spacing="3">
-                    <controls:EasyNetMark Mode="Static" Width="71" HorizontalAlignment="Center" />
-                    <controls:EasyNetWordmark Mode="Static" Width="97" HorizontalAlignment="Center" />
-                </StackPanel>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="296" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-                <TextBlock Margin="0,36,0,0"
-                           HorizontalAlignment="Center"
-                           FontFamily="{StaticResource ExtraBoldFont}"
-                           FontSize="25"
-                           Foreground="{ThemeResource InkStrongBrush}"
-                           Text="The vault is open." />
+        <!-- The sidebar: the panel and its sixteen of air on three sides. -->
+        <Grid Grid.Column="0" Margin="16,16,0,16">
+            <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/panel.png" />
+            <Border CornerRadius="20" Background="{ThemeResource HomePanelBrush}">
+                <Grid Padding="20,35,20,26">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <TextBlock Margin="0,6,0,0"
-                           HorizontalAlignment="Center"
-                           FontFamily="{StaticResource TextFont}"
-                           FontSize="14"
-                           Foreground="{ThemeResource InkSoftBrush}"
-                           Text="The vault's screens are waiting on their designs." />
+                    <!-- The panel's upper half: brand, label, categories. -->
+                    <StackPanel Grid.Row="0">
+                        <!--
+                            The brand's small lockup: the mark over the
+                            wordmark, each centred on the pair's own axis,
+                            with WORKSPACE beneath on the same axis - the
+                            design places the group nine in from the edge.
+                        -->
+                        <StackPanel Width="66" Margin="9,0,0,0">
+                            <controls:EasyNetMark Mode="Static"
+                                                  Width="48"
+                                                  HorizontalAlignment="Center" />
+                            <controls:EasyNetWordmark Mode="Static"
+                                                      Width="66"
+                                                      Margin="0,1,0,0" />
+                            <TextBlock Margin="0,42,0,0"
+                                       HorizontalAlignment="Center"
+                                       FontFamily="{StaticResource BoldFont}"
+                                       FontSize="11"
+                                       CharacterSpacing="150"
+                                       Foreground="{ThemeResource InkSoftBrush}"
+                                       Text="WORKSPACE" />
+                        </StackPanel>
 
-                <Button Margin="0,32,0,0"
-                        HorizontalAlignment="Center"
-                        Style="{StaticResource ActionButtonStyle}"
-                        Command="{x:Bind ViewModel.LockCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="19">
-                        <Grid Width="20" Height="20" VerticalAlignment="Center">
-                            <!--
-                                The design's padlock-and-clock, verbatim:
-                                its masked stroke resolved back to the
-                                shapes that print - the lock's band, the
-                                clock's ring, the clock's hand.
-                            -->
-                            <Path Width="19"
-                                  Height="20"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Fill="{ThemeResource InkBrush}"
-                                  Opacity="0.9"
-                                  Data="F0 M3.11529 8.11103L2.79606 5.32151C2.75561 4.96812 2.75561 4.61147 2.79606 4.25808L2.81882 4.05914C3.06031 1.94897 4.76891 0.279327 6.9407 0.0312541C7.30552 -0.010418 7.67412 -0.010418 8.03895 0.0312541C10.2107 0.279327 11.9193 1.94897 12.1608 4.05914L12.1836 4.25808C12.224 4.61147 12.224 4.96812 12.1836 5.32151L11.9026 7.77663C11.8828 7.95012 11.7458 8.08829 11.5697 8.12352C10.5741 8.32271 9.65577 8.72715 8.8636 9.28929C8.78945 9.34191 8.69972 9.37018 8.60791 9.36774C7.0414 9.32616 5.47304 9.37198 3.9106 9.5052L2.77615 9.60192C2.25142 9.64666 1.82673 10.0349 1.74917 10.5408C1.41694 12.7077 1.41694 14.9104 1.74917 17.0774C1.82673 17.5832 2.25142 17.9715 2.77615 18.0162L3.9106 18.1129C4.85666 18.1936 5.80488 18.2422 6.75355 18.2588C6.89248 18.2612 7.01985 18.3331 7.09491 18.4466C7.31366 18.7775 7.56114 19.0887 7.83393 19.377C7.95521 19.5051 7.86687 19.7211 7.68762 19.7211C6.3837 19.727 5.07956 19.6746 3.77938 19.5637L2.64493 19.467C1.42917 19.3633 0.445208 18.4638 0.265518 17.2918C-0.0885058 14.9827 -0.0885058 12.6354 0.265517 10.3263C0.445208 9.15431 1.42917 8.25479 2.64493 8.15113L3.11529 8.11103ZM7.11596 1.47765C7.36434 1.44928 7.6153 1.44928 7.86368 1.47765C9.34231 1.64654 10.5056 2.78329 10.67 4.21997L10.6928 4.41891C10.721 4.66541 10.721 4.91418 10.6928 5.16068L10.3688 7.99151C8.4517 7.86488 6.52794 7.86488 4.61084 7.99151L4.28688 5.16068C4.25867 4.91418 4.25867 4.66541 4.28688 4.4189L4.30965 4.21997C4.47406 2.78329 5.63733 1.64654 7.11596 1.47765Z M13.7398 13.3236C13.7398 12.9214 13.404 12.5954 12.9898 12.5954C12.5756 12.5954 12.2398 12.9214 12.2398 13.3236V15.0448C12.2398 15.2777 12.3546 15.4967 12.5487 15.6337L13.5487 16.3398C13.8837 16.5763 14.3527 16.5044 14.5964 16.1792C14.84 15.8539 14.7659 15.3985 14.431 15.162L13.7398 14.674V13.3236Z M12.9898 20.12C16.0274 20.12 18.4898 17.7292 18.4898 14.78C18.4898 11.8308 16.0274 9.43996 12.9898 9.43996C9.95226 9.43996 7.48982 11.8308 7.48982 14.78C7.48982 17.7292 9.95226 20.12 12.9898 20.12ZM12.9898 18.6636C15.199 18.6636 16.9898 16.9249 16.9898 14.78C16.9898 12.6351 15.199 10.8963 12.9898 10.8963C10.7807 10.8963 8.98982 12.6351 8.98982 14.78C8.98982 16.9249 10.7807 18.6636 12.9898 18.6636Z" />
-                            </Grid>
-                        <TextBlock VerticalAlignment="Center"
-                                   FontFamily="{StaticResource BoldFont}"
-                                   FontSize="15"
-                                   Foreground="{ThemeResource InkBrush}"
-                                   Text="Lock" />
+                        <!-- The active category: white, in a hairline amber ring. -->
+                        <Grid Width="224" Height="48" Margin="0,24,0,0" HorizontalAlignment="Left">
+                            <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/card.png" />
+                            <Border CornerRadius="24"
+                                    Background="#FFFFFF"
+                                    BorderBrush="{ThemeResource PieceEdgeActiveBrush}"
+                                    BorderThickness="2.5">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                                    <Image Width="20"
+                                           Height="20"
+                                           Stretch="Uniform"
+                                           Source="ms-appx:///Assets/Home/characters.png" />
+                                    <TextBlock Margin="16,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontFamily="{StaticResource BoldFont}"
+                                               FontSize="15"
+                                               LineHeight="20"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               Foreground="{ThemeResource InkStrongBrush}"
+                                               Text="Characters" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- The categories, each in its own quiet pill. -->
+                        <Grid Width="224" Height="35" Margin="0,16,0,0" HorizontalAlignment="Left">
+                            <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/row.png" />
+                            <Border CornerRadius="17.5" Background="{ThemeResource PieceFillBrush}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                                    <Image Width="20"
+                                           Height="20"
+                                           Stretch="Uniform"
+                                           Source="ms-appx:///Assets/Home/websites.png" />
+                                    <TextBlock Margin="16,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontFamily="{StaticResource TextFont}"
+                                               FontSize="15"
+                                               LineHeight="20"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               Foreground="{ThemeResource InkSoftBrush}"
+                                               Text="Websites" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid Width="224" Height="35" Margin="0,21,0,0" HorizontalAlignment="Left">
+                            <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/row.png" />
+                            <Border CornerRadius="17.5" Background="{ThemeResource PieceFillBrush}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                                    <Image Width="20"
+                                           Height="20"
+                                           Stretch="Uniform"
+                                           Source="ms-appx:///Assets/Home/accounts.png" />
+                                    <TextBlock Margin="16,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontFamily="{StaticResource TextFont}"
+                                               FontSize="15"
+                                               LineHeight="20"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               Foreground="{ThemeResource InkSoftBrush}"
+                                               Text="Accounts" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid Width="224" Height="35" Margin="0,21,0,0" HorizontalAlignment="Left">
+                            <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/row.png" />
+                            <Border CornerRadius="17.5" Background="{ThemeResource PieceFillBrush}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                                    <Image Width="20"
+                                           Height="20"
+                                           Stretch="Uniform"
+                                           Source="ms-appx:///Assets/Home/wallets.png" />
+                                    <TextBlock Margin="16,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontFamily="{StaticResource TextFont}"
+                                               FontSize="15"
+                                               LineHeight="20"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               Foreground="{ThemeResource InkSoftBrush}"
+                                               Text="Wallets" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid Width="224" Height="35" Margin="0,21,0,0" HorizontalAlignment="Left">
+                            <Grid controls:PieceShadow.Mask="ms-appx:///Assets/Shadows/row.png" />
+                            <Border CornerRadius="17.5" Background="{ThemeResource PieceFillBrush}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                                    <Image Width="20"
+                                           Height="20"
+                                           Stretch="Uniform"
+                                           Source="ms-appx:///Assets/Home/services.png" />
+                                    <TextBlock Margin="16,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontFamily="{StaticResource TextFont}"
+                                               FontSize="15"
+                                               LineHeight="20"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               Foreground="{ThemeResource InkSoftBrush}"
+                                               Text="Services" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </StackPanel>
-                </Button>
-            </StackPanel>
-        </ScrollViewer>
+
+                    <!-- The panel's foot: the compact-view line and the lock. -->
+                    <StackPanel Grid.Row="2">
+                        <Grid Width="224">
+                            <TextBlock VerticalAlignment="Center"
+                                       FontFamily="{StaticResource TextFont}"
+                                       FontSize="13"
+                                       Foreground="{ThemeResource InkSoftBrush}"
+                                       Text="Compact view" />
+                            <Image Width="5"
+                                   Height="8"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   Source="ms-appx:///Assets/Home/chevron.png" />
+                        </Grid>
+
+                        <Button Margin="0,45,0,0"
+                                HorizontalAlignment="Left"
+                                Style="{StaticResource HomeActionStyle}"
+                                Command="{x:Bind ViewModel.LockCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Grid Width="20" Height="20" VerticalAlignment="Center">
+                                    <!-- The design's closed padlock, verbatim. -->
+                                    <Path HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Fill="{ThemeResource InkBrush}"
+                                          Opacity="0.9"
+                                          Data="F0M 3.12 8.35 L 2.81 5.51 C 2.77 5.15 2.77 4.78 2.81 4.42 L 2.83 4.21 C 3.07 2.04 4.78 0.32 6.95 0.07 C 7.32 0.02 7.68 0.02 8.05 0.07 C 10.22 0.32 11.93 2.04 12.17 4.21 L 12.19 4.42 C 12.23 4.78 12.23 5.15 12.19 5.51 L 11.88 8.35 L 12.56 8.41 C 13.65 8.49 14.53 9.31 14.71 10.38 C 15.07 12.62 15.07 14.9 14.71 17.13 C 14.53 18.2 13.65 19.02 12.56 19.1 L 11.07 19.22 C 8.69 19.41 6.31 19.41 3.93 19.22 L 2.44 19.1 C 1.35 19.02 0.47 18.2 0.29 17.13 C -0.07 14.9 -0.07 12.62 0.29 10.38 C 0.47 9.31 1.35 8.49 2.44 8.41 L 3.12 8.35 Z M 7.13 1.56 C 7.37 1.53 7.62 1.53 7.87 1.56 C 9.35 1.73 10.52 2.9 10.68 4.38 L 10.7 4.58 C 10.73 4.84 10.73 5.09 10.7 5.35 L 10.38 8.24 C 8.46 8.12 6.54 8.12 4.62 8.24 L 4.3 5.35 C 4.27 5.09 4.27 4.84 4.3 4.58 L 4.32 4.38 C 4.48 2.9 5.65 1.73 7.13 1.56 Z M 10.95 9.78 C 8.65 9.6 6.35 9.6 4.05 9.78 L 2.55 9.9 C 2.16 9.94 1.84 10.23 1.77 10.62 C 1.43 12.7 1.43 14.81 1.77 16.89 C 1.84 17.28 2.16 17.58 2.55 17.61 L 4.05 17.73 C 6.35 17.91 8.65 17.91 10.95 17.73 L 12.44 17.61 C 12.84 17.58 13.16 17.28 13.23 16.89 C 13.57 14.81 13.57 12.7 13.23 10.62 C 13.16 10.23 12.84 9.94 12.44 9.9 L 10.95 9.78 Z M 7.5 12.26 C 6.67 12.26 6 12.93 6 13.76 C 6 14.58 6.67 15.26 7.5 15.26 C 8.33 15.26 9 14.58 9 13.76 C 9 12.93 8.33 12.26 7.5 12.26 Z" />
+                                </Grid>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontFamily="{StaticResource BoldFont}"
+                                           FontSize="15"
+                                           LineHeight="20"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           Foreground="{ThemeResource InkBrush}"
+                                           Text="Lock" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- The main area: the next design's to give. -->
+        <StackPanel Grid.Column="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+            <TextBlock HorizontalAlignment="Center"
+                       FontFamily="{StaticResource ExtraBoldFont}"
+                       FontSize="25"
+                       LineHeight="32"
+                       LineStackingStrategy="BlockLineHeight"
+                       Foreground="{ThemeResource InkStrongBrush}"
+                       Text="The vault is open." />
+            <TextBlock Margin="0,6,0,0"
+                       HorizontalAlignment="Center"
+                       FontFamily="{StaticResource TextFont}"
+                       FontSize="14"
+                       LineHeight="20"
+                       LineStackingStrategy="BlockLineHeight"
+                       Foreground="{ThemeResource InkSoftBrush}"
+                       Text="Its screens are waiting on their designs." />
+        </StackPanel>
     </Grid>
 </Page>

@@ -63,7 +63,7 @@ EasyNet/
   App.xaml(.cs)        tokens and the composition root
   MainWindow.xaml(.cs) the chrome-free shell: a drag strip, one close button
   Controls/            the mark, the wordmark, the field, the shadow, the screen
-  Views/               splash, create password, unlock, the vault placeholder
+  Views/               splash, create password, unlock, the vault home
   ViewModels/          one mind per screen
   Services/            the vault (PBKDF2 + AES-GCM verifier), paths, navigation
   Converters/          the one true/false-to-visibility bridge
@@ -80,8 +80,11 @@ tools/
 The three startup screens are real: the splash plays and routes, the password
 creation makes an actual vault (`%LOCALAPPDATA%\EasyNet\vault.json` - a
 PBKDF2-derived key sealing a verifier with AES-GCM; no data in it yet), and
-unlock really unlocks. The vault's own screens - where the records will live -
-are the next design's to give.
+unlock really unlocks. The vault's home is the designer's sidebar - brand,
+categories, compact view, lock - measured from its render and recorded in
+`docs/home-screen.md`; the window opens 800 x 850 for it and 800 x 450 for
+every other screen. The main area beside the sidebar, and the records that
+will live in it, are the next design's to give.
 
 While the create-password screen is still being reviewed against its design,
 delete that `vault.json` to see it again: with the file gone the splash routes
